@@ -11,14 +11,17 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Button } from '@/components/ui/button'
-import { useUser } from '@/lib/hooks/use-user'
 import { getUserInitials, getUserFullName } from '@/lib/utils/user'
 import { signOut } from '@/lib/actions/auth'
 import { LogOut, Settings, KeyRound, User } from 'lucide-react'
 import { useTransition } from 'react'
+import type { User as UserType } from '@/lib/database.types'
 
-export function UserMenu() {
-  const { user, isLoading } = useUser()
+interface UserMenuProps {
+  user: UserType
+}
+
+export function UserMenu({ user }: UserMenuProps) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
 
@@ -26,16 +29,6 @@ export function UserMenu() {
     startTransition(async () => {
       await signOut()
     })
-  }
-
-  if (isLoading) {
-    return (
-      <div className="h-8 w-8 rounded-full bg-muted animate-pulse" />
-    )
-  }
-
-  if (!user) {
-    return null
   }
 
   const initials = getUserInitials(user)

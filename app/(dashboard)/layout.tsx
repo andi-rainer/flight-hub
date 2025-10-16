@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation'
-import { getUser } from '@/lib/supabase/server'
+import { getUserProfile } from '@/lib/supabase/server'
 import { Sidebar } from '@/components/layout/sidebar'
 import { Header } from '@/components/layout/header'
 
@@ -12,10 +12,10 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode
 }) {
-  // Check authentication
-  const user = await getUser()
+  // Check authentication and get user profile
+  const userProfile = await getUserProfile()
 
-  if (!user) {
+  if (!userProfile) {
     redirect('/login')
   }
 
@@ -27,7 +27,7 @@ export default async function DashboardLayout({
       {/* Main Content Area */}
       <div className="flex flex-1 flex-col overflow-hidden">
         {/* Header with mobile menu and user menu */}
-        <Header />
+        <Header user={userProfile} />
 
         {/* Page Content */}
         <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8">

@@ -64,3 +64,30 @@ export async function getUser() {
 
   return user
 }
+
+/**
+ * Gets the current user profile from the database
+ * Returns null if no user is authenticated or profile doesn't exist
+ */
+export async function getUserProfile() {
+  const supabase = await createClient()
+  const { data: { user: authUser }, error: authError } = await supabase.auth.getUser()
+
+  if (authError || !authUser) {
+    console.error('Error getting auth user:', authError)
+    return null
+  }
+
+  const { data: profile, error: profileError } = await supabase
+    .from('users')
+    .select('*')
+    .eq('id', authUser.id)
+    .maybeSingle()
+
+  if (profileError) {
+    console.error('Error getting user profile:', profileError)
+    return null
+  }
+
+  return profile
+}

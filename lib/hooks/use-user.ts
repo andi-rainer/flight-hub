@@ -25,44 +25,74 @@ export function useUser(): UseUserReturn {
   const [error, setError] = useState<Error | null>(null)
 
   useEffect(() => {
+    let mounted = true
     const supabase = createClient()
 
-    // Get initial user
+    // Get initial user with proper timeout handling
     const getInitialUser = async () => {
       try {
-        // Get auth user
-        const { data: { user: authUser }, error: authError } = await supabase.auth.getUser()
+        // Wrap the auth call in a timeout
+        const authPromise = supabase.auth.getUser()
+        const timeoutPromise = new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error('Auth timeout')), 3000)
+        )
+
+        const { data: { user: authUser }, error: authError } = await Promise.race([
+          authPromise,
+          timeoutPromise
+        ])
+
+
+        if (!mounted) {
+          console.log('### Component unmounted, stopping')
+          return
+        }
 
         if (authError) {
           console.error('Auth error:', authError)
+          setIsLoading(false)
           return
         }
 
         setAuthUser(authUser)
 
         if (authUser) {
-          // Get profile data
-          const { data: profile, error: profileError } = await supabase
+          // Get profile data with timeout
+          const profilePromise = supabase
             .from('users')
             .select('*')
             .eq('id', authUser.id)
             .maybeSingle()
 
+          const profileTimeout = new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error('Profile timeout')), 2000)
+          )
+
+          const { data: profile, error: profileError } = await Promise.race([
+            profilePromise,
+            profileTimeout
+          ])
+
+          if (!mounted) return
+
           if (profileError) {
             console.error('Error fetching user profile:', profileError)
-            // Don't throw - just set error and continue
-            setError(profileError instanceof Error ? profileError : new Error(profileError.message))
-          } else {
-            setUser(profile)
+            setError(new Error(String(profileError)))
           }
+
+          setUser(profile || null)
         } else {
           setUser(null)
         }
       } catch (err) {
         console.error('useUser hook error:', err)
-        setError(err instanceof Error ? err : new Error('Failed to load user'))
+        if (mounted) {
+          setError(err instanceof Error ? err : new Error('Failed to load user'))
+        }
       } finally {
-        setIsLoading(false)
+        if (mounted) {
+          setIsLoading(false)
+        }
       }
     }
 
@@ -91,6 +121,8 @@ export function useUser(): UseUserReturn {
     })
 
     return () => {
+      console.log('### useUser cleanup')
+      mounted = false
       subscription.unsubscribe()
     }
   }, [])
