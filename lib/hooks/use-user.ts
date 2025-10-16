@@ -30,13 +30,12 @@ export function useUser(): UseUserReturn {
     // Get initial user
     const getInitialUser = async () => {
       try {
-        setIsLoading(true)
-
         // Get auth user
         const { data: { user: authUser }, error: authError } = await supabase.auth.getUser()
 
         if (authError) {
-          throw authError
+          console.error('Auth error:', authError)
+          return
         }
 
         setAuthUser(authUser)
@@ -47,15 +46,20 @@ export function useUser(): UseUserReturn {
             .from('users')
             .select('*')
             .eq('id', authUser.id)
-            .single()
+            .maybeSingle()
 
           if (profileError) {
-            throw profileError
+            console.error('Error fetching user profile:', profileError)
+            // Don't throw - just set error and continue
+            setError(profileError instanceof Error ? profileError : new Error(profileError.message))
+          } else {
+            setUser(profile)
           }
-
-          setUser(profile)
+        } else {
+          setUser(null)
         }
       } catch (err) {
+        console.error('useUser hook error:', err)
         setError(err instanceof Error ? err : new Error('Failed to load user'))
       } finally {
         setIsLoading(false)
@@ -70,13 +74,17 @@ export function useUser(): UseUserReturn {
 
       if (session?.user) {
         // Fetch updated profile
-        const { data: profile } = await supabase
+        const { data: profile, error: profileError } = await supabase
           .from('users')
           .select('*')
           .eq('id', session.user.id)
           .single()
 
-        setUser(profile)
+        if (profileError) {
+          console.error('Error fetching profile in auth state change:', profileError)
+        }
+
+        setUser(profile || null)
       } else {
         setUser(null)
       }
