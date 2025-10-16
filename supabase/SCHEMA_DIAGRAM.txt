@@ -1,0 +1,356 @@
+FlightHub Database Schema - Entity Relationship Diagram
+========================================================
+
+┌──────────────────────────┐
+│     auth.users           │
+│  (Supabase Auth)         │
+│  ┌────────────────────┐  │
+│  │ id (UUID, PK)      │──┼──────────────────────────────────┐
+│  │ email              │  │                                  │
+│  │ raw_user_meta_data │  │                                  │
+│  └────────────────────┘  │                                  │
+└──────────────────────────┘                                  │
+           │                                                   │
+           │ Trigger: on_auth_user_created                    │
+           │ (auto-creates public.users)                      │
+           ▼                                                   │
+┌─────────────────────────────────────┐                       │
+│        public.users                 │                       │
+├─────────────────────────────────────┤                       │
+│ id (UUID, PK, FK → auth.users)      │                       │
+│ email (TEXT, UNIQUE)                │                       │
+│ name, surname (TEXT)                │                       │
+│ role (TEXT[])  ← 'member', 'board'  │                       │
+│ license_number (TEXT, nullable)     │                       │
+│ functions (TEXT[], FK logical)      │                       │
+│ created_at, updated_at              │                       │
+└─────────────────────────────────────┘                       │
+           │                                                   │
+           │ Referenced by multiple tables                    │
+           │                                                   │
+    ┌──────┴────────┬─────────────┬──────────────┐            │
+    │               │             │              │            │
+    ▼               ▼             ▼              ▼            │
+┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐      │
+│reserva-  │  │flightlog │  │documents │  │accounts  │      │
+│tions     │  │          │  │          │  │          │      │
+└──────────┘  └──────────┘  └──────────┘  └──────────┘      │
+    │               │             │              │            │
+    └───────────────┴─────────────┴──────────────┴────────────┘
+                    (All tables reference users)
+
+
+┌──────────────────────────────────────┐
+│        functions_master              │
+├──────────────────────────────────────┤
+│ id (UUID, PK)                        │
+│ name (TEXT, UNIQUE)                  │
+│ yearly_rate (NUMERIC)                │
+│ description (TEXT)                   │
+│ created_at                           │
+└──────────────────────────────────────┘
+           │
+           │ Logical FK via users.functions array
+           │ (not enforced by DB)
+           ▼
+    (Referenced by users.functions[])
+
+
+┌──────────────────────────────────────┐
+│           planes                     │
+├──────────────────────────────────────┤
+│ id (UUID, PK)                        │
+│ tail_number (TEXT, UNIQUE)           │
+│ type (TEXT)                          │
+│ empty_weight, max_fuel (NUMERIC)     │
+│ fuel_consumption (NUMERIC)           │
+│ color (TEXT)                         │
+│ nav_equipment (TEXT[])               │
+│ xdpr_equipment, emer_equipment       │
+│ max_mass (NUMERIC)                   │
+│ cg_limits (JSONB)                    │
+│ active (BOOLEAN)                     │
+│ created_at, updated_at               │
+└──────────────────────────────────────┘
+           │
+           │ Referenced by:
+           │
+    ┌──────┴────────┬──────────────┐
+    │               │              │
+    ▼               ▼              ▼
+┌──────────┐  ┌──────────┐  ┌──────────┐
+│reserva-  │  │flightlog │  │documents │
+│tions     │  │          │  │(plane)   │
+└──────────┘  └──────────┘  └──────────┘
+
+
+┌──────────────────────────────────────┐
+│        reservations                  │
+├──────────────────────────────────────┤
+│ id (UUID, PK)                        │
+│ plane_id (UUID, FK → planes)         │────┐
+│ user_id (UUID, FK → users)           │────┼───┐
+│ start_time (TIMESTAMPTZ)             │    │   │
+│ end_time (TIMESTAMPTZ)               │    │   │
+│ status (ENUM: active/standby/        │    │   │
+│         cancelled)                   │    │   │
+│ priority (BOOLEAN)                   │    │   │
+│ remarks (TEXT)                       │    │   │
+│ created_at, updated_at               │    │   │
+└──────────────────────────────────────┘    │   │
+                                             │   │
+           Constraints:                      │   │
+           - end_time > start_time           │   │
+           - future_check                    │   │
+                                             │   │
+                                             │   │
+┌──────────────────────────────────────┐    │   │
+│          flightlog                   │    │   │
+├──────────────────────────────────────┤    │   │
+│ id (UUID, PK)                        │    │   │
+│ plane_id (FK → planes, RESTRICT)     │────┘   │
+│ pilot_id (FK → users, RESTRICT)      │────────┘
+│ copilot_id (FK → users, nullable)    │────────┐
+│ block_on, block_off (TIMESTAMPTZ)    │        │
+│ takeoff_time, landing_time           │        │
+│ fuel, oil (NUMERIC)                  │        │
+│ m_and_b_pdf_url (TEXT)               │        │
+│ locked (BOOLEAN)  ← prevents edits   │        │
+│ charged (BOOLEAN)                    │        │
+│ created_at, updated_at               │        │
+└──────────────────────────────────────┘        │
+                                                 │
+           Constraints:                          │
+           - block_off > block_on                │
+           - landing > takeoff                   │
+           - times in sequence                   │
+           - pilot ≠ copilot                     │
+           - charged requires locked             │
+                                                 │
+           Trigger:                              │
+           - Prevents locked entry modification  │
+                                                 │
+                                                 │
+┌──────────────────────────────────────┐        │
+│         documents                    │        │
+├──────────────────────────────────────┤        │
+│ id (UUID, PK)                        │        │
+│ plane_id (FK → planes, nullable)     │────┐   │
+│ user_id (FK → users, nullable)       │────┼───┘
+│ category (TEXT, nullable)            │    │
+│ name, file_url (TEXT)                │    │
+│ tags (TEXT[])                        │    │
+│ uploaded_by (FK → users, RESTRICT)   │────┼───┐
+│ uploaded_at (TIMESTAMPTZ)            │    │   │
+│ expiry_date (DATE, nullable)         │    │   │
+│ approved (BOOLEAN)                   │    │   │
+│ blocks_aircraft (BOOLEAN)            │    │   │
+│  ← prevents reservation if expired   │    │   │
+└──────────────────────────────────────┘    │   │
+                                             │   │
+           Constraint:                       │   │
+           - Exactly one of: plane_id,       │   │
+             user_id, category must be set   │   │
+           - blocks_aircraft only if         │   │
+             plane_id is set                 │   │
+                                             │   │
+                                             │   │
+┌──────────────────────────────────────┐    │   │
+│          accounts                    │    │   │
+├──────────────────────────────────────┤    │   │
+│ id (UUID, PK)                        │    │   │
+│ user_id (FK → users, RESTRICT)       │────┘   │
+│ amount (NUMERIC)                     │        │
+│   ← negative = charge                │        │
+│      positive = payment              │        │
+│ description (TEXT)                   │        │
+│ created_by (FK → users, RESTRICT)    │────────┘
+│ created_at                           │
+└──────────────────────────────────────┘
+
+
+┌──────────────────────────────────────┐
+│        notifications                 │
+├──────────────────────────────────────┤
+│ id (UUID, PK)                        │
+│ user_id (FK → users, CASCADE)        │────┐
+│ type (TEXT)                          │    │
+│ message (TEXT)                       │    │
+│ read (BOOLEAN)                       │    │
+│ created_at                           │    │
+└──────────────────────────────────────┘    │
+                                            │
+                                            │
+                                    ┌───────┴────────┐
+                                    │     users      │
+                                    └────────────────┘
+
+
+==================================================
+VIEWS (Computed/Joined Data)
+==================================================
+
+┌─────────────────────────────────────┐
+│      active_reservations (VIEW)     │
+│  = reservations + planes + users    │
+│  WHERE status='active' AND          │
+│        end_time > NOW()             │
+└─────────────────────────────────────┘
+
+┌─────────────────────────────────────┐
+│    flightlog_with_times (VIEW)      │
+│  = flightlog + calculated times     │
+│    + planes + pilot + copilot       │
+│  Adds: block_time_hours,            │
+│        flight_time_hours            │
+└─────────────────────────────────────┘
+
+┌─────────────────────────────────────┐
+│       user_balances (VIEW)          │
+│  = users + SUM(accounts.amount)     │
+│  Shows aggregated balance per user  │
+└─────────────────────────────────────┘
+
+
+==================================================
+FUNCTIONS
+==================================================
+
+is_board_member(user_uuid)
+  → Returns: BOOLEAN
+  → Used in RLS policies
+  → Checks if 'board' in users.role[]
+
+calculate_block_time(block_on, block_off)
+  → Returns: NUMERIC (hours)
+  → Used in views and queries
+
+calculate_flight_time(takeoff, landing)
+  → Returns: NUMERIC (hours)
+  → Used in views and queries
+
+can_reserve_aircraft(plane_id)
+  → Returns: BOOLEAN
+  → Checks for expired blocking documents
+  → Used before creating reservations
+
+
+==================================================
+ENUMS
+==================================================
+
+reservation_status
+  → 'active', 'standby', 'cancelled'
+
+
+==================================================
+RLS SECURITY MODEL
+==================================================
+
+Role Hierarchy:
+  anonymous → authenticated (member) → board
+
+Table Access Pattern:
+  ┌─────────────┬──────────────┬──────────────┐
+  │   Table     │   Member     │    Board     │
+  ├─────────────┼──────────────┼──────────────┤
+  │ users       │ Read all     │ Read/Write   │
+  │             │ Update self  │   all        │
+  ├─────────────┼──────────────┼──────────────┤
+  │ planes      │ Read all     │ Full access  │
+  ├─────────────┼──────────────┼──────────────┤
+  │ reserva-    │ Read all     │ Full access  │
+  │ tions       │ Write own    │              │
+  ├─────────────┼──────────────┼──────────────┤
+  │ flightlog   │ Read all     │ Full access  │
+  │             │ Write as     │ Lock/charge  │
+  │             │ pilot        │              │
+  ├─────────────┼──────────────┼──────────────┤
+  │ documents   │ Read appr.   │ Full access  │
+  │             │ Read own     │ Approve docs │
+  ├─────────────┼──────────────┼──────────────┤
+  │ accounts    │ Read own     │ Full access  │
+  ├─────────────┼──────────────┼──────────────┤
+  │ notifica-   │ Read/Update  │ Full access  │
+  │ tions       │ own          │ Create for   │
+  │             │              │ any user     │
+  └─────────────┴──────────────┴──────────────┘
+
+
+==================================================
+INDEXES SUMMARY
+==================================================
+
+Primary Indexes:
+  - All UUIDs (PKs)
+  - All foreign keys
+  - Unique constraints (email, tail_number, name)
+
+Performance Indexes:
+  - Time fields (start_time, end_time, block_on, etc.)
+  - Status fields (active, locked, charged, read)
+  - Composite (user_id + read on notifications)
+  - Composite (start_time + end_time on reservations)
+
+Array Indexes (GIN):
+  - users.role, users.functions
+  - planes.nav_equipment
+  - documents.tags
+
+Partial Indexes:
+  - documents.expiry_date (WHERE NOT NULL)
+  - documents.blocks_aircraft (WHERE TRUE)
+  - notifications (WHERE read = FALSE)
+
+
+==================================================
+CASCADE BEHAVIORS
+==================================================
+
+ON DELETE CASCADE:
+  - users → auth.users (deleting auth user deletes profile)
+  - planes → reservations (deleting plane deletes reservations)
+  - planes → documents (deleting plane deletes its documents)
+  - users → documents (deleting user deletes their documents)
+  - users → notifications (deleting user deletes notifications)
+
+ON DELETE RESTRICT:
+  - planes ← flightlog (cannot delete plane with flight history)
+  - users ← flightlog (cannot delete user with flight history)
+  - users ← accounts (cannot delete user with transactions)
+  - users ← documents.uploaded_by (cannot delete doc uploader)
+
+ON DELETE SET NULL:
+  - users ← flightlog.copilot_id (copilot optional, can be removed)
+
+
+==================================================
+DATA FLOW EXAMPLES
+==================================================
+
+New User Signup:
+  1. User signs up → auth.users created
+  2. Trigger fires → public.users created
+  3. Default role = ['member']
+  4. Board manually promotes if needed
+
+Reservation Flow:
+  1. User checks can_reserve_aircraft()
+  2. App checks for conflicts (query reservations)
+  3. User creates reservation (RLS allows)
+  4. Reservation appears in active_reservations view
+
+Flight Flow:
+  1. Pilot creates flightlog entry (RLS allows)
+  2. Pilot can edit while unlocked = false
+  3. Board locks entry (RLS board policy)
+  4. Trigger prevents further pilot edits
+  5. Board charges (creates account entry)
+  6. Appears in flightlog_with_times view
+
+Document Flow:
+  1. User uploads document (approved = false)
+  2. Board sees in unapproved list
+  3. Board approves document
+  4. All members can now see document
+  5. If blocks_aircraft + expired → prevents reservations
