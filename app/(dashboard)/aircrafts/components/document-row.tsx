@@ -126,7 +126,7 @@ export function DocumentRow({ document, aircraftId, isBoardMember, mobileView = 
             <DialogHeader>
               <DialogTitle>Delete Document</DialogTitle>
               <DialogDescription>
-                Are you sure you want to delete "{document.name}"? This action cannot be undone.
+                Are you sure you want to delete &quot;{document.name}&quot;? This action cannot be undone.
               </DialogDescription>
             </DialogHeader>
             <DialogFooter>
@@ -277,7 +277,7 @@ export function DocumentRow({ document, aircraftId, isBoardMember, mobileView = 
           <DialogHeader>
             <DialogTitle>Delete Document</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete "{document.name}"? This action cannot be undone.
+              Are you sure you want to delete &quot;{document.name}&quot;? This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
