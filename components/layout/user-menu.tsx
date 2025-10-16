@@ -13,18 +13,19 @@ import {
 import { Button } from '@/components/ui/button'
 import { useUser } from '@/lib/hooks/use-user'
 import { getUserInitials, getUserFullName } from '@/lib/utils/user'
-import { createClient } from '@/lib/supabase/client'
+import { signOut } from '@/lib/actions/auth'
 import { LogOut, Settings, KeyRound, User } from 'lucide-react'
+import { useTransition } from 'react'
 
 export function UserMenu() {
   const { user, isLoading } = useUser()
   const router = useRouter()
+  const [isPending, startTransition] = useTransition()
 
-  const handleSignOut = async () => {
-    const supabase = createClient()
-    await supabase.auth.signOut()
-    router.push('/login')
-    router.refresh()
+  const handleSignOut = () => {
+    startTransition(async () => {
+      await signOut()
+    })
   }
 
   if (isLoading) {
@@ -74,9 +75,13 @@ export function UserMenu() {
           <span>Change Password</span>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={handleSignOut} className="text-destructive">
+        <DropdownMenuItem
+          onClick={handleSignOut}
+          className="text-destructive"
+          disabled={isPending}
+        >
           <LogOut className="mr-2 h-4 w-4" />
-          <span>Log out</span>
+          <span>{isPending ? 'Logging out...' : 'Log out'}</span>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
