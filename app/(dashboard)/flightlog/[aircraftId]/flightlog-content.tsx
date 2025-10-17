@@ -19,24 +19,25 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { FlightlogDialog } from './components/flightlog-dialog'
-import { getFlightlogs, getAllUsers, getActiveAircraftForFlightlog } from './actions'
+import { getFlightlogs, getAllUsers, getActiveAircraftForFlightlog } from '../actions'
 import type { FlightlogWithTimes } from '@/lib/database.types'
-import { Plus, Filter, Loader2, Lock, ExternalLink, Plane as PlaneIcon } from 'lucide-react'
+import { Plus, Filter, Loader2, Lock, ExternalLink, Plane as PlaneIcon, ArrowLeft } from 'lucide-react'
 import { toast } from 'sonner'
 import { format } from 'date-fns'
+import Link from 'next/link'
 
 interface FlightlogContentProps {
+  aircraftId: string
   userId: string
   isBoardMember: boolean
 }
 
-export function FlightlogContent({ userId, isBoardMember }: FlightlogContentProps) {
+export function FlightlogContent({ aircraftId, userId, isBoardMember }: FlightlogContentProps) {
   const [flightlogs, setFlightlogs] = useState<FlightlogWithTimes[]>([])
   const [filteredFlightlogs, setFilteredFlightlogs] = useState<FlightlogWithTimes[]>([])
-  const [aircraft, setAircraft] = useState<Array<{ id: string; tail_number: string; type: string }>>([])
+  const [aircraft, setAircraft] = useState<{ id: string; tail_number: string; type: string } | null>(null)
   const [users, setUsers] = useState<Array<{ id: string; name: string; surname: string; email: string }>>([])
   const [isLoading, setIsLoading] = useState(true)
-  const [selectedAircraft, setSelectedAircraft] = useState<string>('all')
   const [selectedPilot, setSelectedPilot] = useState<string>('all')
 
   // Dialog state
@@ -46,22 +47,18 @@ export function FlightlogContent({ userId, isBoardMember }: FlightlogContentProp
   // Load data
   useEffect(() => {
     loadData()
-  }, [])
+  }, [aircraftId])
 
-  // Filter flightlogs when filters change
+  // Filter flightlogs when pilot filter changes
   useEffect(() => {
-    let filtered = flightlogs
-
-    if (selectedAircraft !== 'all') {
-      filtered = filtered.filter(f => f.plane_id === selectedAircraft)
-    }
+    let filtered = flightlogs.filter(f => f.plane_id === aircraftId)
 
     if (selectedPilot !== 'all') {
       filtered = filtered.filter(f => f.pilot_id === selectedPilot)
     }
 
     setFilteredFlightlogs(filtered)
-  }, [selectedAircraft, selectedPilot, flightlogs])
+  }, [selectedPilot, flightlogs, aircraftId])
 
   const loadData = async (showLoading = true) => {
     if (showLoading) {
@@ -78,15 +75,17 @@ export function FlightlogContent({ userId, isBoardMember }: FlightlogContentProp
       toast.error('Failed to load flightlogs')
       console.error(flightlogsResult.error)
     } else {
-      setFlightlogs(flightlogsResult.data || [])
-      setFilteredFlightlogs(flightlogsResult.data || [])
+      const filtered = (flightlogsResult.data || []).filter(f => f.plane_id === aircraftId)
+      setFlightlogs(filtered)
+      setFilteredFlightlogs(filtered)
     }
 
     if (aircraftResult.error) {
       toast.error('Failed to load aircraft')
       console.error(aircraftResult.error)
     } else {
-      setAircraft(aircraftResult.data || [])
+      const currentAircraft = (aircraftResult.data || []).find(a => a.id === aircraftId)
+      setAircraft(currentAircraft || null)
     }
 
     if (usersResult.error) {
@@ -125,27 +124,26 @@ export function FlightlogContent({ userId, isBoardMember }: FlightlogContentProp
 
   return (
     <div className="space-y-2">
+      {/* Header with Aircraft Info */}
+      <div className="flex items-center gap-3 rounded-lg border bg-card p-3">
+        <Link href="/flightlog">
+          <Button variant="ghost" size="sm">
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+        </Link>
+        <div className="flex items-center gap-2 flex-1">
+          <PlaneIcon className="h-5 w-5 text-primary" />
+          <div>
+            <h2 className="font-semibold text-lg">{aircraft?.tail_number || 'Loading...'}</h2>
+            <p className="text-xs text-muted-foreground">{aircraft?.type || ''}</p>
+          </div>
+        </div>
+      </div>
+
       {/* Toolbar with Filters */}
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between rounded-lg border bg-card p-3">
         {/* Left side: Filters */}
         <div className="flex flex-col sm:flex-row gap-3 sm:items-center flex-1">
-          <div className="flex items-center gap-2">
-            <Filter className="h-4 w-4 text-muted-foreground" />
-            <Select value={selectedAircraft} onValueChange={setSelectedAircraft}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="All Aircraft" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Aircraft</SelectItem>
-                {aircraft.map((plane) => (
-                  <SelectItem key={plane.id} value={plane.id}>
-                    {plane.tail_number}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
           <div className="flex items-center gap-2">
             <Filter className="h-4 w-4 text-muted-foreground" />
             <Select value={selectedPilot} onValueChange={setSelectedPilot}>
@@ -275,15 +273,18 @@ export function FlightlogContent({ userId, isBoardMember }: FlightlogContentProp
       </div>
 
       {/* Flightlog Dialog */}
-      <FlightlogDialog
-        open={dialogOpen}
-        onOpenChange={handleDialogClose}
-        aircraft={aircraft}
-        users={users}
-        existingEntry={selectedEntry}
-        currentUserId={userId}
-        isBoardMember={isBoardMember}
-      />
+      {aircraft && (
+        <FlightlogDialog
+          open={dialogOpen}
+          onOpenChange={handleDialogClose}
+          aircraft={aircraft}
+          aircraftId={aircraftId}
+          users={users}
+          existingEntry={selectedEntry}
+          currentUserId={userId}
+          isBoardMember={isBoardMember}
+        />
+      )}
     </div>
   )
 }

@@ -1,12 +1,10 @@
-import { Suspense } from 'react'
 import { getUserProfile } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
-import { FlightlogContent } from './flightlog-content'
-import { Loader2 } from 'lucide-react'
+import { FlightlogList } from './flightlog-list'
 
 export const metadata = {
   title: 'Flight Log - FlightHub',
-  description: 'Track and manage flight logs',
+  description: 'Select an aircraft to view its flight log',
 }
 
 export default async function FlightlogPage() {
@@ -16,18 +14,5 @@ export default async function FlightlogPage() {
     redirect('/login')
   }
 
-  return (
-    <Suspense
-      fallback={
-        <div className="flex h-[600px] items-center justify-center">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-        </div>
-      }
-    >
-      <FlightlogContent
-        userId={userProfile.id}
-        isBoardMember={userProfile.role?.includes('board') || false}
-      />
-    </Suspense>
-  )
+  return <FlightlogList />
 }
