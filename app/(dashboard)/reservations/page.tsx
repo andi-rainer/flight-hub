@@ -1,15 +1,30 @@
-export default function ReservationsPage() {
+import { Suspense } from 'react'
+import { getUserProfile } from '@/lib/supabase/server'
+import { redirect } from 'next/navigation'
+import { ReservationsContent } from './reservations-content'
+import { Loader2 } from 'lucide-react'
+
+export const metadata = {
+  title: 'Reservations - FlightHub',
+  description: 'View and manage aircraft reservations',
+}
+
+export default async function ReservationsPage() {
+  const userProfile = await getUserProfile()
+
+  if (!userProfile) {
+    redirect('/login')
+  }
+
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Reservations</h1>
-        <p className="text-muted-foreground">
-          View and manage aircraft reservations
-        </p>
-      </div>
-      <div className="text-muted-foreground">
-        Reservation calendar and management features coming soon...
-      </div>
-    </div>
+    <Suspense
+      fallback={
+        <div className="flex h-[600px] items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
+      }
+    >
+      <ReservationsContent userId={userProfile.id} isBoardMember={userProfile.role?.includes('board') || false} />
+    </Suspense>
   )
 }
