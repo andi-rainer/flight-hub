@@ -28,23 +28,12 @@ export function useUser(): UseUserReturn {
     let mounted = true
     const supabase = createClient()
 
-    // Get initial user with proper timeout handling
+    // Get initial user
     const getInitialUser = async () => {
       try {
-        // Wrap the auth call in a timeout
-        const authPromise = supabase.auth.getUser()
-        const timeoutPromise = new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error('Auth timeout')), 3000)
-        )
-
-        const { data: { user: authUser }, error: authError } = await Promise.race([
-          authPromise,
-          timeoutPromise
-        ])
-
+        const { data: { user: authUser }, error: authError } = await supabase.auth.getUser()
 
         if (!mounted) {
-          console.log('### Component unmounted, stopping')
           return
         }
 
@@ -57,21 +46,12 @@ export function useUser(): UseUserReturn {
         setAuthUser(authUser)
 
         if (authUser) {
-          // Get profile data with timeout
-          const profilePromise = supabase
+          // Get profile data
+          const { data: profile, error: profileError } = await supabase
             .from('users')
             .select('*')
             .eq('id', authUser.id)
             .maybeSingle()
-
-          const profileTimeout = new Promise<never>((_, reject) =>
-            setTimeout(() => reject(new Error('Profile timeout')), 2000)
-          )
-
-          const { data: profile, error: profileError } = await Promise.race([
-            profilePromise,
-            profileTimeout
-          ])
 
           if (!mounted) return
 

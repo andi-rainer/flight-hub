@@ -226,15 +226,15 @@ export function FlightlogDialog({
               Copilot (Optional)
             </Label>
             <Select
-              value={copilotId}
-              onValueChange={setCopilotId}
+              value={copilotId || 'none'}
+              onValueChange={(value) => setCopilotId(value === 'none' ? '' : value)}
               disabled={isPending || (isEditMode && !canEdit)}
             >
               <SelectTrigger id="copilot">
                 <SelectValue placeholder="No copilot" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">No copilot</SelectItem>
+                <SelectItem value="none">No copilot</SelectItem>
                 {users
                   .filter(u => u.id !== currentUserId)
                   .map((user) => (
