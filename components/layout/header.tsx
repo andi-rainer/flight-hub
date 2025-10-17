@@ -24,6 +24,10 @@ const pageTitles: Record<string, { title: string; description: string }> = {
     title: 'Aircraft',
     description: 'View aircraft fleet information',
   },
+  '/flightlog': {
+    title: 'Flight Log',
+    description: 'Track and manage flight logs',
+  },
   '/members': {
     title: 'Members',
     description: 'View and manage club members',
