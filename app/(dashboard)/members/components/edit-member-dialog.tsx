@@ -11,14 +11,25 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Pencil, Loader2 } from 'lucide-react'
-import { updateMember } from '@/lib/actions/members'
+import { Pencil, Loader2, Trash2, Mail } from 'lucide-react'
+import { updateMember, deleteMember, resendInvitation } from '@/lib/actions/members'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import type { User, FunctionMaster } from '@/lib/database.types'
 import { Checkbox } from '@/components/ui/checkbox'
+import { Separator } from '@/components/ui/separator'
 
 interface EditMemberDialogProps {
   member: User
@@ -28,6 +39,9 @@ interface EditMemberDialogProps {
 export function EditMemberDialog({ member, functions }: EditMemberDialogProps) {
   const [open, setOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isResending, setIsResending] = useState(false)
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
   const router = useRouter()
 
   const [formData, setFormData] = useState({
@@ -61,6 +75,37 @@ export function EditMemberDialog({ member, functions }: EditMemberDialogProps) {
     }
 
     setIsSubmitting(false)
+  }
+
+  const handleResendInvitation = async () => {
+    setIsResending(true)
+
+    const result = await resendInvitation(member.id)
+
+    if (result.success) {
+      toast.success(result.message || 'Invitation resent successfully')
+    } else {
+      toast.error(result.error || 'Failed to resend invitation')
+    }
+
+    setIsResending(false)
+  }
+
+  const handleDelete = async () => {
+    setIsDeleting(true)
+
+    const result = await deleteMember(member.id)
+
+    if (result.success) {
+      toast.success(result.message || 'Member deleted successfully')
+      setShowDeleteDialog(false)
+      setOpen(false)
+      router.refresh()
+    } else {
+      toast.error(result.error || 'Failed to delete member')
+    }
+
+    setIsDeleting(false)
   }
 
   const toggleFunction = (functionId: string) => {
@@ -150,7 +195,40 @@ export function EditMemberDialog({ member, functions }: EditMemberDialogProps) {
               </label>
             </div>
           </div>
-          <DialogFooter>
+
+          <Separator className="my-4" />
+
+          <div className="space-y-3">
+            <Label className="text-sm font-medium">Actions</Label>
+            <div className="flex flex-col gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleResendInvitation}
+                disabled={isResending || isSubmitting}
+                className="w-full justify-start"
+              >
+                {isResending ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Mail className="h-4 w-4 mr-2" />
+                )}
+                Resend Invitation Email
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowDeleteDialog(true)}
+                disabled={isSubmitting || isResending}
+                className="w-full justify-start text-destructive hover:text-destructive"
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Delete User
+              </Button>
+            </div>
+          </div>
+
+          <DialogFooter className="mt-6">
             <Button
               type="button"
               variant="outline"
@@ -166,6 +244,29 @@ export function EditMemberDialog({ member, functions }: EditMemberDialogProps) {
           </DialogFooter>
         </form>
       </DialogContent>
+
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete User</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete {member.name} {member.surname}? This action cannot be undone.
+              All associated documents will also be deleted. Users with flight logs cannot be deleted.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              disabled={isDeleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isDeleting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Delete User
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   )
 }

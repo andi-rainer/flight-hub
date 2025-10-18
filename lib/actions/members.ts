@@ -1,6 +1,6 @@
 'use server'
 
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import type { UserUpdate } from '@/lib/database.types'
 
@@ -88,9 +88,10 @@ export async function inviteUser(data: {
     return { success: false, error: 'A user with this email already exists' }
   }
 
-  // Invite user via Supabase Auth
+  // Invite user via Supabase Auth using admin client
   // Note: This requires SMTP configuration in Supabase
-  const { data: authData, error: authError } = await supabase.auth.admin.inviteUserByEmail(
+  const adminClient = createAdminClient()
+  const { data: authData, error: authError } = await adminClient.auth.admin.inviteUserByEmail(
     data.email,
     {
       data: {
@@ -105,20 +106,24 @@ export async function inviteUser(data: {
     return { success: false, error: authError.message }
   }
 
-  // Create user profile
+  // Create or update user profile using upsert (in case profile was auto-created by trigger)
   const { error: profileError } = await supabase
     .from('users')
-    .insert({
+    .upsert({
       id: authData.user.id,
       email: data.email,
       name: data.name,
       surname: data.surname,
       functions: data.functions,
       role: data.role || ['member'],
+    }, {
+      onConflict: 'id'
     })
 
   if (profileError) {
     console.error('Error creating user profile:', profileError)
+    // If profile creation fails, try to delete the auth user to maintain consistency
+    await adminClient.auth.admin.deleteUser(authData.user.id)
     return { success: false, error: profileError.message }
   }
 
@@ -126,6 +131,144 @@ export async function inviteUser(data: {
   return {
     success: true,
     message: 'User invited successfully. They will receive an email to set their password.'
+  }
+}
+
+export async function resendInvitation(userId: string) {
+  const supabase = await createClient()
+
+  // Verify user is board member
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) {
+    return { success: false, error: 'Not authenticated' }
+  }
+
+  const { data: profile } = await supabase
+    .from('users')
+    .select('role')
+    .eq('id', user.id)
+    .single()
+
+  if (!profile?.role?.includes('board')) {
+    return { success: false, error: 'Not authorized - board members only' }
+  }
+
+  // Get the user to resend invite to
+  const { data: targetUser } = await supabase
+    .from('users')
+    .select('email')
+    .eq('id', userId)
+    .single()
+
+  if (!targetUser) {
+    return { success: false, error: 'User not found' }
+  }
+
+  // Resend invitation using admin client
+  const adminClient = createAdminClient()
+  const { error: inviteError } = await adminClient.auth.admin.inviteUserByEmail(
+    targetUser.email
+  )
+
+  if (inviteError) {
+    console.error('Error resending invitation:', inviteError)
+    return { success: false, error: inviteError.message }
+  }
+
+  revalidatePath('/members')
+  return {
+    success: true,
+    message: 'Invitation resent successfully'
+  }
+}
+
+export async function deleteMember(userId: string) {
+  const supabase = await createClient()
+
+  // Verify user is board member
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) {
+    return { success: false, error: 'Not authenticated' }
+  }
+
+  const { data: profile } = await supabase
+    .from('users')
+    .select('role')
+    .eq('id', user.id)
+    .single()
+
+  if (!profile?.role?.includes('board')) {
+    return { success: false, error: 'Not authorized - board members only' }
+  }
+
+  // Prevent deleting yourself
+  if (userId === user.id) {
+    return { success: false, error: 'You cannot delete your own account' }
+  }
+
+  // Check if user has associated flight logs
+  const { data: flightLogs } = await supabase
+    .from('flightlog')
+    .select('id')
+    .or(`pic_id.eq.${userId},sic_id.eq.${userId}`)
+    .limit(1)
+
+  if (flightLogs && flightLogs.length > 0) {
+    return {
+      success: false,
+      error: 'Cannot delete user with associated flight logs. Please reassign or delete flight logs first.'
+    }
+  }
+
+  // Get user's documents for cleanup
+  const { data: userDocuments } = await supabase
+    .from('documents')
+    .select('id, file_url')
+    .eq('user_id', userId)
+
+  // Delete user's documents from storage
+  if (userDocuments && userDocuments.length > 0) {
+    const filePaths = userDocuments
+      .map(doc => doc.file_url.split('/').pop())
+      .filter(Boolean) as string[]
+
+    if (filePaths.length > 0) {
+      await supabase.storage
+        .from('documents')
+        .remove(filePaths)
+    }
+  }
+
+  // Delete user's documents from database
+  await supabase
+    .from('documents')
+    .delete()
+    .eq('user_id', userId)
+
+  // Delete from users table (this should cascade in most cases)
+  const { error: deleteError } = await supabase
+    .from('users')
+    .delete()
+    .eq('id', userId)
+
+  if (deleteError) {
+    console.error('Error deleting user profile:', deleteError)
+    return { success: false, error: deleteError.message }
+  }
+
+  // Delete from auth using admin client
+  const adminClient = createAdminClient()
+  const { error: authDeleteError } = await adminClient.auth.admin.deleteUser(userId)
+
+  if (authDeleteError) {
+    console.error('Error deleting auth user:', authDeleteError)
+    // Don't fail here as the profile is already deleted
+  }
+
+  revalidatePath('/members')
+  return {
+    success: true,
+    message: 'User deleted successfully'
   }
 }
 
