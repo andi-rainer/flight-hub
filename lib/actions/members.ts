@@ -155,7 +155,11 @@ export async function approveUserDocument(documentId: string) {
   // Update document approval status
   const { error } = await supabase
     .from('documents')
-    .update({ approved: true })
+    .update({
+      approved: true,
+      approved_by: user.id,
+      approved_at: new Date().toISOString(),
+    })
     .eq('id', documentId)
 
   if (error) {
@@ -189,7 +193,11 @@ export async function unapproveUserDocument(documentId: string) {
   // Update document approval status
   const { error } = await supabase
     .from('documents')
-    .update({ approved: false })
+    .update({
+      approved: false,
+      approved_by: null,
+      approved_at: null,
+    })
     .eq('id', documentId)
 
   if (error) {

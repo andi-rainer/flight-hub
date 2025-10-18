@@ -36,7 +36,7 @@ export async function getFlightlogById(id: string) {
   return { data, error: null }
 }
 
-export async function createFlightlog(entry: Omit<FlightlogInsert, 'pilot_id'>) {
+export async function createFlightlog(entry: FlightlogInsert) {
   const supabase = await createClient()
 
   // Get current user
@@ -45,40 +45,47 @@ export async function createFlightlog(entry: Omit<FlightlogInsert, 'pilot_id'>) 
     return { data: null, error: 'Not authenticated' }
   }
 
-  // Validate times
-  const blockOn = new Date(entry.block_on)
+  // Check if user is board member
+  const { data: userProfile } = await supabase
+    .from('users')
+    .select('role')
+    .eq('id', user.id)
+    .single()
+
+  const isBoardMember = userProfile?.role?.includes('board') || false
+
+  // If not board member, pilot must be current user
+  if (!isBoardMember && entry.pilot_id !== user.id) {
+    return { data: null, error: 'You can only create flightlog entries for yourself' }
+  }
+
+  // Validate times - Chronological order: Block Off ≤ Takeoff ≤ Landing ≤ Block On
   const blockOff = new Date(entry.block_off)
   const takeoffTime = new Date(entry.takeoff_time)
   const landingTime = new Date(entry.landing_time)
+  const blockOn = new Date(entry.block_on)
 
-  if (blockOff <= blockOn) {
-    return { data: null, error: 'Block off time must be after block on time' }
+  if (takeoffTime < blockOff) {
+    return { data: null, error: 'Takeoff time must be after or at Block Off time' }
   }
 
-  if (landingTime <= takeoffTime) {
-    return { data: null, error: 'Landing time must be after takeoff time' }
+  if (landingTime < takeoffTime) {
+    return { data: null, error: 'Landing time must be after or at takeoff time' }
   }
 
-  if (takeoffTime < blockOn) {
-    return { data: null, error: 'Takeoff time cannot be before block on time' }
+  if (blockOn < landingTime) {
+    return { data: null, error: 'Block On time must be after or at landing time' }
   }
 
-  if (landingTime > blockOff) {
-    return { data: null, error: 'Landing time cannot be after block off time' }
-  }
-
-  // Check for pilot/copilot conflict
-  if (entry.copilot_id && entry.copilot_id === user.id) {
-    return { data: null, error: 'Copilot cannot be the same as pilot' }
+  // Check for pilot/crew conflict
+  if (entry.copilot_id && entry.copilot_id === entry.pilot_id) {
+    return { data: null, error: 'Additional crewmember cannot be the same as pilot' }
   }
 
   // Insert flightlog entry
   const { data, error } = await supabase
     .from('flightlog')
-    .insert({
-      ...entry,
-      pilot_id: user.id,
-    })
+    .insert(entry)
     .select()
     .single()
 
@@ -129,7 +136,7 @@ export async function updateFlightlog(id: string, updates: FlightlogUpdate) {
     return { data: null, error: 'You can only edit your own flightlog entries' }
   }
 
-  // Validate times if they're being updated
+  // Validate times if they're being updated - Chronological order: Block Off ≤ Takeoff ≤ Landing ≤ Block On
   if (updates.block_on || updates.block_off || updates.takeoff_time || updates.landing_time) {
     const { data: current } = await supabase
       .from('flightlog')
@@ -138,25 +145,21 @@ export async function updateFlightlog(id: string, updates: FlightlogUpdate) {
       .single()
 
     if (current) {
-      const blockOn = new Date(updates.block_on || current.block_on)
       const blockOff = new Date(updates.block_off || current.block_off)
       const takeoffTime = new Date(updates.takeoff_time || current.takeoff_time)
       const landingTime = new Date(updates.landing_time || current.landing_time)
+      const blockOn = new Date(updates.block_on || current.block_on)
 
-      if (blockOff <= blockOn) {
-        return { data: null, error: 'Block off time must be after block on time' }
+      if (takeoffTime < blockOff) {
+        return { data: null, error: 'Takeoff time must be after or at Block Off time' }
       }
 
-      if (landingTime <= takeoffTime) {
-        return { data: null, error: 'Landing time must be after takeoff time' }
+      if (landingTime < takeoffTime) {
+        return { data: null, error: 'Landing time must be after or at takeoff time' }
       }
 
-      if (takeoffTime < blockOn) {
-        return { data: null, error: 'Takeoff time cannot be before block on time' }
-      }
-
-      if (landingTime > blockOff) {
-        return { data: null, error: 'Landing time cannot be after block off time' }
+      if (blockOn < landingTime) {
+        return { data: null, error: 'Block On time must be after or at landing time' }
       }
     }
   }
@@ -244,4 +247,107 @@ export async function getActiveAircraftForFlightlog() {
   }
 
   return { data, error: null }
+}
+
+export async function getOperationTypesForPlane(planeId: string) {
+  const supabase = await createClient()
+
+  const { data, error } = await supabase
+    .from('operation_types')
+    .select('*')
+    .eq('plane_id', planeId)
+    .order('is_default', { ascending: false })
+    .order('name', { ascending: true })
+
+  if (error) {
+    console.error('Error fetching operation types:', error)
+    return { data: null, error: error.message }
+  }
+
+  return { data, error: null }
+}
+
+export async function uploadMassAndBalanceDocument(formData: FormData) {
+  const supabase = await createClient()
+
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) {
+    return { error: 'Not authenticated' }
+  }
+
+  const file = formData.get('file') as File
+  const planeId = formData.get('planeId') as string
+  const flightlogId = formData.get('flightlogId') as string | null
+
+  if (!file || !planeId) {
+    return { error: 'Missing required fields' }
+  }
+
+  // Validate file type (PDF or Image)
+  const validTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png', 'image/webp']
+  if (!validTypes.includes(file.type)) {
+    return { error: 'Invalid file type. Only PDF and images are allowed.' }
+  }
+
+  // Upload to Supabase Storage
+  const fileExt = file.name.split('.').pop()
+  const timestamp = Date.now()
+  const fileName = `mb-${planeId}-${timestamp}.${fileExt}`
+  const filePath = `mass-and-balance/${fileName}`
+
+  const { error: uploadError } = await supabase.storage
+    .from('club-documents')
+    .upload(filePath, file)
+
+  if (uploadError) {
+    return { error: `Upload failed: ${uploadError.message}` }
+  }
+
+  // Get public URL
+  const { data: { publicUrl } } = supabase.storage
+    .from('club-documents')
+    .getPublicUrl(filePath)
+
+  // Get plane tail number for document name
+  const { data: plane } = await supabase
+    .from('planes')
+    .select('tail_number')
+    .eq('id', planeId)
+    .single()
+
+  // Create database record in documents table
+  const { data: document, error: dbError } = await supabase
+    .from('documents')
+    .insert({
+      name: `M&B - ${plane?.tail_number || 'Unknown'} - ${new Date().toLocaleDateString()}`,
+      category: 'Mass & Balance',
+      tags: ['mass-and-balance', 'flight-preparation'],
+      file_url: publicUrl,
+      uploaded_by: user.id,
+      plane_id: planeId,
+      user_id: null,
+      approved: true,
+    })
+    .select()
+    .single()
+
+  if (dbError) {
+    // Cleanup uploaded file
+    await supabase.storage.from('club-documents').remove([filePath])
+    return { error: `Database error: ${dbError.message}` }
+  }
+
+  // Update flightlog entry if flightlogId is provided
+  if (flightlogId) {
+    const { error: updateError } = await supabase
+      .from('flightlog')
+      .update({ m_and_b_pdf_url: publicUrl })
+      .eq('id', flightlogId)
+
+    if (updateError) {
+      console.error('Error updating flightlog:', updateError)
+    }
+  }
+
+  return { data: { url: publicUrl, documentId: document.id }, error: null }
 }

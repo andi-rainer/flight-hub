@@ -56,6 +56,7 @@ export async function createFunction(data: Omit<FunctionMasterInsert, 'id' | 'cr
   }
 
   revalidatePath('/settings')
+  revalidatePath('/members')
   return { success: true, data: newFunction }
 }
 
@@ -106,6 +107,7 @@ export async function updateFunction(id: string, data: FunctionMasterUpdate) {
   }
 
   revalidatePath('/settings')
+  revalidatePath('/members')
   return { success: true, data: updatedFunction }
 }
 

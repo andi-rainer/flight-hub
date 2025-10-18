@@ -4,10 +4,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Shield, AlertCircle } from 'lucide-react'
 import { InviteUserDialog } from './components/invite-user-dialog'
 import { EditMemberDialog } from './components/edit-member-dialog'
 import { MemberDocumentsDialog } from './components/member-documents-dialog'
+import { FunctionsSection } from './components/functions-section'
 import type { User, FunctionMaster, Document } from '@/lib/database.types'
 
 interface UserWithDocuments extends User {
@@ -100,6 +102,7 @@ async function getFunctions(): Promise<FunctionMaster[]> {
   return functions || []
 }
 
+
 function getFunctionNames(functionIds: string[], allFunctions: FunctionMaster[]): string {
   if (!functionIds || functionIds.length === 0) return '-'
 
@@ -150,7 +153,10 @@ export default async function MembersPage() {
     )
   }
 
-  const [members, functions] = await Promise.all([getMembers(), getFunctions()])
+  const [members, functions] = await Promise.all([
+    getMembers(),
+    getFunctions(),
+  ])
 
   return (
     <div className="space-y-6">
@@ -163,17 +169,25 @@ export default async function MembersPage() {
         <InviteUserDialog functions={functions} />
       </div>
 
-      {/* Info Alert */}
-      <Alert>
-        <AlertCircle className="h-4 w-4" />
-        <AlertTitle>Member Management</AlertTitle>
-        <AlertDescription>
-          Invite new members, assign functions, and approve member documents. Document status
-          indicators show if licenses or certifications are expired or expiring soon.
-        </AlertDescription>
-      </Alert>
+      {/* Tabs */}
+      <Tabs defaultValue="members" className="space-y-6">
+        <TabsList>
+          <TabsTrigger value="members">Members</TabsTrigger>
+          <TabsTrigger value="functions">Functions</TabsTrigger>
+        </TabsList>
 
-      {/* Members Table */}
+        <TabsContent value="members" className="space-y-4">
+          {/* Info Alert */}
+          <Alert>
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Member Management</AlertTitle>
+            <AlertDescription>
+              Invite new members, assign functions, and approve member documents. Document status
+              indicators show if licenses or certifications are expired or expiring soon.
+            </AlertDescription>
+          </Alert>
+
+          {/* Members Table */}
       <Card>
         <CardHeader>
           <CardTitle>Club Members</CardTitle>
@@ -245,6 +259,20 @@ export default async function MembersPage() {
           </div>
         </CardContent>
       </Card>
+        </TabsContent>
+
+        <TabsContent value="functions" className="space-y-4">
+          <Alert>
+            <Shield className="h-4 w-4" />
+            <AlertTitle>Board Member Access</AlertTitle>
+            <AlertDescription>
+              Manage member functions for classification and role assignment. These functions help
+              organize and categorize club members.
+            </AlertDescription>
+          </Alert>
+          <FunctionsSection functions={functions} />
+        </TabsContent>
+      </Tabs>
     </div>
   )
 }

@@ -68,11 +68,16 @@ const navItems: NavItem[] = [
 
 function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname()
-  const { isBoardMember } = useUser()
+  const { isBoardMember, isLoading } = useUser()
 
   // Filter nav items based on user role
+  // Don't filter while loading to prevent items disappearing during page reload
   const filteredNavItems = navItems.filter((item) => {
     if (item.requiresBoard) {
+      // Keep item visible while loading, only filter after user data is loaded
+      if (isLoading) {
+        return true
+      }
       return isBoardMember
     }
     return true

@@ -62,21 +62,18 @@ export interface Database {
         Row: {
           id: string
           name: string
-          yearly_rate: number
           description: string | null
           created_at: string
         }
         Insert: {
           id?: string
           name: string
-          yearly_rate?: number
           description?: string | null
           created_at?: string
         }
         Update: {
           id?: string
           name?: string
-          yearly_rate?: number
           description?: string | null
           created_at?: string
         }
@@ -97,6 +94,8 @@ export interface Database {
           max_mass: number | null
           cg_limits: Json | null
           active: boolean
+          billing_unit: string
+          default_rate: number
           created_at: string
           updated_at: string
         }
@@ -114,6 +113,8 @@ export interface Database {
           max_mass?: number | null
           cg_limits?: Json | null
           active?: boolean
+          billing_unit?: string
+          default_rate?: number
           created_at?: string
           updated_at?: string
         }
@@ -131,6 +132,8 @@ export interface Database {
           max_mass?: number | null
           cg_limits?: Json | null
           active?: boolean
+          billing_unit?: string
+          default_rate?: number
           created_at?: string
           updated_at?: string
         }
@@ -203,6 +206,7 @@ export interface Database {
           fuel: number | null
           oil: number | null
           m_and_b_pdf_url: string | null
+          operation_type_id: string | null
           locked: boolean
           charged: boolean
           created_at: string
@@ -220,6 +224,7 @@ export interface Database {
           fuel?: number | null
           oil?: number | null
           m_and_b_pdf_url?: string | null
+          operation_type_id?: string | null
           locked?: boolean
           charged?: boolean
           created_at?: string
@@ -237,6 +242,7 @@ export interface Database {
           fuel?: number | null
           oil?: number | null
           m_and_b_pdf_url?: string | null
+          operation_type_id?: string | null
           locked?: boolean
           charged?: boolean
           created_at?: string
@@ -280,6 +286,9 @@ export interface Database {
           expiry_date: string | null
           approved: boolean
           blocks_aircraft: boolean
+          document_type_id: string | null
+          approved_by: string | null
+          approved_at: string | null
         }
         Insert: {
           id?: string
@@ -294,6 +303,9 @@ export interface Database {
           expiry_date?: string | null
           approved?: boolean
           blocks_aircraft?: boolean
+          document_type_id?: string | null
+          approved_by?: string | null
+          approved_at?: string | null
         }
         Update: {
           id?: string
@@ -308,6 +320,9 @@ export interface Database {
           expiry_date?: string | null
           approved?: boolean
           blocks_aircraft?: boolean
+          document_type_id?: string | null
+          approved_by?: string | null
+          approved_at?: string | null
         }
         Relationships: [
           {
@@ -330,8 +345,64 @@ export interface Database {
             isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documents_document_type_id_fkey"
+            columns: ["document_type_id"]
+            isOneToOne: false
+            referencedRelation: "document_types"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documents_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
           }
         ]
+      }
+      document_types: {
+        Row: {
+          id: string
+          name: string
+          description: string | null
+          category: string | null
+          mandatory: boolean
+          expires: boolean
+          expiry_type: string | null
+          default_validity_months: number | null
+          required_for_functions: string[]
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          description?: string | null
+          category?: string | null
+          mandatory?: boolean
+          expires?: boolean
+          expiry_type?: string | null
+          default_validity_months?: number | null
+          required_for_functions?: string[]
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          description?: string | null
+          category?: string | null
+          mandatory?: boolean
+          expires?: boolean
+          expiry_type?: string | null
+          default_validity_months?: number | null
+          required_for_functions?: string[]
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       accounts: {
         Row: {
@@ -410,6 +481,50 @@ export interface Database {
           }
         ]
       }
+      operation_types: {
+        Row: {
+          id: string
+          plane_id: string
+          name: string
+          description: string | null
+          rate: number
+          is_default: boolean
+          color: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          plane_id: string
+          name: string
+          description?: string | null
+          rate: number
+          is_default?: boolean
+          color?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          plane_id?: string
+          name?: string
+          description?: string | null
+          rate?: number
+          is_default?: boolean
+          color?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "operation_types_plane_id_fkey"
+            columns: ["plane_id"]
+            isOneToOne: false
+            referencedRelation: "planes"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
     }
     Views: {
       active_reservations: {
@@ -462,6 +577,7 @@ export interface Database {
           fuel: number | null
           oil: number | null
           m_and_b_pdf_url: string | null
+          operation_type_id: string | null
           locked: boolean
           charged: boolean
           created_at: string
@@ -474,6 +590,9 @@ export interface Database {
           pilot_surname: string
           copilot_name: string | null
           copilot_surname: string | null
+          operation_type_name: string | null
+          operation_rate: number | null
+          billing_unit: string | null
         }
         Relationships: [
           {
@@ -570,6 +689,10 @@ export type Document = Database['public']['Tables']['documents']['Row']
 export type DocumentInsert = Database['public']['Tables']['documents']['Insert']
 export type DocumentUpdate = Database['public']['Tables']['documents']['Update']
 
+export type DocumentType = Database['public']['Tables']['document_types']['Row']
+export type DocumentTypeInsert = Database['public']['Tables']['document_types']['Insert']
+export type DocumentTypeUpdate = Database['public']['Tables']['document_types']['Update']
+
 export type Account = Database['public']['Tables']['accounts']['Row']
 export type AccountInsert = Database['public']['Tables']['accounts']['Insert']
 export type AccountUpdate = Database['public']['Tables']['accounts']['Update']
@@ -577,6 +700,10 @@ export type AccountUpdate = Database['public']['Tables']['accounts']['Update']
 export type Notification = Database['public']['Tables']['notifications']['Row']
 export type NotificationInsert = Database['public']['Tables']['notifications']['Insert']
 export type NotificationUpdate = Database['public']['Tables']['notifications']['Update']
+
+export type OperationType = Database['public']['Tables']['operation_types']['Row']
+export type OperationTypeInsert = Database['public']['Tables']['operation_types']['Insert']
+export type OperationTypeUpdate = Database['public']['Tables']['operation_types']['Update']
 
 // View types
 export type ActiveReservation = Database['public']['Views']['active_reservations']['Row']

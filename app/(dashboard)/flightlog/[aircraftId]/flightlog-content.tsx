@@ -19,8 +19,8 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { FlightlogDialog } from './components/flightlog-dialog'
-import { getFlightlogs, getAllUsers, getActiveAircraftForFlightlog } from '../actions'
-import type { FlightlogWithTimes } from '@/lib/database.types'
+import { getFlightlogs, getAllUsers, getActiveAircraftForFlightlog, getOperationTypesForPlane } from '../actions'
+import type { FlightlogWithTimes, OperationType } from '@/lib/database.types'
 import { Plus, Filter, Loader2, Lock, ExternalLink, Plane as PlaneIcon, ArrowLeft } from 'lucide-react'
 import { toast } from 'sonner'
 import { format } from 'date-fns'
@@ -37,6 +37,7 @@ export function FlightlogContent({ aircraftId, userId, isBoardMember }: Flightlo
   const [filteredFlightlogs, setFilteredFlightlogs] = useState<FlightlogWithTimes[]>([])
   const [aircraft, setAircraft] = useState<{ id: string; tail_number: string; type: string } | null>(null)
   const [users, setUsers] = useState<Array<{ id: string; name: string; surname: string; email: string }>>([])
+  const [operationTypes, setOperationTypes] = useState<OperationType[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [selectedPilot, setSelectedPilot] = useState<string>('all')
 
@@ -65,10 +66,11 @@ export function FlightlogContent({ aircraftId, userId, isBoardMember }: Flightlo
       setIsLoading(true)
     }
 
-    const [flightlogsResult, aircraftResult, usersResult] = await Promise.all([
+    const [flightlogsResult, aircraftResult, usersResult, operationTypesResult] = await Promise.all([
       getFlightlogs(),
       getActiveAircraftForFlightlog(),
       getAllUsers(),
+      getOperationTypesForPlane(aircraftId),
     ])
 
     if (flightlogsResult.error) {
@@ -93,6 +95,13 @@ export function FlightlogContent({ aircraftId, userId, isBoardMember }: Flightlo
       console.error(usersResult.error)
     } else {
       setUsers(usersResult.data || [])
+    }
+
+    if (operationTypesResult.error) {
+      toast.error('Failed to load operation types')
+      console.error(operationTypesResult.error)
+    } else {
+      setOperationTypes(operationTypesResult.data || [])
     }
 
     if (showLoading) {
@@ -188,19 +197,18 @@ export function FlightlogContent({ aircraftId, userId, isBoardMember }: Flightlo
           <TableHeader>
             <TableRow>
               <TableHead className="w-[100px]">Date</TableHead>
-              <TableHead>Aircraft</TableHead>
+              <TableHead>Times</TableHead>
               <TableHead>Pilot</TableHead>
-              <TableHead>Copilot</TableHead>
-              <TableHead className="text-right">Block Time</TableHead>
-              <TableHead className="text-right">Flight Time</TableHead>
-              <TableHead className="text-center">M&B</TableHead>
+              <TableHead className="hidden sm:table-cell">Crew</TableHead>
+              <TableHead className="text-right">Hours</TableHead>
+              <TableHead className="text-center hidden sm:table-cell">M&B</TableHead>
               <TableHead>Status</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filteredFlightlogs.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
+                <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
                   No flightlog entries found
                 </TableCell>
               </TableRow>
@@ -211,29 +219,33 @@ export function FlightlogContent({ aircraftId, userId, isBoardMember }: Flightlo
                   className="cursor-pointer hover:bg-muted/50"
                   onClick={() => handleSelectEntry(entry)}
                 >
-                  <TableCell className="font-medium">
-                    {format(new Date(entry.block_on), 'MMM dd, yyyy')}
+                  <TableCell className="font-medium text-sm">
+                    <span className="hidden sm:inline">{format(new Date(entry.block_off), 'MMM dd, yyyy')}</span>
+                    <span className="sm:hidden">{format(new Date(entry.block_off), 'MMM dd')}</span>
                   </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-1">
-                      <PlaneIcon className="h-3 w-3 text-muted-foreground" />
-                      <span className="font-medium">{entry.tail_number}</span>
-                      <span className="text-xs text-muted-foreground">({entry.plane_type})</span>
+                  <TableCell className="font-mono text-xs">
+                    <div className="flex flex-col">
+                      <span className="text-muted-foreground">
+                        {format(new Date(entry.block_off), 'HH:mm')} / {format(new Date(entry.takeoff_time), 'HH:mm')}
+                      </span>
+                      <span className="text-muted-foreground">
+                        {format(new Date(entry.landing_time), 'HH:mm')} / {format(new Date(entry.block_on), 'HH:mm')}
+                      </span>
                     </div>
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="text-sm">
                     {entry.pilot_name} {entry.pilot_surname}
                   </TableCell>
-                  <TableCell className="text-muted-foreground">
+                  <TableCell className="text-muted-foreground text-sm hidden sm:table-cell">
                     {entry.copilot_name ? `${entry.copilot_name} ${entry.copilot_surname}` : '—'}
                   </TableCell>
-                  <TableCell className="text-right font-mono text-sm">
-                    {entry.block_time_hours?.toFixed(2)} hrs
+                  <TableCell className="text-right font-mono text-xs">
+                    <div className="flex flex-col items-end">
+                      <span>{entry.block_time_hours?.toFixed(2)}</span>
+                      <span>{entry.flight_time_hours?.toFixed(2)}</span>
+                    </div>
                   </TableCell>
-                  <TableCell className="text-right font-mono text-sm">
-                    {entry.flight_time_hours?.toFixed(2)} hrs
-                  </TableCell>
-                  <TableCell className="text-center">
+                  <TableCell className="text-center hidden sm:table-cell">
                     {entry.m_and_b_pdf_url ? (
                       <Button
                         variant="ghost"
@@ -250,18 +262,21 @@ export function FlightlogContent({ aircraftId, userId, isBoardMember }: Flightlo
                     )}
                   </TableCell>
                   <TableCell>
-                    <div className="flex gap-1">
+                    <div className="flex gap-1 flex-wrap">
                       {entry.locked && (
                         <Badge variant="secondary" className="text-xs">
                           <Lock className="mr-1 h-2 w-2" />
-                          Locked
+                          <span className="hidden sm:inline">Locked</span>
                         </Badge>
                       )}
                       {entry.charged && (
-                        <Badge variant="default" className="text-xs">Charged</Badge>
+                        <Badge variant="default" className="text-xs">
+                          <span className="hidden sm:inline">Charged</span>
+                          <span className="sm:hidden">C</span>
+                        </Badge>
                       )}
                       {!entry.locked && !entry.charged && (
-                        <Badge variant="outline" className="text-xs">Editable</Badge>
+                        <Badge variant="outline" className="text-xs hidden sm:inline-flex">Editable</Badge>
                       )}
                     </div>
                   </TableCell>
@@ -280,6 +295,7 @@ export function FlightlogContent({ aircraftId, userId, isBoardMember }: Flightlo
           aircraft={aircraft}
           aircraftId={aircraftId}
           users={users}
+          operationTypes={operationTypes}
           existingEntry={selectedEntry}
           currentUserId={userId}
           isBoardMember={isBoardMember}

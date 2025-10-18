@@ -9,7 +9,8 @@ import Link from 'next/link'
 import { AircraftDetailsTab } from '../components/aircraft-details-tab'
 import { AircraftDocumentsTab } from '../components/aircraft-documents-tab'
 import { AircraftFlightLogsTab } from '../components/aircraft-flight-logs-tab'
-import type { Plane, Document as AircraftDocument, User } from '@/lib/database.types'
+import { AircraftBillingTab } from '../components/aircraft-billing-tab'
+import type { Plane, Document as AircraftDocument, User, OperationType } from '@/lib/database.types'
 
 interface AircraftWithDocuments extends Plane {
   documents: AircraftDocument[]
@@ -49,6 +50,24 @@ async function getCurrentUser(): Promise<User | null> {
   return profile
 }
 
+async function getOperationTypesForAircraft(aircraftId: string): Promise<OperationType[]> {
+  const supabase = await createClient()
+
+  const { data: operationTypes, error } = await supabase
+    .from('operation_types')
+    .select('*')
+    .eq('plane_id', aircraftId)
+    .order('is_default', { ascending: false })
+    .order('name', { ascending: true })
+
+  if (error) {
+    console.error('Error fetching operation types:', error)
+    return []
+  }
+
+  return operationTypes || []
+}
+
 function getDocumentExpiryStatus(expiryDate: string | null) {
   if (!expiryDate) return 'none'
 
@@ -69,9 +88,10 @@ export default async function AircraftDetailPage({
   params: { id: string }
   searchParams: { page?: string }
 }) {
-  const [aircraft, currentUser] = await Promise.all([
+  const [aircraft, currentUser, operationTypes] = await Promise.all([
     getAircraft(params.id),
     getCurrentUser(),
+    getOperationTypesForAircraft(params.id),
   ])
 
   const page = parseInt(searchParams.page || '1', 10)
@@ -136,6 +156,7 @@ export default async function AircraftDetailPage({
             )}
           </TabsTrigger>
           <TabsTrigger value="flightlogs">Flight Logs</TabsTrigger>
+          {isBoardMember && <TabsTrigger value="billing">Billing</TabsTrigger>}
         </TabsList>
 
         <TabsContent value="details" className="space-y-4">
@@ -153,6 +174,12 @@ export default async function AircraftDetailPage({
         <TabsContent value="flightlogs" className="space-y-4">
           <AircraftFlightLogsTab aircraftId={aircraft.id} page={page} />
         </TabsContent>
+
+        {isBoardMember && (
+          <TabsContent value="billing" className="space-y-4">
+            <AircraftBillingTab aircraft={aircraft} operationTypes={operationTypes} />
+          </TabsContent>
+        )}
       </Tabs>
     </div>
   )

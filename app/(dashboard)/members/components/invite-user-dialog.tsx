@@ -51,6 +51,8 @@ export function InviteUserDialog({ functions }: InviteUserDialogProps) {
     e.preventDefault()
     setIsSubmitting(true)
 
+    console.log('### Inviting user with data:', formData)
+
     const roles = formData.isBoardMember ? ['member', 'board'] : ['member']
 
     const result = await inviteUser({
@@ -67,6 +69,7 @@ export function InviteUserDialog({ functions }: InviteUserDialogProps) {
       resetForm()
       router.refresh()
     } else {
+      console.log('### Invite user failed:', result)
       toast.error(result.error || 'Failed to invite user')
     }
 
