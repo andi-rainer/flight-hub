@@ -310,6 +310,16 @@ export async function approveUserDocument(documentId: string) {
     return { success: false, error: error.message }
   }
 
+  // Mark related notifications as read
+  await supabase
+    .from('notifications')
+    .update({
+      read: true,
+      read_at: new Date().toISOString(),
+    })
+    .eq('document_id', documentId)
+    .eq('type', 'document_uploaded')
+
   revalidatePath('/members')
   return { success: true }
 }

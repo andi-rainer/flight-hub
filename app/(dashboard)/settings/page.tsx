@@ -53,7 +53,7 @@ export default async function SettingsPage() {
         </TabsContent>
 
         <TabsContent value="documents" className="space-y-4">
-          <PilotDocumentsSection userId={user.id} />
+          <PilotDocumentsSection userId={user.id} isBoardMember={isBoardMember} />
         </TabsContent>
 
         {isBoardMember && (

@@ -3,10 +3,13 @@
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -37,12 +40,47 @@ function getDocumentExpiryStatus(expiryDate: string | null) {
 
 export function MemberDocumentsDialog({ member, documents }: MemberDocumentsDialogProps) {
   const [open, setOpen] = useState(false)
+  const [approvingDoc, setApprovingDoc] = useState<Document | null>(null)
+  const [expiryDate, setExpiryDate] = useState('')
   const router = useRouter()
 
-  const handleApprove = async (documentId: string) => {
-    const result = await approveUserDocument(documentId)
+  const handleApproveClick = (doc: Document) => {
+    setApprovingDoc(doc)
+    setExpiryDate(doc.expiry_date || '')
+  }
+
+  const handleApproveConfirm = async () => {
+    if (!approvingDoc) return
+
+    // Update expiry date if changed
+    if (expiryDate !== approvingDoc.expiry_date) {
+      try {
+        const response = await fetch('/api/documents/update-expiry', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            documentId: approvingDoc.id,
+            expiryDate: expiryDate || null,
+          }),
+        })
+
+        if (!response.ok) {
+          toast.error('Failed to update expiry date')
+          return
+        }
+      } catch (error) {
+        toast.error('Failed to update expiry date')
+        console.error(error)
+        return
+      }
+    }
+
+    // Approve the document
+    const result = await approveUserDocument(approvingDoc.id)
     if (result.success) {
       toast.success('Document approved')
+      setApprovingDoc(null)
+      setExpiryDate('')
       router.refresh()
     } else {
       toast.error(result.error || 'Failed to approve document')
@@ -68,6 +106,29 @@ export function MemberDocumentsDialog({ member, documents }: MemberDocumentsDial
       router.refresh()
     } else {
       toast.error(result.error || 'Failed to delete document')
+    }
+  }
+
+  const handleViewDocument = async (doc: Document) => {
+    try {
+      const response = await fetch('/api/documents/signed-url', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          filePath: doc.file_url,
+          documentId: doc.id,
+        }),
+      })
+
+      if (response.ok) {
+        const { signedUrl } = await response.json()
+        window.open(signedUrl, '_blank')
+      } else {
+        toast.error('Failed to generate document URL')
+      }
+    } catch (error) {
+      console.error('Error viewing document:', error)
+      toast.error('Failed to open document')
     }
   }
 
@@ -123,21 +184,25 @@ export function MemberDocumentsDialog({ member, documents }: MemberDocumentsDial
                         {getStatusBadge(expiryStatus)}
                       </div>
                       <div className="text-sm text-muted-foreground space-y-1">
-                        {doc.expiry_date && (
-                          <div className="flex items-center gap-1">
-                            {(expiryStatus === 'expired' || expiryStatus === 'critical') && (
-                              <AlertTriangle className="h-3 w-3 text-red-600" />
-                            )}
-                            {expiryStatus === 'warning' && (
-                              <AlertTriangle className="h-3 w-3 text-orange-600" />
-                            )}
-                            <span>
-                              Expires: {new Date(doc.expiry_date).toLocaleDateString()}
-                            </span>
-                          </div>
-                        )}
                         <div>
                           Uploaded: {new Date(doc.uploaded_at).toLocaleDateString()}
+                        </div>
+                        <div className="flex items-center gap-1">
+                          {doc.expiry_date ? (
+                            <>
+                              {(expiryStatus === 'expired' || expiryStatus === 'critical') && (
+                                <AlertTriangle className="h-3 w-3 text-red-600" />
+                              )}
+                              {expiryStatus === 'warning' && (
+                                <AlertTriangle className="h-3 w-3 text-orange-600" />
+                              )}
+                              <span>
+                                Expires: {new Date(doc.expiry_date).toLocaleDateString()}
+                              </span>
+                            </>
+                          ) : (
+                            <span>Expiry: No expiry date</span>
+                          )}
                         </div>
                         <div>
                           Status:{' '}
@@ -148,10 +213,13 @@ export function MemberDocumentsDialog({ member, documents }: MemberDocumentsDial
                       </div>
                     </div>
                     <div className="flex items-center gap-1">
-                      <Button variant="ghost" size="sm" asChild>
-                        <a href={doc.file_url} download target="_blank" rel="noopener noreferrer">
-                          <Download className="h-4 w-4" />
-                        </a>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleViewDocument(doc)}
+                        title="View Document"
+                      >
+                        <Download className="h-4 w-4" />
                       </Button>
                       {doc.approved ? (
                         <Button
@@ -166,7 +234,7 @@ export function MemberDocumentsDialog({ member, documents }: MemberDocumentsDial
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleApprove(doc.id)}
+                          onClick={() => handleApproveClick(doc)}
                           title="Approve"
                         >
                           <Check className="h-4 w-4" />
@@ -188,6 +256,45 @@ export function MemberDocumentsDialog({ member, documents }: MemberDocumentsDial
           )}
         </div>
       </DialogContent>
+
+      {/* Approval Dialog with Expiry Date */}
+      <Dialog open={!!approvingDoc} onOpenChange={(open) => !open && setApprovingDoc(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Approve Document</DialogTitle>
+            <DialogDescription>
+              Review and approve {approvingDoc?.name}. You can set or update the expiry date before approving.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="approve-expiry">Expiry Date (Optional)</Label>
+              <Input
+                id="approve-expiry"
+                type="date"
+                value={expiryDate}
+                onChange={(e) => setExpiryDate(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">
+                Leave empty if the document does not expire
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setApprovingDoc(null)}
+            >
+              Cancel
+            </Button>
+            <Button onClick={handleApproveConfirm}>
+              <Check className="h-4 w-4 mr-2" />
+              Approve Document
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Dialog>
   )
 }

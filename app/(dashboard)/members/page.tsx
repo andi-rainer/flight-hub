@@ -14,7 +14,7 @@ import type { User, FunctionMaster, Document } from '@/lib/database.types'
 
 interface UserWithDocuments extends User {
   documents: Document[]
-  document_status: 'ok' | 'warning' | 'expired'
+  document_status: 'ok' | 'warning' | 'expired' | 'pending'
 }
 
 async function getCurrentUser(): Promise<User | null> {
@@ -35,33 +35,48 @@ async function getCurrentUser(): Promise<User | null> {
 async function getMembers(): Promise<UserWithDocuments[]> {
   const supabase = await createClient()
 
-  // Get all users with their documents
-  const { data: users, error } = await supabase
-    .from('users')
-    .select(`
-      *,
-      documents:documents!documents_user_id_fkey(*)
-    `)
-    .order('name', { ascending: true })
+  // Get all users with their documents and document types
+  const [usersResult, documentTypesResult] = await Promise.all([
+    supabase
+      .from('users')
+      .select(`
+        *,
+        documents:documents!documents_user_id_fkey(*)
+      `)
+      .order('name', { ascending: true }),
+    supabase
+      .from('document_types')
+      .select('*')
+  ])
 
-  if (error) {
-    console.error('Error fetching members:', error)
+  if (usersResult.error) {
+    console.error('Error fetching members:', usersResult.error)
     return []
   }
 
-  if (!users) return []
+  if (!usersResult.data) return []
 
   // Calculate document status for each user
-  return users.map(user => {
+  return usersResult.data.map(user => {
     const userDocs = user.documents as Document[]
 
-    // Check for expired or expiring documents
-    let documentStatus: 'ok' | 'warning' | 'expired' = 'ok'
+    // Check for expired or expiring documents and mandatory document approval
+    let documentStatus: 'ok' | 'warning' | 'expired' | 'pending' = 'ok'
 
     if (userDocs.length > 0) {
       const now = new Date()
 
+      // Check if any documents are pending approval
+      const hasPendingDocs = userDocs.some(doc => !doc.approved)
+
+      // Check for expired or expiring documents (only approved ones)
+      let hasExpired = false
+      let hasExpiring = false
+
       for (const doc of userDocs) {
+        // Only check expiry for approved documents
+        if (!doc.approved) continue
+
         if (doc.expiry_date) {
           const expiry = new Date(doc.expiry_date)
           const daysUntilExpiry = Math.floor(
@@ -69,12 +84,28 @@ async function getMembers(): Promise<UserWithDocuments[]> {
           )
 
           if (daysUntilExpiry < 0) {
-            documentStatus = 'expired'
+            hasExpired = true
             break
-          } else if (daysUntilExpiry < 45 && documentStatus === 'ok') {
-            documentStatus = 'warning'
+          } else if (daysUntilExpiry < 45) {
+            hasExpiring = true
           }
         }
+      }
+
+      // Determine status based on priority:
+      // 1. Expired (highest priority)
+      // 2. Pending approval
+      // 3. Expiring soon
+      // 4. OK
+      if (hasExpired) {
+        documentStatus = 'expired'
+      } else if (hasPendingDocs && hasExpiring) {
+        // Show both pending and expiring
+        documentStatus = 'warning' // Will show "Pending / Expiring"
+      } else if (hasPendingDocs) {
+        documentStatus = 'pending'
+      } else if (hasExpiring) {
+        documentStatus = 'warning'
       }
     }
 
@@ -113,12 +144,32 @@ function getFunctionNames(functionIds: string[], allFunctions: FunctionMaster[])
   return names.length > 0 ? names.join(', ') : '-'
 }
 
-function getDocumentStatusBadge(status: 'ok' | 'warning' | 'expired') {
+function getDocumentStatusBadge(status: 'ok' | 'warning' | 'expired' | 'pending', user: UserWithDocuments) {
+  const hasPendingDocs = user.documents.some(doc => !doc.approved)
+  const hasExpiring = user.documents.some(doc => {
+    if (!doc.approved || !doc.expiry_date) return false
+    const expiry = new Date(doc.expiry_date)
+    const now = new Date()
+    const daysUntilExpiry = Math.floor((expiry.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+    return daysUntilExpiry >= 0 && daysUntilExpiry < 45
+  })
+
   switch (status) {
     case 'expired':
       return <Badge variant="destructive">Expired Docs</Badge>
     case 'warning':
+      // Both pending and expiring
+      if (hasPendingDocs && hasExpiring) {
+        return (
+          <div className="flex gap-1">
+            <Badge className="bg-blue-500 hover:bg-blue-600">Pending</Badge>
+            <Badge className="bg-orange-500 hover:bg-orange-600">Expiring Soon</Badge>
+          </div>
+        )
+      }
       return <Badge className="bg-orange-500 hover:bg-orange-600">Expiring Soon</Badge>
+    case 'pending':
+      return <Badge className="bg-blue-500 hover:bg-blue-600">Pending</Badge>
     case 'ok':
     default:
       return <Badge variant="outline">Valid</Badge>
@@ -239,7 +290,7 @@ export default async function MembersPage() {
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
-                          {getDocumentStatusBadge(member.document_status)}
+                          {getDocumentStatusBadge(member.document_status, member)}
                           <span className="text-sm text-muted-foreground">
                             ({member.documents.length})
                           </span>

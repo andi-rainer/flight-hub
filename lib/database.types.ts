@@ -451,25 +451,37 @@ export interface Database {
           id: string
           user_id: string
           type: string
+          title: string
           message: string
+          link: string | null
+          document_id: string | null
           read: boolean
           created_at: string
+          read_at: string | null
         }
         Insert: {
           id?: string
           user_id: string
           type: string
+          title: string
           message: string
+          link?: string | null
+          document_id?: string | null
           read?: boolean
           created_at?: string
+          read_at?: string | null
         }
         Update: {
           id?: string
           user_id?: string
           type?: string
+          title?: string
           message?: string
+          link?: string | null
+          document_id?: string | null
           read?: boolean
           created_at?: string
+          read_at?: string | null
         }
         Relationships: [
           {
@@ -477,6 +489,13 @@ export interface Database {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
             referencedColumns: ["id"]
           }
         ]

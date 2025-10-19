@@ -60,7 +60,10 @@ interface DashboardData {
   unreadNotifications: Array<{
     id: string
     type: string
+    title: string
     message: string
+    link: string | null
+    document_id: string | null
     created_at: string
   }>
 }
@@ -158,7 +161,7 @@ async function fetchDashboardData(userId: string): Promise<DashboardData> {
   // Fetch unread notifications
   const { data: notifications } = await supabase
     .from('notifications')
-    .select('id, type, message, created_at')
+    .select('id, type, title, message, link, document_id, created_at')
     .eq('user_id', userId)
     .eq('read', false)
     .order('created_at', { ascending: false })
@@ -193,6 +196,10 @@ function getNotificationIcon(type: string) {
       return <CheckCircle2 className="h-4 w-4" />
     case 'document_expiring':
       return <AlertCircle className="h-4 w-4" />
+    case 'document_uploaded':
+      return <FileText className="h-4 w-4" />
+    case 'document_approved':
+      return <CheckCircle2 className="h-4 w-4" />
     case 'general':
       return <Info className="h-4 w-4" />
     default:
@@ -543,13 +550,22 @@ async function DashboardContent() {
                   <div className="flex items-start justify-between gap-2 w-full">
                     <div className="flex-1">
                       <AlertTitle className="text-sm">
-                        {notification.type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                        {notification.title}
                       </AlertTitle>
                       <AlertDescription className="text-xs">
                         {notification.message}
                         <span className="text-muted-foreground ml-2">
                           • {formatDistance(new Date(notification.created_at), new Date(), { addSuffix: true })}
                         </span>
+                        {notification.link && (
+                          <div className="mt-2">
+                            <Button asChild size="sm" variant="outline">
+                              <Link href={notification.link}>
+                                View Details
+                              </Link>
+                            </Button>
+                          </div>
+                        )}
                       </AlertDescription>
                     </div>
                     <MarkNotificationRead notificationId={notification.id} />
