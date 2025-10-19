@@ -344,7 +344,7 @@ async function DashboardContent() {
             <Button asChild variant="outline">
               <Link href="/documents">
                 <FileText className="mr-2 h-4 w-4" />
-                Upload Document
+                General Documents
               </Link>
             </Button>
           </div>

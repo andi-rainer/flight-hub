@@ -1,7 +1,7 @@
 'use client'
 
 import {Calendar, dateFnsLocalizer} from 'react-big-calendar'
-import {addDays, addMonths, format, isBefore, parse, startOfDay, startOfMonth} from 'date-fns'
+import {addDays, addMonths, format, isBefore, parse, startOfDay, startOfWeek, startOfMonth, getDay} from 'date-fns'
 import {enUS} from 'date-fns/locale'
 import {useMemo, useState} from 'react'
 import type {ActiveReservation} from '@/lib/database.types'
@@ -21,9 +21,12 @@ const locales = {
   'en-US': enUS,
 }
 
+// IMPORTANT: start of week, getDay are needed(!) for date-fns localizer to work properly in month view
 const localizer = dateFnsLocalizer({
   format,
   parse,
+  startOfWeek,
+  getDay,
   locales,
 })
 

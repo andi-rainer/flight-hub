@@ -178,10 +178,9 @@ Potential improvements:
 2. Implement real-time updates using Supabase Realtime
 3. Add filters for date ranges
 4. Add charts/graphs for flight statistics
-5. Make hourly rate configurable per aircraft
-6. Add export functionality for transactions
-7. Implement notification preferences
-8. Add keyboard shortcuts for quick actions
+5. Add export functionality for transactions
+6. Implement notification preferences
+7. Add keyboard shortcuts for quick actions
 
 ## Dependencies
 

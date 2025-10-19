@@ -5,32 +5,76 @@ import { createClient, getUserProfile } from '@/lib/supabase/server'
 import type { ReservationInsert, ReservationUpdate } from '@/lib/database.types'
 
 /**
- * Check if user has valid and approved license and medical documents
+ * Check if user has all mandatory documents required for their functions
  */
 async function hasValidDocuments(userId: string): Promise<{ valid: boolean; message?: string }> {
   const supabase = await createClient()
 
-  const { data: documents, error } = await supabase
+  // Get user's functions
+  const { data: user, error: userError } = await supabase
+    .from('users')
+    .select('functions')
+    .eq('id', userId)
+    .single()
+
+  if (userError || !user) {
+    return { valid: false, message: 'Failed to check user functions' }
+  }
+
+  const userFunctions = user.functions || []
+
+  // Get all document types that are mandatory and required for user's functions
+  const { data: requiredDocTypes, error: docTypesError } = await supabase
+    .from('document_types')
+    .select('id, name, mandatory, required_for_functions')
+
+  if (docTypesError) {
+    return { valid: false, message: 'Failed to check required documents' }
+  }
+
+  // Filter to get only mandatory document types required for user's functions
+  const mandatoryForUser = requiredDocTypes?.filter(docType => {
+    if (!docType.mandatory) return false
+    if (!docType.required_for_functions || docType.required_for_functions.length === 0) return false
+    return docType.required_for_functions.some(reqFunc => userFunctions.includes(reqFunc))
+  }) || []
+
+  if (mandatoryForUser.length === 0) {
+    // No mandatory documents required for this user's functions
+    return { valid: true }
+  }
+
+  // Get user's approved, valid documents
+  const { data: userDocuments, error: docsError } = await supabase
     .from('documents')
-    .select('*')
+    .select('document_type_id, expiry_date')
     .eq('user_id', userId)
     .eq('approved', true)
-    .in('category', ['license', 'medical'])
-    .gte('expiry_date', new Date().toISOString())
 
-  if (error) {
+  if (docsError) {
     return { valid: false, message: 'Failed to check documents' }
   }
 
-  const hasLicense = documents.some(doc => doc.category === 'license')
-  const hasMedical = documents.some(doc => doc.category === 'medical')
+  // Filter for non-expired documents
+  const now = new Date()
+  const validDocuments = (userDocuments || []).filter(doc => {
+    if (!doc.expiry_date) return true // No expiry = always valid
+    return new Date(doc.expiry_date) >= now
+  })
 
-  if (!hasLicense) {
-    return { valid: false, message: 'Valid and approved license document required' }
-  }
+  const uploadedTypeIds = validDocuments.map(doc => doc.document_type_id).filter(Boolean)
 
-  if (!hasMedical) {
-    return { valid: false, message: 'Valid and approved medical document required' }
+  // Check if all mandatory document types are uploaded and valid
+  const missingMandatory = mandatoryForUser.filter(docType =>
+    !uploadedTypeIds.includes(docType.id)
+  )
+
+  if (missingMandatory.length > 0) {
+    const missingNames = missingMandatory.map(dt => dt.name).join(', ')
+    return {
+      valid: false,
+      message: `Missing required documents: ${missingNames}`
+    }
   }
 
   return { valid: true }
