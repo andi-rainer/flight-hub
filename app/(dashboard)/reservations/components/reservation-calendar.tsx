@@ -129,41 +129,63 @@ export function ReservationCalendar({
 
   // Transform reservations into calendar events
   const events = useMemo<CalendarEvent[]>(() => {
-    return reservations
-      .filter(reservation => {
-        // In month view, only show active reservations
-        if (customView === 'month') {
-          return reservation.status === 'active'
-        }
-        // In other views, show all
-        return true
-      })
-      .map(reservation => {
-        // Format title based on view
-        let title: string
+    // Filter out cancelled reservations entirely - we don't show them anymore
+    const filteredReservations = reservations.filter(r => r.status !== 'cancelled')
 
-        if (customView === 'month') {
-          // Month view: show time and tail number
-          const startTime = format(new Date(reservation.start_time), 'HH:mm')
-          const priorityIndicator = reservation.priority ? '⭐ ' : ''
-          title = `${priorityIndicator}${startTime} ${reservation.tail_number}`
-        } else {
-          // Day/3-day view: show user name and status
-          const statusIndicator = reservation.status === 'standby' ? ' [STANDBY]' :
-                                 reservation.status === 'cancelled' ? ' [CANCELLED]' : ''
-          const priorityIndicator = reservation.priority ? '⭐ ' : ''
-          title = `${priorityIndicator}${reservation.user_name} ${reservation.user_surname}${statusIndicator}`
-        }
+    return filteredReservations.map(reservation => {
+      // Format title based on view
+      let title: string
 
-        return {
-          id: reservation.id,
-          title,
-          start: new Date(reservation.start_time),
-          end: new Date(reservation.end_time),
-          resource: reservation,
-          resourceId: reservation.plane_id, // Link event to aircraft resource
-        }
-      })
+      if (customView === 'month') {
+        // Month view: show time and tail number
+        const startTime = format(new Date(reservation.start_time), 'HH:mm')
+        const priorityIndicator = reservation.priority ? '⭐ ' : ''
+        title = `${priorityIndicator}${startTime} ${reservation.tail_number}`
+      } else {
+        // Day/3-day view: show user name and status
+        const statusIndicator = reservation.status === 'standby' ? ' [STANDBY]' :
+                               reservation.status === 'cancelled' ? ' [CANCELLED]' : ''
+        const priorityIndicator = reservation.priority ? '⭐ ' : ''
+        title = `${priorityIndicator}${reservation.user_name} ${reservation.user_surname}${statusIndicator}`
+      }
+
+      // Parse the ISO string timestamps correctly
+      // If the string doesn't end with 'Z', it's stored without timezone
+      // and should be treated as local time, not UTC
+      let startTimeStr = reservation.start_time
+      let endTimeStr = reservation.end_time
+
+      // If timestamps don't have timezone info, treat them as local
+      if (!startTimeStr.endsWith('Z') && !startTimeStr.includes('+') && !startTimeStr.includes('-', 10)) {
+        // No timezone info - treat as local time by removing any timezone conversion
+        startTimeStr = startTimeStr.replace('T', ' ').replace(/\.\d+$/, '')
+        const [datePart, timePart] = startTimeStr.split(' ')
+        const [year, month, day] = datePart.split('-').map(Number)
+        const [hour, minute, second = 0] = timePart.split(':').map(Number)
+        var startDate = new Date(year, month - 1, day, hour, minute, second)
+      } else {
+        var startDate = new Date(startTimeStr)
+      }
+
+      if (!endTimeStr.endsWith('Z') && !endTimeStr.includes('+') && !endTimeStr.includes('-', 10)) {
+        endTimeStr = endTimeStr.replace('T', ' ').replace(/\.\d+$/, '')
+        const [datePart, timePart] = endTimeStr.split(' ')
+        const [year, month, day] = datePart.split('-').map(Number)
+        const [hour, minute, second = 0] = timePart.split(':').map(Number)
+        var endDate = new Date(year, month - 1, day, hour, minute, second)
+      } else {
+        var endDate = new Date(endTimeStr)
+      }
+
+      return {
+        id: reservation.id,
+        title,
+        start: startDate,
+        end: endDate,
+        resource: reservation,
+        resourceId: reservation.plane_id, // Link event to aircraft resource
+      }
+    })
   }, [reservations, customView])
 
   // Custom event style getter
@@ -173,16 +195,34 @@ export function ReservationCalendar({
     let border = '0px'
     let opacity = 0.9
     let backgroundImage = 'none'
+    let width = '85%' // Default for active (wider than standby)
+    let marginLeft = '0'
+    let position = 'absolute' as const
+    let left = '2px' // Small offset from left edge
+    let maxWidth = '85%'
+    let zIndex = 1
 
     if (reservation.status === 'standby') {
       backgroundColor = '#f59e0b' // amber for standby
       // Add striped pattern for standby
       backgroundImage = 'repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(0,0,0,.1) 10px, rgba(0,0,0,.1) 20px)'
       border = '2px dashed rgba(245, 158, 11, 0.8)'
-      opacity = 0.85
-    } else if (reservation.status === 'cancelled') {
-      backgroundColor = '#6b7280' // gray for cancelled
-      opacity = 0.6
+      opacity = 0.9
+      // Standby: 40% width, positioned to the right, overlaying active
+      width = '40%'
+      maxWidth = '40%'
+      marginLeft = '0'
+      position = 'absolute'
+      left = '58%' // Position more to the right, overlaying the right portion of active
+      zIndex = 2 // Above active
+    } else {
+      // Active: 85% width (clearly wider than standby), positioned at left
+      width = '85%'
+      maxWidth = '85%'
+      marginLeft = '0'
+      position = 'absolute'
+      left = '2px'
+      zIndex = 1 // Base layer
     }
 
     if (reservation.priority && reservation.status === 'active') {
@@ -204,6 +244,14 @@ export function ReservationCalendar({
         lineHeight: '1',
         fontWeight: reservation.status === 'standby' ? '600' : '500',
         whiteSpace: 'nowrap' as const,
+        overflow: 'hidden' as const,
+        textOverflow: 'ellipsis' as const,
+        width,
+        maxWidth,
+        marginLeft,
+        position,
+        left,
+        zIndex,
       },
     }
   }

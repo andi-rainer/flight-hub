@@ -261,3 +261,25 @@
   padding: 0px 2px;
   margin-top: 1px;
 }
+
+/* Force event positioning and widths in day/week views */
+.rbc-time-view .rbc-event {
+  position: absolute !important;
+}
+
+/* Active reservations - wide and left */
+.rbc-time-view .rbc-event[style*="rgb(59, 130, 246)"],
+.rbc-time-view .rbc-event[style*="rgb(139, 92, 246)"] {
+  width: 85% !important;
+  max-width: 85% !important;
+  left: 2px !important;
+  z-index: 1 !important;
+}
+
+/* Standby reservations - narrow and right */
+.rbc-time-view .rbc-event[style*="rgb(245, 158, 11)"] {
+  width: 40% !important;
+  max-width: 40% !important;
+  left: 58% !important;
+  z-index: 2 !important;
+}

@@ -242,6 +242,18 @@ export async function createReservation(reservation: Omit<ReservationInsert, 'us
     } else {
       // Non-priority reservation with conflicts becomes standby
       status = 'standby'
+
+      // Check if there are already 2 standby reservations for this time slot
+      const { data: existingStandbys } = await supabase
+        .from('reservations')
+        .select('id')
+        .eq('plane_id', reservation.plane_id)
+        .eq('status', 'standby')
+        .or(`and(start_time.lt.${reservation.end_time},end_time.gt.${reservation.start_time})`)
+
+      if (existingStandbys && existingStandbys.length >= 2) {
+        return { error: 'Maximum of 2 standby reservations allowed for this time slot. Please choose a different time.' }
+      }
     }
   }
 
@@ -398,6 +410,43 @@ export async function deleteReservation(id: string) {
   if (error) {
     console.error('Error cancelling reservation:', error)
     return { error: error.message }
+  }
+
+  // If this was an active reservation, promote the first standby reservation to active
+  if (existing.status === 'active') {
+    // Find standby reservations that overlap with the cancelled reservation's time slot
+    // Using better overlap detection: (start1 < end2 AND end1 > start2)
+    const { data: standbys, error: standbyError } = await supabase
+      .from('reservations')
+      .select('id, priority, created_at, start_time, end_time')
+      .eq('plane_id', existing.plane_id)
+      .eq('status', 'standby')
+      .lt('start_time', existing.end_time)
+      .gt('end_time', existing.start_time)
+      .order('priority', { ascending: false }) // Priority reservations first
+      .order('created_at', { ascending: true }) // Then by creation time (first come, first served)
+
+    console.log('Looking for standbys to promote:', {
+      plane_id: existing.plane_id,
+      cancelled_start: existing.start_time,
+      cancelled_end: existing.end_time,
+      found: standbys?.length || 0,
+      standbys
+    })
+
+    if (standbys && standbys.length > 0) {
+      // Promote the first standby to active
+      const { error: updateError } = await supabase
+        .from('reservations')
+        .update({ status: 'active' })
+        .eq('id', standbys[0].id)
+
+      if (updateError) {
+        console.error('Error promoting standby to active:', updateError)
+      } else {
+        console.log('Successfully promoted standby to active:', standbys[0].id)
+      }
+    }
   }
 
   revalidatePath('/reservations')

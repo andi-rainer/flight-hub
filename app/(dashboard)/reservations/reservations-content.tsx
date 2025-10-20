@@ -13,6 +13,7 @@ import {
 import { ReservationCalendar } from './components/reservation-calendar'
 import { ReservationDialog } from './components/reservation-dialog'
 import { getReservations, getActiveAircraft } from './actions'
+import { createClient } from '@/lib/supabase/client'
 import type { ActiveReservation, Plane } from '@/lib/database.types'
 import { Plus, Filter, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
@@ -40,14 +41,38 @@ export function ReservationsContent({ userId, isBoardMember }: ReservationsConte
     loadData()
   }, [])
 
-  // Filter reservations when aircraft filter changes
+  // Real-time subscription for reservations table changes
   useEffect(() => {
-    if (selectedAircraft === 'all') {
-      setFilteredReservations(reservations)
-    } else {
-      setFilteredReservations(reservations.filter(r => r.plane_id === selectedAircraft))
+    const supabase = createClient()
+
+    console.log('Setting up reservations real-time subscription...')
+
+    // Subscribe to all changes on reservations table
+    const reservationsSubscription = supabase
+      .channel('reservations-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*', // Listen to INSERT, UPDATE, DELETE
+          schema: 'public',
+          table: 'reservations',
+        },
+        (payload) => {
+          console.log('Real-time reservation change detected:', payload.eventType, payload)
+          // Refetch reservations when any change occurs
+          loadData(false) // false = don't show loading spinner
+        }
+      )
+      .subscribe((status) => {
+        console.log('Reservations subscription status:', status)
+      })
+
+    // Cleanup subscription on unmount
+    return () => {
+      console.log('Cleaning up reservations subscription')
+      reservationsSubscription.unsubscribe()
     }
-  }, [selectedAircraft, reservations])
+  }, [])
 
   const loadData = async (showLoading = true) => {
     if (showLoading) {
@@ -64,7 +89,6 @@ export function ReservationsContent({ userId, isBoardMember }: ReservationsConte
       console.error(reservationsResult.error)
     } else {
       setReservations(reservationsResult.data || [])
-      setFilteredReservations(reservationsResult.data || [])
     }
 
     if (aircraftResult.error) {
@@ -78,6 +102,15 @@ export function ReservationsContent({ userId, isBoardMember }: ReservationsConte
       setIsLoading(false)
     }
   }
+
+  // Filter reservations when aircraft filter changes
+  useEffect(() => {
+    if (selectedAircraft === 'all') {
+      setFilteredReservations(reservations)
+    } else {
+      setFilteredReservations(reservations.filter(r => r.plane_id === selectedAircraft))
+    }
+  }, [selectedAircraft, reservations])
 
   const handleSelectSlot = (start: Date, end: Date) => {
     setSelectedSlotStart(start)
