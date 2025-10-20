@@ -15,6 +15,8 @@ import type { User, FunctionMaster, Document } from '@/lib/database.types'
 interface UserWithDocuments extends User {
   documents: Document[]
   document_status: 'ok' | 'warning' | 'expired' | 'pending'
+  mandatory_uploaded: number
+  mandatory_required: number
 }
 
 async function getCurrentUser(): Promise<User | null> {
@@ -46,7 +48,7 @@ async function getMembers(): Promise<UserWithDocuments[]> {
       .order('name', { ascending: true }),
     supabase
       .from('document_types')
-      .select('*')
+      .select('id, name, mandatory, required_for_functions')
   ])
 
   if (usersResult.error) {
@@ -56,14 +58,34 @@ async function getMembers(): Promise<UserWithDocuments[]> {
 
   if (!usersResult.data) return []
 
+  const documentTypes = documentTypesResult.data || []
+
   // Calculate document status for each user
   return usersResult.data.map(user => {
     const userDocs = user.documents as Document[]
+    const userFunctions = user.functions || []
+
+    // Get mandatory document types for this user's functions
+    const mandatoryForUser = documentTypes.filter(docType => {
+      if (!docType.mandatory) return false
+      if (!docType.required_for_functions || docType.required_for_functions.length === 0) return false
+      return docType.required_for_functions.some((reqFunc: string) => userFunctions.includes(reqFunc))
+    })
+
+    const mandatoryCount = mandatoryForUser.length
+
+    // Count uploaded(!) mandatory documents
+    const uploadedMandatoryCount = userDocs.filter(doc => {
+      return mandatoryForUser.some(mandatoryDocType => mandatoryDocType.id === doc.document_type_id)
+    }).length
 
     // Check for expired or expiring documents and mandatory document approval
     let documentStatus: 'ok' | 'warning' | 'expired' | 'pending' = 'ok'
 
-    if (userDocs.length > 0) {
+    // If user has mandatory docs but hasn't uploaded all, mark as incomplete
+    if (mandatoryCount > 0 && uploadedMandatoryCount < mandatoryCount) {
+      documentStatus = 'pending' // Will show "Incomplete"
+    } else if (userDocs.length > 0) {
       const now = new Date()
 
       // Check if any documents are pending approval
@@ -113,6 +135,8 @@ async function getMembers(): Promise<UserWithDocuments[]> {
       ...user,
       documents: userDocs,
       document_status: documentStatus,
+      mandatory_uploaded: uploadedMandatoryCount,
+      mandatory_required: mandatoryCount,
     }
   })
 }
@@ -154,6 +178,9 @@ function getDocumentStatusBadge(status: 'ok' | 'warning' | 'expired' | 'pending'
     return daysUntilExpiry >= 0 && daysUntilExpiry < 45
   })
 
+  // Check if user is missing mandatory documents
+  const isMissingMandatory = user.mandatory_required > 0 && user.mandatory_uploaded < user.mandatory_required
+
   switch (status) {
     case 'expired':
       return <Badge variant="destructive">Expired Docs</Badge>
@@ -169,7 +196,29 @@ function getDocumentStatusBadge(status: 'ok' | 'warning' | 'expired' | 'pending'
       }
       return <Badge className="bg-orange-500 hover:bg-orange-600">Expiring Soon</Badge>
     case 'pending':
-      return <Badge className="bg-blue-500 hover:bg-blue-600">Pending</Badge>
+      // Show "Incomplete" if missing mandatory docs, otherwise "Pending"
+      if (isMissingMandatory && hasPendingDocs) {
+        return (
+            <div className="flex gap-1">
+                <Badge className="bg-red-500 hover:bg-red-600">Incomplete</Badge>
+                <Badge className="bg-blue-500 hover:bg-blue-600">Pending</Badge>
+            </div>
+        )
+      }
+      else if (hasPendingDocs && hasExpiring) {
+        return (
+          <div className="flex gap-1">
+            <Badge className="bg-blue-500 hover:bg-blue-600">Pending</Badge>
+            <Badge className="bg-orange-500 hover:bg-orange-600">Expiring Soon</Badge>
+          </div>
+        )
+      }
+      else if (isMissingMandatory) {
+        return <Badge className="bg-red-500 hover:bg-red-600">Incomplete</Badge>
+      }
+      else {
+        return <Badge className="bg-blue-500 hover:bg-blue-600">Pending</Badge>
+      }
     case 'ok':
     default:
       return <Badge variant="outline">Valid</Badge>
@@ -292,7 +341,11 @@ export default async function MembersPage() {
                         <div className="flex items-center gap-2">
                           {getDocumentStatusBadge(member.document_status, member)}
                           <span className="text-sm text-muted-foreground">
-                            ({member.documents.length})
+                            {member.mandatory_required > 0 ? (
+                              `(${member.mandatory_uploaded}/${member.mandatory_required})`
+                            ) : (
+                              `(${member.documents.length})`
+                            )}
                           </span>
                         </div>
                       </TableCell>

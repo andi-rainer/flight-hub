@@ -5,6 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ProfileSection } from './profile-section'
 import { PilotDocumentsSection } from './pilot-documents-section'
 import { DocumentTypesSection } from './document-types-section'
+import { createClient } from '@/lib/supabase/client'
 import type { User } from '@/lib/database.types'
 
 interface SettingsTabsProps {
@@ -19,15 +20,49 @@ export function SettingsTabs({ user, isBoardMember }: SettingsTabsProps) {
   const fetchUserAlerts = () => {
     fetch(`/api/documents/user-alerts?userId=${user.id}`)
       .then(res => res.json())
-      .then(data => setUserAlertsCount(data.count || 0))
+      .then(data => {
+        setUserAlertsCount(data.count || 0)
+        // Also trigger sidebar badge update
+        window.dispatchEvent(new Event('user-alerts-updated'))
+      })
       .catch(err => console.error('Error fetching user alerts:', err))
   }
 
+  // Initial fetch
   useEffect(() => {
     fetchUserAlerts()
   }, [user.id])
 
-  // Listen for document updates to refresh badge
+  // Real-time subscription for documents table changes
+  useEffect(() => {
+    const supabase = createClient()
+
+    // Subscribe to document changes that affect this user
+    const documentsSubscription = supabase
+      .channel('user-documents-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*', // Listen to INSERT, UPDATE, DELETE
+          schema: 'public',
+          table: 'documents',
+          filter: `user_id=eq.${user.id}`, // Only changes for this user
+        },
+        (payload) => {
+          console.log('Real-time user document change detected:', payload)
+          // Refetch alerts when user's documents change
+          fetchUserAlerts()
+        }
+      )
+      .subscribe()
+
+    // Cleanup subscription on unmount
+    return () => {
+      documentsSubscription.unsubscribe()
+    }
+  }, [user.id])
+
+  // Also listen for manual refresh events (for immediate feedback)
   useEffect(() => {
     window.addEventListener('document-updated', fetchUserAlerts)
     return () => window.removeEventListener('document-updated', fetchUserAlerts)

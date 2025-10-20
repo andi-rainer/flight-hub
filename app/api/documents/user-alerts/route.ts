@@ -46,8 +46,8 @@ export async function GET(request: NextRequest) {
     let alertCount = 0
 
     // Check for missing documents
+    // Count ALL uploaded documents (not just approved), matching the member list logic
     const uploadedTypeIds = (userDocuments || [])
-      .filter(doc => doc.approved) // Only count approved documents
       .map(doc => doc.document_type_id)
       .filter(Boolean)
 

@@ -14,14 +14,12 @@ import {
   Clock,
   Bell,
   Plus,
-  AlertCircle,
-  CheckCircle2,
-  Info,
   XCircle,
+  CheckCircle2,
 } from 'lucide-react'
 import Link from 'next/link'
-import { format, formatDistance, addDays, differenceInMinutes } from 'date-fns'
-import { MarkNotificationRead } from './mark-notification-read'
+import { format, addDays, differenceInMinutes } from 'date-fns'
+import { NotificationsCard } from './components/notifications-card'
 
 interface DashboardData {
   upcomingReservations: Array<{
@@ -187,23 +185,6 @@ function getStatusColor(status: 'active' | 'standby' | 'cancelled') {
       return 'bg-gray-500/10 text-gray-700 dark:text-gray-400 border-gray-500/20'
     default:
       return 'bg-gray-500/10 text-gray-700 dark:text-gray-400 border-gray-500/20'
-  }
-}
-
-function getNotificationIcon(type: string) {
-  switch (type) {
-    case 'reservation_active':
-      return <CheckCircle2 className="h-4 w-4" />
-    case 'document_expiring':
-      return <AlertCircle className="h-4 w-4" />
-    case 'document_uploaded':
-      return <FileText className="h-4 w-4" />
-    case 'document_approved':
-      return <CheckCircle2 className="h-4 w-4" />
-    case 'general':
-      return <Info className="h-4 w-4" />
-    default:
-      return <Bell className="h-4 w-4" />
   }
 }
 
@@ -534,48 +515,10 @@ async function DashboardContent() {
       </div>
 
       {/* Notifications */}
-      {dashboardData.unreadNotifications.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Notifications</CardTitle>
-            <CardDescription>
-              Unread notifications and alerts
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {dashboardData.unreadNotifications.map((notification) => (
-                <Alert key={notification.id}>
-                  {getNotificationIcon(notification.type)}
-                  <div className="flex items-start justify-between gap-2 w-full">
-                    <div className="flex-1">
-                      <AlertTitle className="text-sm">
-                        {notification.title}
-                      </AlertTitle>
-                      <AlertDescription className="text-xs">
-                        {notification.message}
-                        <span className="text-muted-foreground ml-2">
-                          • {formatDistance(new Date(notification.created_at), new Date(), { addSuffix: true })}
-                        </span>
-                        {notification.link && (
-                          <div className="mt-2">
-                            <Button asChild size="sm" variant="outline">
-                              <Link href={notification.link}>
-                                View Details
-                              </Link>
-                            </Button>
-                          </div>
-                        )}
-                      </AlertDescription>
-                    </div>
-                    <MarkNotificationRead notificationId={notification.id} />
-                  </div>
-                </Alert>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      <NotificationsCard
+        userId={user.id}
+        initialNotifications={dashboardData.unreadNotifications}
+      />
     </div>
   )
 }

@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
 import { Badge } from '@/components/ui/badge'
+import { createClient } from '@/lib/supabase/client'
 import type { User } from '@/lib/database.types'
 import {
   LayoutDashboard,
@@ -95,23 +96,59 @@ function SidebarContent({ user, onNavigate }: { user: User; onNavigate?: () => v
       .catch(err => console.error('Error fetching user alerts:', err))
   }
 
+  // Initial fetch
   useEffect(() => {
     fetchPendingApprovals()
-  }, [isBoardMember])
-
-  useEffect(() => {
     fetchUserAlerts()
-  }, [user.id])
+  }, [isBoardMember, user.id])
 
-  // Listen for document updates to refresh badges
+  // Real-time subscription for documents table changes
+  useEffect(() => {
+    const supabase = createClient()
+
+    // Subscribe to all changes on documents table
+    const documentsSubscription = supabase
+      .channel('documents-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*', // Listen to INSERT, UPDATE, DELETE
+          schema: 'public',
+          table: 'documents',
+        },
+        (payload) => {
+          console.log('Real-time document change detected:', payload)
+          // Refetch badge counts when any document changes
+          fetchPendingApprovals()
+          fetchUserAlerts()
+        }
+      )
+      .subscribe()
+
+    // Cleanup subscription on unmount
+    return () => {
+      documentsSubscription.unsubscribe()
+    }
+  }, [isBoardMember, user.id])
+
+  // Also listen for manual refresh events (for immediate feedback)
   useEffect(() => {
     const handleDocumentUpdate = () => {
       fetchPendingApprovals()
       fetchUserAlerts()
     }
 
+    const handleUserAlertsUpdate = () => {
+      fetchUserAlerts()
+    }
+
     window.addEventListener('document-updated', handleDocumentUpdate)
-    return () => window.removeEventListener('document-updated', handleDocumentUpdate)
+    window.addEventListener('user-alerts-updated', handleUserAlertsUpdate)
+
+    return () => {
+      window.removeEventListener('document-updated', handleDocumentUpdate)
+      window.removeEventListener('user-alerts-updated', handleUserAlertsUpdate)
+    }
   }, [isBoardMember, user.id])
 
   // Filter nav items based on user role
