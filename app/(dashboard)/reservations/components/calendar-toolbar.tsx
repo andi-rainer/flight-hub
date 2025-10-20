@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { format } from 'date-fns'
 
-type CustomView = 'day' | 'three_day' | 'month'
+type CustomView = 'day' | 'month'
 
 interface CalendarToolbarProps {
   date: Date
@@ -18,9 +18,7 @@ interface CalendarToolbarProps {
 
 export function CalendarToolbar({ date, view, onNavigate, onViewChange, onDateSelect, dateRange }: CalendarToolbarProps) {
   const getDateLabel = () => {
-    if (view === 'three_day') {
-      return `${format(dateRange.start, 'MMM dd')} - ${format(dateRange.end, 'MMM dd, yyyy')}`
-    } else if (view === 'month') {
+    if (view === 'month') {
       return format(date, 'MMMM yyyy')
     } else {
       return format(date, 'EEEE, MMMM dd, yyyy')
@@ -81,13 +79,6 @@ export function CalendarToolbar({ date, view, onNavigate, onViewChange, onDateSe
           onClick={() => onViewChange('day')}
         >
           Day
-        </Button>
-        <Button
-          variant={view === 'three_day' ? 'default' : 'outline'}
-          size="sm"
-          onClick={() => onViewChange('three_day')}
-        >
-          3 Days
         </Button>
         <Button
           variant={view === 'month' ? 'default' : 'outline'}

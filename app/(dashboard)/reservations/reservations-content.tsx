@@ -34,6 +34,7 @@ export function ReservationsContent({ userId, isBoardMember }: ReservationsConte
   const [dialogOpen, setDialogOpen] = useState(false)
   const [selectedSlotStart, setSelectedSlotStart] = useState<Date | undefined>()
   const [selectedSlotEnd, setSelectedSlotEnd] = useState<Date | undefined>()
+  const [selectedSlotAircraft, setSelectedSlotAircraft] = useState<string | undefined>()
   const [selectedReservation, setSelectedReservation] = useState<ActiveReservation | undefined>()
 
   // Load data
@@ -45,8 +46,6 @@ export function ReservationsContent({ userId, isBoardMember }: ReservationsConte
   useEffect(() => {
     const supabase = createClient()
 
-    console.log('Setting up reservations real-time subscription...')
-
     // Subscribe to all changes on reservations table
     const reservationsSubscription = supabase
       .channel('reservations-changes')
@@ -57,19 +56,15 @@ export function ReservationsContent({ userId, isBoardMember }: ReservationsConte
           schema: 'public',
           table: 'reservations',
         },
-        (payload) => {
-          console.log('Real-time reservation change detected:', payload.eventType, payload)
+        () => {
           // Refetch reservations when any change occurs
           loadData(false) // false = don't show loading spinner
         }
       )
-      .subscribe((status) => {
-        console.log('Reservations subscription status:', status)
-      })
+      .subscribe()
 
     // Cleanup subscription on unmount
     return () => {
-      console.log('Cleaning up reservations subscription')
       reservationsSubscription.unsubscribe()
     }
   }, [])
@@ -112,9 +107,10 @@ export function ReservationsContent({ userId, isBoardMember }: ReservationsConte
     }
   }, [selectedAircraft, reservations])
 
-  const handleSelectSlot = (start: Date, end: Date) => {
+  const handleSelectSlot = (start: Date, end: Date, aircraftId?: string) => {
     setSelectedSlotStart(start)
     setSelectedSlotEnd(end)
+    setSelectedSlotAircraft(aircraftId)
     setSelectedReservation(undefined)
     setDialogOpen(true)
   }
@@ -123,12 +119,15 @@ export function ReservationsContent({ userId, isBoardMember }: ReservationsConte
     setSelectedReservation(reservation)
     setSelectedSlotStart(undefined)
     setSelectedSlotEnd(undefined)
+    setSelectedSlotAircraft(undefined)
     setDialogOpen(true)
   }
 
   const handleDialogClose = (open: boolean) => {
     setDialogOpen(open)
     if (!open) {
+      // Clear selected slot aircraft
+      setSelectedSlotAircraft(undefined)
       // Reload data when dialog closes without showing loading spinner
       loadData(false)
     }
@@ -194,6 +193,7 @@ export function ReservationsContent({ userId, isBoardMember }: ReservationsConte
             setSelectedReservation(undefined)
             setSelectedSlotStart(undefined)
             setSelectedSlotEnd(undefined)
+            setSelectedSlotAircraft(undefined)
             setDialogOpen(true)
           }}
         >
@@ -219,6 +219,7 @@ export function ReservationsContent({ userId, isBoardMember }: ReservationsConte
         aircraft={aircraft}
         initialStartTime={selectedSlotStart}
         initialEndTime={selectedSlotEnd}
+        initialAircraftId={selectedSlotAircraft}
         existingReservation={selectedReservation}
         currentUserId={userId}
         isBoardMember={isBoardMember}

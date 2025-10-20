@@ -9,7 +9,7 @@ import {CalendarToolbar} from './calendar-toolbar'
 import 'react-big-calendar/lib/css/react-big-calendar.css'
 import './calendar-styles.css'
 
-type CustomView = 'day' | 'three_day' | 'month'
+type CustomView = 'day' | 'month'
 
 interface Resource {
   id: string
@@ -33,7 +33,7 @@ const localizer = dateFnsLocalizer({
 interface ReservationCalendarProps {
   reservations: ActiveReservation[]
   aircraft: { id: string; tail_number: string; type: string; color: string | null }[]
-  onSelectSlot: (start: Date, end: Date) => void
+  onSelectSlot: (start: Date, end: Date, aircraftId?: string) => void
   onSelectEvent: (reservation: ActiveReservation) => void
 }
 
@@ -57,12 +57,7 @@ export function ReservationCalendar({
   // Calculate the date range based on custom view
   const dateRange = useMemo(() => {
     const start = startOfDay(date)
-    if (customView === 'three_day') {
-      return {
-        start,
-        end: addDays(start, 2)
-      }
-    } else if (customView === 'month') {
+    if (customView === 'month') {
       const monthStart = startOfMonth(date)
       const monthEnd = new Date(monthStart.getFullYear(), monthStart.getMonth() + 1, 0)
       return {
@@ -83,18 +78,14 @@ export function ReservationCalendar({
     if (action === 'TODAY') {
       newDate = new Date()
     } else if (action === 'NEXT') {
-      if (customView === 'three_day') {
-        newDate = addDays(date, 3)
-      } else if (customView === 'month') {
+      if (customView === 'month') {
         newDate = addMonths(date, 1)
       } else {
         newDate = addDays(date, 1)
       }
     } else {
       // PREV
-      if (customView === 'three_day') {
-        newDate = addDays(date, -3)
-      } else if (customView === 'month') {
+      if (customView === 'month') {
         newDate = addMonths(date, -1)
       } else {
         newDate = addDays(date, -1)
@@ -278,13 +269,14 @@ export function ReservationCalendar({
           resourceTitleAccessor="title"
           startAccessor="start"
           endAccessor="end"
-          view={customView === 'day' ? 'day' : customView === 'month' ? 'month' : 'week'}
+          view={customView === 'day' ? 'day' : 'month'}
           onView={() => {}} // Disable built-in view change
           date={date}
           onNavigate={() => {}} // Disable built-in navigation
           onSelectSlot={(slotInfo) => {
-            // When clicking on a specific aircraft row, we know which plane
-            onSelectSlot(slotInfo.start, slotInfo.end)
+            // When clicking on a specific aircraft row, pass the resource ID (aircraft ID)
+            const aircraftId = slotInfo.resourceId as string | undefined
+            onSelectSlot(slotInfo.start, slotInfo.end, aircraftId)
           }}
           onSelectEvent={(event) => onSelectEvent(event.resource)}
           selectable

@@ -33,6 +33,7 @@ interface ReservationDialogProps {
   aircraft: Pick<Plane, 'id' | 'tail_number' | 'type' | 'color'>[]
   initialStartTime?: Date
   initialEndTime?: Date
+  initialAircraftId?: string
   existingReservation?: ActiveReservation
   currentUserId: string
   isBoardMember: boolean
@@ -44,6 +45,7 @@ export function ReservationDialog({
   aircraft,
   initialStartTime,
   initialEndTime,
+  initialAircraftId,
   existingReservation,
   currentUserId,
   isBoardMember,
@@ -70,7 +72,7 @@ export function ReservationDialog({
         setPriority(existingReservation.priority || false)
         setRemarks(existingReservation.remarks || '')
       } else {
-        setPlaneId('')
+        setPlaneId(initialAircraftId || '')
         setStartTime(initialStartTime ? format(initialStartTime, "yyyy-MM-dd'T'HH:mm") : '')
         setEndTime(initialEndTime ? format(initialEndTime, "yyyy-MM-dd'T'HH:mm") : '')
         setStatus('active')
@@ -78,7 +80,7 @@ export function ReservationDialog({
         setRemarks('')
       }
     }
-  }, [open, existingReservation, initialStartTime, initialEndTime])
+  }, [open, existingReservation, initialStartTime, initialEndTime, initialAircraftId])
 
   const isEditMode = !!existingReservation
   const canEdit = isEditMode && (existingReservation.user_id === currentUserId || isBoardMember)
