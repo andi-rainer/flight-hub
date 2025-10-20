@@ -1,12 +1,13 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
+import { Badge } from '@/components/ui/badge'
 import type { User } from '@/lib/database.types'
 import {
   LayoutDashboard,
@@ -73,6 +74,45 @@ const navItems: NavItem[] = [
 function SidebarContent({ user, onNavigate }: { user: User; onNavigate?: () => void }) {
   const pathname = usePathname()
   const isBoardMember = user.role?.includes('board') ?? false
+  const [pendingApprovalsCount, setPendingApprovalsCount] = useState(0)
+  const [userAlertsCount, setUserAlertsCount] = useState(0)
+
+  // Fetch pending approvals count for board members
+  const fetchPendingApprovals = () => {
+    if (isBoardMember) {
+      fetch('/api/documents/pending-approvals')
+        .then(res => res.json())
+        .then(data => setPendingApprovalsCount(data.count || 0))
+        .catch(err => console.error('Error fetching pending approvals:', err))
+    }
+  }
+
+  // Fetch user document alerts
+  const fetchUserAlerts = () => {
+    fetch(`/api/documents/user-alerts?userId=${user.id}`)
+      .then(res => res.json())
+      .then(data => setUserAlertsCount(data.count || 0))
+      .catch(err => console.error('Error fetching user alerts:', err))
+  }
+
+  useEffect(() => {
+    fetchPendingApprovals()
+  }, [isBoardMember])
+
+  useEffect(() => {
+    fetchUserAlerts()
+  }, [user.id])
+
+  // Listen for document updates to refresh badges
+  useEffect(() => {
+    const handleDocumentUpdate = () => {
+      fetchPendingApprovals()
+      fetchUserAlerts()
+    }
+
+    window.addEventListener('document-updated', handleDocumentUpdate)
+    return () => window.removeEventListener('document-updated', handleDocumentUpdate)
+  }, [isBoardMember, user.id])
 
   // Filter nav items based on user role
   const filteredNavItems = navItems.filter((item) => {
@@ -101,6 +141,22 @@ function SidebarContent({ user, onNavigate }: { user: User; onNavigate?: () => v
             const Icon = item.icon
             const isActive = pathname === item.href || pathname.startsWith(item.href + '/')
 
+            // Determine badge display for this item
+            let showBadge = false
+            let badgeContent: React.ReactNode = null
+
+            if (item.href === '/members' && isBoardMember && pendingApprovalsCount > 0) {
+              showBadge = true
+              badgeContent = pendingApprovalsCount > 99 ? '99+' : pendingApprovalsCount
+            } else if (item.href === '/settings' && userAlertsCount > 0) {
+              showBadge = true
+              // Just show a red dot for settings
+              badgeContent = null
+            } else if (item.badge) {
+              showBadge = true
+              badgeContent = item.badge
+            }
+
             return (
               <Link key={item.href} href={item.href} onClick={onNavigate}>
                 <Button
@@ -111,11 +167,18 @@ function SidebarContent({ user, onNavigate }: { user: User; onNavigate?: () => v
                   )}
                 >
                   <Icon className="h-4 w-4" />
-                  <span>{item.title}</span>
-                  {item.badge && (
-                    <span className="ml-auto text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">
-                      {item.badge}
-                    </span>
+                  <span className="flex-1 text-left">{item.title}</span>
+                  {showBadge && (
+                    badgeContent ? (
+                      <Badge
+                        variant="destructive"
+                        className="ml-auto h-5 min-w-[20px] flex items-center justify-center rounded-full px-1.5 text-[10px] font-semibold"
+                      >
+                        {badgeContent}
+                      </Badge>
+                    ) : (
+                      <span className="ml-auto h-2 w-2 rounded-full bg-destructive"></span>
+                    )
                   )}
                 </Button>
               </Link>

@@ -81,6 +81,8 @@ export function MemberDocumentsDialog({ member, documents }: MemberDocumentsDial
       toast.success('Document approved')
       setApprovingDoc(null)
       setExpiryDate('')
+      // Trigger refresh for badges
+      window.dispatchEvent(new Event('document-updated'))
       router.refresh()
     } else {
       toast.error(result.error || 'Failed to approve document')
@@ -91,6 +93,8 @@ export function MemberDocumentsDialog({ member, documents }: MemberDocumentsDial
     const result = await unapproveUserDocument(documentId)
     if (result.success) {
       toast.success('Document unapproved')
+      // Trigger refresh for badges
+      window.dispatchEvent(new Event('document-updated'))
       router.refresh()
     } else {
       toast.error(result.error || 'Failed to unapprove document')
@@ -103,6 +107,8 @@ export function MemberDocumentsDialog({ member, documents }: MemberDocumentsDial
     const result = await deleteUserDocument(documentId)
     if (result.success) {
       toast.success('Document deleted')
+      // Trigger refresh for badges
+      window.dispatchEvent(new Event('document-updated'))
       router.refresh()
     } else {
       toast.error(result.error || 'Failed to delete document')

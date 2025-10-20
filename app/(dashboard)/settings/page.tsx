@@ -1,9 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { ProfileSection } from './components/profile-section'
-import { PilotDocumentsSection } from './components/pilot-documents-section'
-import { DocumentTypesSection } from './components/document-types-section'
+import { SettingsTabs } from './components/settings-tabs'
 import type { User } from '@/lib/database.types'
 
 async function getCurrentUser(): Promise<User | null> {
@@ -41,27 +38,7 @@ export default async function SettingsPage() {
       </div>
 
       {/* Content */}
-      <Tabs defaultValue="profile" className="space-y-6">
-        <TabsList>
-          <TabsTrigger value="profile">Profile</TabsTrigger>
-          <TabsTrigger value="documents">My Documents</TabsTrigger>
-          {isBoardMember && <TabsTrigger value="document-types">Document Settings</TabsTrigger>}
-        </TabsList>
-
-        <TabsContent value="profile" className="space-y-4">
-          <ProfileSection user={user} />
-        </TabsContent>
-
-        <TabsContent value="documents" className="space-y-4">
-          <PilotDocumentsSection userId={user.id} isBoardMember={isBoardMember} />
-        </TabsContent>
-
-        {isBoardMember && (
-          <TabsContent value="document-types" className="space-y-4">
-            <DocumentTypesSection />
-          </TabsContent>
-        )}
-      </Tabs>
+      <SettingsTabs user={user} isBoardMember={isBoardMember} />
     </div>
   )
 }

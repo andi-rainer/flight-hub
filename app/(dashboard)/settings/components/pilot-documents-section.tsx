@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
@@ -35,6 +36,7 @@ interface PilotDocumentsSectionProps {
 }
 
 export function PilotDocumentsSection({ userId, isBoardMember = false }: PilotDocumentsSectionProps) {
+  const router = useRouter()
   const [documents, setDocuments] = useState<Document[]>([])
   const [documentTypes, setDocumentTypes] = useState<DocumentType[]>([])
   const [userFunctions, setUserFunctions] = useState<string[]>([])
@@ -139,6 +141,9 @@ export function PilotDocumentsSection({ userId, isBoardMember = false }: PilotDo
         setSelectedFile(null)
         setExpiryDate('')
         loadData()
+        // Trigger refresh for badges
+        window.dispatchEvent(new Event('document-updated'))
+        router.refresh()
       } else {
         const error = await response.json()
         toast.error(error.error || 'Failed to upload document')
@@ -231,6 +236,9 @@ export function PilotDocumentsSection({ userId, isBoardMember = false }: PilotDo
         setSelectedFile(null)
         setExpiryDate('')
         loadData()
+        // Trigger refresh for badges
+        window.dispatchEvent(new Event('document-updated'))
+        router.refresh()
       } else {
         const error = await response.json()
         toast.error(error.error || 'Failed to renew document')
