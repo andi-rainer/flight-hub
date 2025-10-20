@@ -101,7 +101,6 @@ export function useUser(): UseUserReturn {
     })
 
     return () => {
-      console.log('### useUser cleanup')
       mounted = false
       subscription.unsubscribe()
     }

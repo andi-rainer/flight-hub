@@ -22,7 +22,7 @@ export default async function DashboardLayout({
   return (
     <div className="flex h-screen overflow-hidden">
       {/* Desktop Sidebar */}
-      <Sidebar />
+      <Sidebar user={userProfile} />
 
       {/* Main Content Area */}
       <div className="flex flex-1 flex-col overflow-hidden">

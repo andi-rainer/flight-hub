@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
-import { useUser } from '@/lib/hooks/use-user'
+import type { User } from '@/lib/database.types'
 import {
   LayoutDashboard,
   Plane,
@@ -25,6 +25,10 @@ interface NavItem {
   icon: React.ComponentType<{ className?: string }>
   badge?: string
   requiresBoard?: boolean
+}
+
+interface SidebarProps {
+  user: User
 }
 
 const navItems: NavItem[] = [
@@ -66,18 +70,13 @@ const navItems: NavItem[] = [
   },
 ]
 
-function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
+function SidebarContent({ user, onNavigate }: { user: User; onNavigate?: () => void }) {
   const pathname = usePathname()
-  const { isBoardMember, isLoading } = useUser()
+  const isBoardMember = user.role?.includes('board') ?? false
 
   // Filter nav items based on user role
-  // Don't filter while loading to prevent items disappearing during page reload
   const filteredNavItems = navItems.filter((item) => {
     if (item.requiresBoard) {
-      // Keep item visible while loading, only filter after user data is loaded
-      if (isLoading) {
-        return true
-      }
       return isBoardMember
     }
     return true
@@ -135,15 +134,15 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   )
 }
 
-export function Sidebar() {
+export function Sidebar({ user }: SidebarProps) {
   return (
     <aside className="hidden md:flex h-screen w-64 flex-col border-r bg-background">
-      <SidebarContent />
+      <SidebarContent user={user} />
     </aside>
   )
 }
 
-export function MobileSidebar() {
+export function MobileSidebar({ user }: SidebarProps) {
   const [open, setOpen] = useState(false)
 
   return (
@@ -155,7 +154,7 @@ export function MobileSidebar() {
         </Button>
       </SheetTrigger>
       <SheetContent side="left" className="p-0 w-64">
-        <SidebarContent onNavigate={() => setOpen(false)} />
+        <SidebarContent user={user} onNavigate={() => setOpen(false)} />
       </SheetContent>
     </Sheet>
   )
