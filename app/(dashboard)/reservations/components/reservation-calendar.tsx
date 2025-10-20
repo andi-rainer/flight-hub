@@ -128,12 +128,13 @@ export function ReservationCalendar({
       let title: string
 
       if (customView === 'month') {
-        // Month view: show time and tail number
+        // Month view: show time, tail number, and user name
         const startTime = format(new Date(reservation.start_time), 'HH:mm')
         const priorityIndicator = reservation.priority ? '⭐ ' : ''
-        title = `${priorityIndicator}${startTime} ${reservation.tail_number}`
+        const statusIndicator = reservation.status === 'standby' ? ' [S]' : ''
+        title = `${priorityIndicator}${startTime} ${reservation.tail_number} - ${reservation.user_name}${statusIndicator}`
       } else {
-        // Day/3-day view: show user name and status
+        // Day view: show user name and status
         const statusIndicator = reservation.status === 'standby' ? ' [STANDBY]' :
                                reservation.status === 'cancelled' ? ' [CANCELLED]' : ''
         const priorityIndicator = reservation.priority ? '⭐ ' : ''
@@ -260,11 +261,11 @@ export function ReservationCalendar({
       />
 
       {/* Calendar */}
-      <div className={`h-[800px] calendar-view-${customView}`}>
+      <div className={`calendar-view-${customView}`} style={{ height: customView === 'month' ? '700px' : '800px' }}>
         <Calendar
           localizer={localizer}
           events={events}
-          resources={resources}
+          resources={customView === 'day' ? resources : undefined}
           resourceIdAccessor="id"
           resourceTitleAccessor="title"
           startAccessor="start"
@@ -281,7 +282,7 @@ export function ReservationCalendar({
           onSelectEvent={(event) => onSelectEvent(event.resource)}
           selectable
           eventPropGetter={eventStyleGetter}
-          views={['day', 'week', 'month']}
+          views={['day', 'month']}
           step={30}
           timeslots={2}
           min={new Date(2025, 0, 1, 6, 0, 0)} // 6:00 AM
@@ -290,8 +291,8 @@ export function ReservationCalendar({
           defaultView="day"
           toolbar={false} // Hide default toolbar
           style={{ height: '100%' }}
-          popup
-          popupOffset={5}
+          popup={true}
+          popupOffset={10}
           messages={{
             showMore: (total) => `+${total} more`,
           }}
