@@ -224,6 +224,7 @@ export async function addPayment(data: {
   userId: string
   amount: number
   description: string
+  created_at?: string
 }) {
   const auth = await verifyBoardMember()
   if (!auth.authorized) {
@@ -238,6 +239,7 @@ export async function addPayment(data: {
     user_id: data.userId,
     amount: Math.abs(data.amount), // Positive for credit/payment
     description: data.description,
+    ...(data.created_at && { created_at: data.created_at }),
   })
 }
 
@@ -245,6 +247,7 @@ export async function addCharge(data: {
   userId: string
   amount: number
   description: string
+  created_at?: string
 }) {
   const auth = await verifyBoardMember()
   if (!auth.authorized) {
@@ -259,6 +262,7 @@ export async function addCharge(data: {
     user_id: data.userId,
     amount: -Math.abs(data.amount), // Negative for debit/charge
     description: data.description,
+    ...(data.created_at && { created_at: data.created_at }),
   })
 }
 
@@ -266,6 +270,7 @@ export async function addAdjustment(data: {
   userId: string
   amount: number
   description: string
+  created_at?: string
 }) {
   const auth = await verifyBoardMember()
   if (!auth.authorized) {
@@ -276,5 +281,100 @@ export async function addAdjustment(data: {
     user_id: data.userId,
     amount: data.amount, // Can be positive or negative
     description: data.description,
+    ...(data.created_at && { created_at: data.created_at }),
   })
+}
+
+// ============================================================================
+// REVERSE FLIGHT CHARGES
+// ============================================================================
+
+export async function reverseFlightCharge(transactionId: string) {
+  const auth = await verifyBoardMember()
+  if (!auth.authorized) {
+    return { success: false, error: auth.error }
+  }
+
+  // Get the original transaction
+  const { data: originalTx, error: fetchError } = await auth.supabase
+    .from('accounts')
+    .select(`
+      *,
+      flight:flightlog!accounts_flightlog_id_fkey(
+        id,
+        charged,
+        locked,
+        block_off,
+        block_on,
+        plane:planes(tail_number)
+      )
+    `)
+    .eq('id', transactionId)
+    .single()
+
+  if (fetchError || !originalTx) {
+    console.error('Error fetching original transaction:', fetchError)
+    return { success: false, error: 'Transaction not found' }
+  }
+
+  // Verify this transaction is linked to a flight
+  if (!originalTx.flightlog_id) {
+    return { success: false, error: 'This transaction is not linked to a flight' }
+  }
+
+  // Check if already reversed
+  const { data: existingReversal } = await auth.supabase
+    .from('accounts')
+    .select('id')
+    .eq('reverses_transaction_id', transactionId)
+    .single()
+
+  if (existingReversal) {
+    return { success: false, error: 'This transaction has already been reversed' }
+  }
+
+  // Create reverse transaction
+  const reverseAmount = -originalTx.amount
+  const { data: reverseTx, error: reverseError } = await auth.supabase
+    .from('accounts')
+    .insert({
+      user_id: originalTx.user_id,
+      amount: reverseAmount,
+      description: `REVERSAL: ${originalTx.description}`,
+      created_by: auth.userId,
+      reverses_transaction_id: transactionId,
+    })
+    .select()
+    .single()
+
+  if (reverseError) {
+    console.error('Error creating reverse transaction:', reverseError)
+    return { success: false, error: reverseError.message }
+  }
+
+  // Unlock and uncharge the flight
+  const { error: unlockError } = await auth.supabase
+    .from('flightlog')
+    .update({
+      charged: false,
+      locked: false,
+      charged_by: null,
+      charged_at: null,
+    })
+    .eq('id', originalTx.flightlog_id)
+
+  if (unlockError) {
+    console.error('Error unlocking flight:', unlockError)
+    // Try to delete the reverse transaction since flight unlock failed
+    await auth.supabase.from('accounts').delete().eq('id', reverseTx.id)
+    return { success: false, error: 'Failed to unlock flight: ' + unlockError.message }
+  }
+
+  revalidatePath('/accounting')
+  revalidatePath('/billing')
+  return {
+    success: true,
+    data: reverseTx,
+    message: 'Flight charge reversed and flight unlocked for re-charging'
+  }
 }

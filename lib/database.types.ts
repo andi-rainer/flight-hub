@@ -47,6 +47,10 @@ export type Database = {
           description: string
           id: string
           user_id: string
+          reversed_at: string | null
+          reversed_by: string | null
+          reversal_transaction_id: string | null
+          reverses_transaction_id: string | null
         }
         Insert: {
           amount: number
@@ -55,6 +59,10 @@ export type Database = {
           description: string
           id?: string
           user_id: string
+          reversed_at?: string | null
+          reversed_by?: string | null
+          reversal_transaction_id?: string | null
+          reverses_transaction_id?: string | null
         }
         Update: {
           amount?: number
@@ -63,6 +71,10 @@ export type Database = {
           description?: string
           id?: string
           user_id?: string
+          reversed_at?: string | null
+          reversed_by?: string | null
+          reversal_transaction_id?: string | null
+          reverses_transaction_id?: string | null
         }
         Relationships: [
           {
@@ -104,6 +116,10 @@ export type Database = {
           description: string
           flightlog_id: string
           id: string
+          reversed_at: string | null
+          reversed_by: string | null
+          reversal_transaction_id: string | null
+          reverses_transaction_id: string | null
         }
         Insert: {
           amount: number
@@ -113,6 +129,10 @@ export type Database = {
           description: string
           flightlog_id: string
           id?: string
+          reversed_at?: string | null
+          reversed_by?: string | null
+          reversal_transaction_id?: string | null
+          reverses_transaction_id?: string | null
         }
         Update: {
           amount?: number
@@ -122,6 +142,10 @@ export type Database = {
           description?: string
           flightlog_id?: string
           id?: string
+          reversed_at?: string | null
+          reversed_by?: string | null
+          reversal_transaction_id?: string | null
+          reverses_transaction_id?: string | null
         }
         Relationships: [
           {

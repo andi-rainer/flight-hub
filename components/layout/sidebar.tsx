@@ -20,6 +20,7 @@ import {
   Settings,
   Menu,
   CreditCard,
+  Calculator,
 } from 'lucide-react'
 
 interface NavItem {
@@ -65,6 +66,12 @@ const navItems: NavItem[] = [
     title: 'Billing',
     href: '/billing',
     icon: CreditCard,
+    requiresBoard: true,
+  },
+  {
+    title: 'Accounting',
+    href: '/accounting',
+    icon: Calculator,
     requiresBoard: true,
   },
   {

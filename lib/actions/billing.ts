@@ -92,6 +92,7 @@ export async function chargeFlightToUser(data: {
     .from('accounts')
     .insert({
       user_id: data.userId,
+      flightlog_id: data.flightlogId,
       amount: -Math.abs(data.amount), // Negative for debit
       description: data.description,
       created_by: auth.userId,
@@ -168,13 +169,13 @@ export async function chargeFlightToCostCenter(data: {
     return { success: false, error: 'Cost center is not active' }
   }
 
-  // Create cost center transaction
+  // Create cost center transaction (negative for charges/costs)
   const { error: transactionError } = await auth.supabase
     .from('cost_center_transactions')
     .insert({
       cost_center_id: data.costCenterId,
       flightlog_id: data.flightlogId,
-      amount: data.amount,
+      amount: -Math.abs(data.amount), // Negative for charges/costs
       description: data.description,
       created_by: auth.userId,
     })

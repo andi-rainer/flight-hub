@@ -250,3 +250,199 @@ export async function getCostCenterTransactions(costCenterId?: string) {
 
   return { success: true, data }
 }
+
+export async function addCostCenterTransaction(data: {
+  costCenterId: string
+  amount: number
+  description: string
+  created_at?: string
+}) {
+  const auth = await verifyBoardMember()
+  if (!auth.authorized) {
+    return { success: false, error: auth.error }
+  }
+
+  const { data: transaction, error } = await auth.supabase
+    .from('cost_center_transactions')
+    .insert({
+      cost_center_id: data.costCenterId,
+      amount: data.amount,
+      description: data.description,
+      created_by: auth.userId,
+      ...(data.created_at && { created_at: data.created_at }),
+    })
+    .select()
+    .single()
+
+  if (error) {
+    console.error('Error adding cost center transaction:', error)
+    return { success: false, error: error.message }
+  }
+
+  revalidatePath('/accounting')
+  return { success: true, data: transaction }
+}
+
+// ============================================================================
+// MANUAL ADJUSTMENTS FOR COST CENTERS
+// ============================================================================
+
+export async function addCostCenterCredit(data: {
+  costCenterId: string
+  amount: number
+  description: string
+  created_at?: string
+}) {
+  const auth = await verifyBoardMember()
+  if (!auth.authorized) {
+    return { success: false, error: auth.error }
+  }
+
+  if (data.amount <= 0) {
+    return { success: false, error: 'Credit amount must be positive' }
+  }
+
+  return await addCostCenterTransaction({
+    costCenterId: data.costCenterId,
+    amount: Math.abs(data.amount), // Positive for credit
+    description: data.description,
+    ...(data.created_at && { created_at: data.created_at }),
+  })
+}
+
+export async function addCostCenterCharge(data: {
+  costCenterId: string
+  amount: number
+  description: string
+  created_at?: string
+}) {
+  const auth = await verifyBoardMember()
+  if (!auth.authorized) {
+    return { success: false, error: auth.error }
+  }
+
+  if (data.amount <= 0) {
+    return { success: false, error: 'Charge amount must be positive' }
+  }
+
+  return await addCostCenterTransaction({
+    costCenterId: data.costCenterId,
+    amount: -Math.abs(data.amount), // Negative for charge/cost
+    description: data.description,
+    ...(data.created_at && { created_at: data.created_at }),
+  })
+}
+
+export async function addCostCenterAdjustment(data: {
+  costCenterId: string
+  amount: number
+  description: string
+  created_at?: string
+}) {
+  const auth = await verifyBoardMember()
+  if (!auth.authorized) {
+    return { success: false, error: auth.error }
+  }
+
+  return await addCostCenterTransaction({
+    costCenterId: data.costCenterId,
+    amount: data.amount, // Can be positive or negative
+    description: data.description,
+    ...(data.created_at && { created_at: data.created_at }),
+  })
+}
+
+// ============================================================================
+// REVERSE FLIGHT CHARGES
+// ============================================================================
+
+export async function reverseCostCenterFlightCharge(transactionId: string) {
+  const auth = await verifyBoardMember()
+  if (!auth.authorized) {
+    return { success: false, error: auth.error }
+  }
+
+  // Get the original transaction
+  const { data: originalTx, error: fetchError } = await auth.supabase
+    .from('cost_center_transactions')
+    .select(`
+      *,
+      cost_center:cost_centers(id, name),
+      flight:flightlog!cost_center_transactions_flightlog_id_fkey(
+        id,
+        charged,
+        locked,
+        block_off,
+        block_on,
+        plane:planes(tail_number)
+      )
+    `)
+    .eq('id', transactionId)
+    .single()
+
+  if (fetchError || !originalTx) {
+    console.error('Error fetching original transaction:', fetchError)
+    return { success: false, error: 'Transaction not found' }
+  }
+
+  // Verify this transaction is linked to a flight
+  if (!originalTx.flightlog_id) {
+    return { success: false, error: 'This transaction is not linked to a flight' }
+  }
+
+  // Check if already reversed
+  const { data: existingReversal } = await auth.supabase
+    .from('cost_center_transactions')
+    .select('id')
+    .eq('reverses_transaction_id', transactionId)
+    .single()
+
+  if (existingReversal) {
+    return { success: false, error: 'This transaction has already been reversed' }
+  }
+
+  // Create reverse transaction
+  const reverseAmount = -originalTx.amount
+  const { data: reverseTx, error: reverseError } = await auth.supabase
+    .from('cost_center_transactions')
+    .insert({
+      cost_center_id: originalTx.cost_center_id,
+      amount: reverseAmount,
+      description: `REVERSAL: ${originalTx.description}`,
+      created_by: auth.userId,
+      reverses_transaction_id: transactionId,
+    })
+    .select()
+    .single()
+
+  if (reverseError) {
+    console.error('Error creating reverse transaction:', reverseError)
+    return { success: false, error: reverseError.message }
+  }
+
+  // Unlock and uncharge the flight
+  const { error: unlockError } = await auth.supabase
+    .from('flightlog')
+    .update({
+      charged: false,
+      locked: false,
+      charged_by: null,
+      charged_at: null,
+    })
+    .eq('id', originalTx.flightlog_id)
+
+  if (unlockError) {
+    console.error('Error unlocking flight:', unlockError)
+    // Try to delete the reverse transaction since flight unlock failed
+    await auth.supabase.from('cost_center_transactions').delete().eq('id', reverseTx.id)
+    return { success: false, error: 'Failed to unlock flight: ' + unlockError.message }
+  }
+
+  revalidatePath('/accounting')
+  revalidatePath('/billing')
+  return {
+    success: true,
+    data: reverseTx,
+    message: 'Flight charge reversed and flight unlocked for re-charging'
+  }
+}
