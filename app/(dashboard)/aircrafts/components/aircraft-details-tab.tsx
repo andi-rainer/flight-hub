@@ -15,6 +15,7 @@ import { Pencil } from 'lucide-react'
 import type { Plane } from '@/lib/database.types'
 import { AircraftForm } from './aircraft-form'
 import { useState } from 'react'
+import { format } from 'date-fns'
 
 interface AircraftDetailsTabProps {
   aircraft: Plane
@@ -153,7 +154,7 @@ export function AircraftDetailsTab({ aircraft, isBoardMember }: AircraftDetailsT
 
           <div className="border-t pt-4">
             <p className="text-sm text-muted-foreground">
-              Created: {new Date(aircraft.created_at).toLocaleDateString()}
+              Created: {format(new Date(aircraft.created_at), 'dd.MM.yyyy')}
             </p>
           </div>
         </CardContent>

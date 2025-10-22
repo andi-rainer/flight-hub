@@ -43,15 +43,16 @@ import {
 } from '@/lib/actions/operation-types'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
-import type { Plane, OperationType } from '@/lib/database.types'
+import type { Plane, OperationType, CostCenter } from '@/lib/database.types'
 import { Badge } from '@/components/ui/badge'
 
 interface AircraftBillingTabProps {
   aircraft: Plane
   operationTypes: OperationType[]
+  costCenters: CostCenter[]
 }
 
-export function AircraftBillingTab({ aircraft, operationTypes }: AircraftBillingTabProps) {
+export function AircraftBillingTab({ aircraft, operationTypes, costCenters }: AircraftBillingTabProps) {
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [editingOperationType, setEditingOperationType] = useState<OperationType | null>(null)
   const [isConfigOpen, setIsConfigOpen] = useState(false)
@@ -64,6 +65,7 @@ export function AircraftBillingTab({ aircraft, operationTypes }: AircraftBilling
     rate: '',
     is_default: false,
     color: '#3b82f6',
+    default_cost_center_id: undefined as string | undefined,
   })
 
   const [configData, setConfigData] = useState({
@@ -78,6 +80,7 @@ export function AircraftBillingTab({ aircraft, operationTypes }: AircraftBilling
       rate: '',
       is_default: false,
       color: '#3b82f6',
+      default_cost_center_id: undefined,
     })
   }
 
@@ -100,6 +103,7 @@ export function AircraftBillingTab({ aircraft, operationTypes }: AircraftBilling
       rate: parseFloat(formData.rate),
       is_default: formData.is_default,
       color: formData.color || null,
+      default_cost_center_id: formData.default_cost_center_id || null,
     })
 
     if (result.success) {
@@ -126,6 +130,7 @@ export function AircraftBillingTab({ aircraft, operationTypes }: AircraftBilling
       rate: parseFloat(formData.rate),
       is_default: formData.is_default,
       color: formData.color || null,
+      default_cost_center_id: formData.default_cost_center_id || null,
     })
 
     if (result.success) {
@@ -180,6 +185,7 @@ export function AircraftBillingTab({ aircraft, operationTypes }: AircraftBilling
       rate: opType.rate.toString(),
       is_default: opType.is_default,
       color: opType.color || '#3b82f6',
+      default_cost_center_id: opType.default_cost_center_id || undefined,
     })
   }
 
@@ -388,6 +394,30 @@ export function AircraftBillingTab({ aircraft, operationTypes }: AircraftBilling
                         Set as default operation type
                       </Label>
                     </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="cost-center">Default Cost Center (Optional)</Label>
+                      <Select
+                        value={formData.default_cost_center_id || '__none__'}
+                        onValueChange={(value) =>
+                          setFormData({ ...formData, default_cost_center_id: value === '__none__' ? undefined : value })
+                        }
+                      >
+                        <SelectTrigger id="cost-center">
+                          <SelectValue placeholder="Charge to pilot (no cost center)" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="__none__">Charge to pilot (no cost center)</SelectItem>
+                          {costCenters.map((cc) => (
+                            <SelectItem key={cc.id} value={cc.id}>
+                              {cc.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <p className="text-sm text-muted-foreground">
+                        If set, flights with this operation type will be charged to the cost center instead of the pilot
+                      </p>
+                    </div>
                   </div>
                   <DialogFooter>
                     <Button
@@ -416,6 +446,7 @@ export function AircraftBillingTab({ aircraft, operationTypes }: AircraftBilling
                   <TableHead>Name</TableHead>
                   <TableHead>Description</TableHead>
                   <TableHead>Rate</TableHead>
+                  <TableHead>Cost Center</TableHead>
                   <TableHead>Default</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
@@ -423,7 +454,7 @@ export function AircraftBillingTab({ aircraft, operationTypes }: AircraftBilling
               <TableBody>
                 {operationTypes.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center text-muted-foreground">
+                    <TableCell colSpan={6} className="text-center text-muted-foreground">
                       No operation types defined for this aircraft
                     </TableCell>
                   </TableRow>
@@ -446,6 +477,15 @@ export function AircraftBillingTab({ aircraft, operationTypes }: AircraftBilling
                       </TableCell>
                       <TableCell>
                         EUR {opType.rate.toFixed(2)}/{aircraft.billing_unit}
+                      </TableCell>
+                      <TableCell>
+                        {opType.default_cost_center_id ? (
+                          <span className="text-sm">
+                            {costCenters.find(cc => cc.id === opType.default_cost_center_id)?.name || 'Unknown'}
+                          </span>
+                        ) : (
+                          <span className="text-sm text-muted-foreground">Pilot</span>
+                        )}
                       </TableCell>
                       <TableCell>
                         {opType.is_default && (
@@ -553,6 +593,30 @@ export function AircraftBillingTab({ aircraft, operationTypes }: AircraftBilling
                                     <Label htmlFor="edit-is-default" className="font-normal">
                                       Set as default operation type
                                     </Label>
+                                  </div>
+                                  <div className="space-y-2">
+                                    <Label htmlFor="edit-cost-center">Default Cost Center (Optional)</Label>
+                                    <Select
+                                      value={formData.default_cost_center_id || '__none__'}
+                                      onValueChange={(value) =>
+                                        setFormData({ ...formData, default_cost_center_id: value === '__none__' ? undefined : value })
+                                      }
+                                    >
+                                      <SelectTrigger id="edit-cost-center">
+                                        <SelectValue placeholder="Charge to pilot (no cost center)" />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="__none__">Charge to pilot (no cost center)</SelectItem>
+                                        {costCenters.map((cc) => (
+                                          <SelectItem key={cc.id} value={cc.id}>
+                                            {cc.name}
+                                          </SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
+                                    <p className="text-sm text-muted-foreground">
+                                      If set, flights with this operation type will be charged to the cost center instead of the pilot
+                                    </p>
                                   </div>
                                 </div>
                                 <DialogFooter>

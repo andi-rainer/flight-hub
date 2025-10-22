@@ -19,6 +19,7 @@ import {
   FileText,
   Settings,
   Menu,
+  CreditCard,
 } from 'lucide-react'
 
 interface NavItem {
@@ -58,6 +59,12 @@ const navItems: NavItem[] = [
     title: 'Members',
     href: '/members',
     icon: Users,
+    requiresBoard: true,
+  },
+  {
+    title: 'Billing',
+    href: '/billing',
+    icon: CreditCard,
     requiresBoard: true,
   },
   {

@@ -95,6 +95,113 @@ export type Database = {
           },
         ]
       }
+      cost_center_transactions: {
+        Row: {
+          amount: number
+          cost_center_id: string
+          created_at: string
+          created_by: string
+          description: string
+          flightlog_id: string
+          id: string
+        }
+        Insert: {
+          amount: number
+          cost_center_id: string
+          created_at?: string
+          created_by: string
+          description: string
+          flightlog_id: string
+          id?: string
+        }
+        Update: {
+          amount?: number
+          cost_center_id?: string
+          created_at?: string
+          created_by?: string
+          description?: string
+          flightlog_id?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cost_center_transactions_cost_center_id_fkey"
+            columns: ["cost_center_id"]
+            isOneToOne: false
+            referencedRelation: "cost_centers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cost_center_transactions_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "user_balances"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "cost_center_transactions_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cost_center_transactions_flightlog_id_fkey"
+            columns: ["flightlog_id"]
+            isOneToOne: true
+            referencedRelation: "flightlog"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cost_center_transactions_flightlog_id_fkey"
+            columns: ["flightlog_id"]
+            isOneToOne: true
+            referencedRelation: "flightlog_with_operation_details"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cost_center_transactions_flightlog_id_fkey"
+            columns: ["flightlog_id"]
+            isOneToOne: true
+            referencedRelation: "flightlog_with_times"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cost_center_transactions_flightlog_id_fkey"
+            columns: ["flightlog_id"]
+            isOneToOne: true
+            referencedRelation: "uncharged_flights"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cost_centers: {
+        Row: {
+          active: boolean
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       document_types: {
         Row: {
           category: string | null
@@ -260,6 +367,8 @@ export type Database = {
           block_off: string
           block_on: string
           charged: boolean
+          charged_at: string | null
+          charged_by: string | null
           copilot_id: string | null
           created_at: string
           fuel: number | null
@@ -279,6 +388,8 @@ export type Database = {
           block_off: string
           block_on: string
           charged?: boolean
+          charged_at?: string | null
+          charged_by?: string | null
           copilot_id?: string | null
           created_at?: string
           fuel?: number | null
@@ -298,6 +409,8 @@ export type Database = {
           block_off?: string
           block_on?: string
           charged?: boolean
+          charged_at?: string | null
+          charged_by?: string | null
           copilot_id?: string | null
           created_at?: string
           fuel?: number | null
@@ -314,6 +427,20 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "flightlog_charged_by_fkey"
+            columns: ["charged_by"]
+            isOneToOne: false
+            referencedRelation: "user_balances"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "flightlog_charged_by_fkey"
+            columns: ["charged_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "flightlog_copilot_id_fkey"
             columns: ["copilot_id"]
@@ -455,6 +582,7 @@ export type Database = {
         Row: {
           color: string | null
           created_at: string | null
+          default_cost_center_id: string | null
           description: string | null
           id: string
           is_default: boolean | null
@@ -466,6 +594,7 @@ export type Database = {
         Insert: {
           color?: string | null
           created_at?: string | null
+          default_cost_center_id?: string | null
           description?: string | null
           id?: string
           is_default?: boolean | null
@@ -477,6 +606,7 @@ export type Database = {
         Update: {
           color?: string | null
           created_at?: string | null
+          default_cost_center_id?: string | null
           description?: string | null
           id?: string
           is_default?: boolean | null
@@ -486,6 +616,13 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "operation_types_default_cost_center_id_fkey"
+            columns: ["default_cost_center_id"]
+            isOneToOne: false
+            referencedRelation: "cost_centers"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "operation_types_plane_id_fkey"
             columns: ["plane_id"]
@@ -912,6 +1049,100 @@ export type Database = {
           },
         ]
       }
+      uncharged_flights: {
+        Row: {
+          billing_unit: string | null
+          block_off: string | null
+          block_on: string | null
+          block_time_hours: number | null
+          calculated_amount: number | null
+          charged: boolean | null
+          copilot_id: string | null
+          copilot_name: string | null
+          copilot_surname: string | null
+          created_at: string | null
+          default_cost_center_id: string | null
+          default_cost_center_name: string | null
+          flight_time_hours: number | null
+          fuel: number | null
+          id: string | null
+          landing_time: string | null
+          landings: number | null
+          locked: boolean | null
+          m_and_b_pdf_url: string | null
+          oil: number | null
+          operation_rate: number | null
+          operation_type_id: string | null
+          operation_type_name: string | null
+          pilot_email: string | null
+          pilot_id: string | null
+          pilot_name: string | null
+          pilot_surname: string | null
+          plane_default_rate: number | null
+          plane_id: string | null
+          plane_type: string | null
+          tail_number: string | null
+          takeoff_time: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "flightlog_copilot_id_fkey"
+            columns: ["copilot_id"]
+            isOneToOne: false
+            referencedRelation: "user_balances"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "flightlog_copilot_id_fkey"
+            columns: ["copilot_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "flightlog_operation_type_id_fkey"
+            columns: ["operation_type_id"]
+            isOneToOne: false
+            referencedRelation: "operation_types"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "flightlog_pilot_id_fkey"
+            columns: ["pilot_id"]
+            isOneToOne: false
+            referencedRelation: "user_balances"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "flightlog_pilot_id_fkey"
+            columns: ["pilot_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "flightlog_plane_id_fkey"
+            columns: ["plane_id"]
+            isOneToOne: false
+            referencedRelation: "aircraft_totals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "flightlog_plane_id_fkey"
+            columns: ["plane_id"]
+            isOneToOne: false
+            referencedRelation: "planes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "operation_types_default_cost_center_id_fkey"
+            columns: ["default_cost_center_id"]
+            isOneToOne: false
+            referencedRelation: "cost_centers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_balances: {
         Row: {
           balance: number | null
@@ -1026,14 +1257,8 @@ export type Database = {
         Args: { p_landing_time: string; p_takeoff_time: string }
         Returns: number
       }
-      can_reserve_aircraft: {
-        Args: { p_plane_id: string }
-        Returns: boolean
-      }
-      is_board_member: {
-        Args: { user_uuid: string }
-        Returns: boolean
-      }
+      can_reserve_aircraft: { Args: { p_plane_id: string }; Returns: boolean }
+      is_board_member: { Args: { user_uuid: string }; Returns: boolean }
     }
     Enums: {
       reservation_status: "active" | "standby" | "cancelled"
@@ -1172,7 +1397,7 @@ export const Constants = {
   },
 } as const
 
-// Convenience type exports for commonly used types
+// Convenience type exports for commonly used database types
 export type User = Database['public']['Tables']['users']['Row']
 export type UserInsert = Database['public']['Tables']['users']['Insert']
 export type UserUpdate = Database['public']['Tables']['users']['Update']
@@ -1181,17 +1406,17 @@ export type Plane = Database['public']['Tables']['planes']['Row']
 export type PlaneInsert = Database['public']['Tables']['planes']['Insert']
 export type PlaneUpdate = Database['public']['Tables']['planes']['Update']
 
-export type Reservation = Database['public']['Tables']['reservations']['Row']
-export type ReservationInsert = Database['public']['Tables']['reservations']['Insert']
-export type ReservationUpdate = Database['public']['Tables']['reservations']['Update']
-
 export type Flightlog = Database['public']['Tables']['flightlog']['Row']
 export type FlightlogInsert = Database['public']['Tables']['flightlog']['Insert']
 export type FlightlogUpdate = Database['public']['Tables']['flightlog']['Update']
 
-export type OperationType = Database['public']['Tables']['operation_types']['Row']
-export type OperationTypeInsert = Database['public']['Tables']['operation_types']['Insert']
-export type OperationTypeUpdate = Database['public']['Tables']['operation_types']['Update']
+export type FlightlogWithTimes = Database['public']['Views']['flightlog_with_times']['Row']
+
+export type Reservation = Database['public']['Tables']['reservations']['Row']
+export type ReservationInsert = Database['public']['Tables']['reservations']['Insert']
+export type ReservationUpdate = Database['public']['Tables']['reservations']['Update']
+
+export type ActiveReservation = Database['public']['Views']['active_reservations']['Row']
 
 export type Document = Database['public']['Tables']['documents']['Row']
 export type DocumentInsert = Database['public']['Tables']['documents']['Insert']
@@ -1202,12 +1427,27 @@ export type DocumentTypeInsert = Database['public']['Tables']['document_types'][
 export type DocumentTypeUpdate = Database['public']['Tables']['document_types']['Update']
 
 export type FunctionMaster = Database['public']['Tables']['functions_master']['Row']
-export type FunctionMasterInsert = Database['public']['Tables']['functions_master']['Insert']
-export type FunctionMasterUpdate = Database['public']['Tables']['functions_master']['Update']
 
-// View types
-export type FlightlogWithTimes = Database['public']['Views']['flightlog_with_times']['Row']
-export type ActiveReservation = Database['public']['Views']['active_reservations']['Row']
+export type OperationType = Database['public']['Tables']['operation_types']['Row']
+export type OperationTypeInsert = Database['public']['Tables']['operation_types']['Insert']
+export type OperationTypeUpdate = Database['public']['Tables']['operation_types']['Update']
 
-// Enum types
-export type ReservationStatus = Database['public']['Enums']['reservation_status']
+export type Notification = Database['public']['Tables']['notifications']['Row']
+export type NotificationInsert = Database['public']['Tables']['notifications']['Insert']
+export type NotificationUpdate = Database['public']['Tables']['notifications']['Update']
+
+// Billing-related types
+export type CostCenter = Database['public']['Tables']['cost_centers']['Row']
+export type CostCenterInsert = Database['public']['Tables']['cost_centers']['Insert']
+export type CostCenterUpdate = Database['public']['Tables']['cost_centers']['Update']
+
+export type CostCenterTransaction = Database['public']['Tables']['cost_center_transactions']['Row']
+export type CostCenterTransactionInsert = Database['public']['Tables']['cost_center_transactions']['Insert']
+export type CostCenterTransactionUpdate = Database['public']['Tables']['cost_center_transactions']['Update']
+
+export type Account = Database['public']['Tables']['accounts']['Row']
+export type AccountInsert = Database['public']['Tables']['accounts']['Insert']
+export type AccountUpdate = Database['public']['Tables']['accounts']['Update']
+
+export type UnchargedFlight = Database['public']['Views']['uncharged_flights']['Row']
+export type UserBalance = Database['public']['Views']['user_balances']['Row']

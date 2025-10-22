@@ -10,7 +10,7 @@ import { AircraftDetailsTab } from '../components/aircraft-details-tab'
 import { AircraftDocumentsTab } from '../components/aircraft-documents-tab'
 import { AircraftFlightLogsTab } from '../components/aircraft-flight-logs-tab'
 import { AircraftBillingTab } from '../components/aircraft-billing-tab'
-import type { Plane, Document as AircraftDocument, User, OperationType } from '@/lib/database.types'
+import type { Plane, Document as AircraftDocument, User, OperationType, CostCenter } from '@/lib/database.types'
 
 interface AircraftWithDocuments extends Plane {
   documents: AircraftDocument[]
@@ -68,6 +68,23 @@ async function getOperationTypesForAircraft(aircraftId: string): Promise<Operati
   return operationTypes || []
 }
 
+async function getCostCenters(): Promise<CostCenter[]> {
+  const supabase = await createClient()
+
+  const { data: costCenters, error } = await supabase
+    .from('cost_centers')
+    .select('*')
+    .eq('active', true)
+    .order('name', { ascending: true })
+
+  if (error) {
+    console.error('Error fetching cost centers:', error)
+    return []
+  }
+
+  return costCenters || []
+}
+
 function getDocumentExpiryStatus(expiryDate: string | null) {
   if (!expiryDate) return 'none'
 
@@ -85,16 +102,20 @@ export default async function AircraftDetailPage({
   params,
   searchParams,
 }: {
-  params: { id: string }
-  searchParams: { page?: string }
+  params: Promise<{ id: string }>
+  searchParams: Promise<{ page?: string }>
 }) {
-  const [aircraft, currentUser, operationTypes] = await Promise.all([
-    getAircraft(params.id),
+  const { id } = await params
+  const { page: pageParam } = await searchParams
+
+  const [aircraft, currentUser, operationTypes, costCenters] = await Promise.all([
+    getAircraft(id),
     getCurrentUser(),
-    getOperationTypesForAircraft(params.id),
+    getOperationTypesForAircraft(id),
+    getCostCenters(),
   ])
 
-  const page = parseInt(searchParams.page || '1', 10)
+  const page = parseInt(pageParam || '1', 10)
 
   if (!aircraft) {
     notFound()
@@ -177,7 +198,7 @@ export default async function AircraftDetailPage({
 
         {isBoardMember && (
           <TabsContent value="billing" className="space-y-4">
-            <AircraftBillingTab aircraft={aircraft} operationTypes={operationTypes} />
+            <AircraftBillingTab aircraft={aircraft} operationTypes={operationTypes} costCenters={costCenters} />
           </TabsContent>
         )}
       </Tabs>
