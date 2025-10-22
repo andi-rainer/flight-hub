@@ -46,6 +46,21 @@ export function AircraftForm({ aircraft, onSuccess }: AircraftFormProps) {
       }
     }
 
+    // Parse initial flight hours from HH:MM format
+    const initialFlightHoursStr = formData.get('initial_flight_hours') as string
+    let initialFlightHours = 0
+    if (initialFlightHoursStr) {
+      const match = initialFlightHoursStr.match(/^(\d+):([0-5][0-9])$/)
+      if (match) {
+        const hours = parseInt(match[1])
+        const minutes = parseInt(match[2])
+        initialFlightHours = hours + (minutes / 60)
+      } else {
+        setError('Invalid format for Initial Flight Hours. Use HH:MM format (e.g., 1250:30)')
+        return
+      }
+    }
+
     const aircraftData: PlaneInsert = {
       tail_number: formData.get('tail_number') as string,
       type: formData.get('type') as string,
@@ -59,6 +74,8 @@ export function AircraftForm({ aircraft, onSuccess }: AircraftFormProps) {
       emer_equipment: formData.get('emer_equipment') as string || null,
       cg_limits: cgLimits,
       active: formData.get('active') === 'on',
+      initial_flight_hours: initialFlightHours,
+      initial_landings: parseInt(formData.get('initial_landings') as string) || 0,
     }
 
     startTransition(async () => {
@@ -173,6 +190,40 @@ export function AircraftForm({ aircraft, onSuccess }: AircraftFormProps) {
             defaultValue={aircraft?.xdpr_equipment || ''}
             placeholder="e.g., Mode S"
           />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="initial_flight_hours">Initial Flight Hours (HH:MM)</Label>
+          <Input
+            id="initial_flight_hours"
+            name="initial_flight_hours"
+            type="text"
+            pattern="[0-9]+:[0-5][0-9]"
+            defaultValue={
+              aircraft?.initial_flight_hours
+                ? `${Math.floor(aircraft.initial_flight_hours)}:${Math.round((aircraft.initial_flight_hours % 1) * 60).toString().padStart(2, '0')}`
+                : '0:00'
+            }
+            placeholder="e.g., 1250:30"
+          />
+          <p className="text-xs text-muted-foreground">
+            For aircraft that were not brand new when added to the system
+          </p>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="initial_landings">Initial Landings</Label>
+          <Input
+            id="initial_landings"
+            name="initial_landings"
+            type="number"
+            min="0"
+            defaultValue={aircraft?.initial_landings || '0'}
+            placeholder="e.g., 450"
+          />
+          <p className="text-xs text-muted-foreground">
+            For aircraft that were not brand new when added to the system
+          </p>
         </div>
       </div>
 

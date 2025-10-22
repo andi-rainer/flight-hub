@@ -62,6 +62,7 @@ export function FlightlogDialog({
   const [blockOn, setBlockOn] = useState('')
   const [fuel, setFuel] = useState('')
   const [oil, setOil] = useState('')
+  const [landings, setLandings] = useState('1')
   const [mAndBPdfUrl, setMAndBPdfUrl] = useState('')
   const [mAndBFile, setMAndBFile] = useState<File | null>(null)
   const [isUploadingMB, setIsUploadingMB] = useState(false)
@@ -92,6 +93,7 @@ export function FlightlogDialog({
         setBlockOn(format(new Date(existingEntry.block_on), "yyyy-MM-dd'T'HH:mm"))
         setFuel(existingEntry.fuel?.toString() || '')
         setOil(existingEntry.oil?.toString() || '')
+        setLandings(existingEntry.landings?.toString() || '1')
         setMAndBPdfUrl(existingEntry.m_and_b_pdf_url || '')
         setMAndBFile(null)
       } else {
@@ -104,6 +106,7 @@ export function FlightlogDialog({
         setBlockOn(today)
         setFuel('')
         setOil('')
+        setLandings('1')
         setMAndBPdfUrl('')
         setMAndBFile(null)
       }
@@ -182,6 +185,7 @@ export function FlightlogDialog({
           block_on: blockOnDate.toISOString(),
           fuel: fuel ? parseFloat(fuel) : null,
           oil: oil ? parseFloat(oil) : null,
+          landings: landings ? parseInt(landings) : 1,
           m_and_b_pdf_url: mbUrl || null,
         })
 
@@ -203,6 +207,7 @@ export function FlightlogDialog({
           block_on: blockOnDate.toISOString(),
           fuel: fuel ? parseFloat(fuel) : null,
           oil: oil ? parseFloat(oil) : null,
+          landings: landings ? parseInt(landings) : 1,
           m_and_b_pdf_url: mbUrl || null,
         })
 
@@ -423,8 +428,8 @@ export function FlightlogDialog({
             </div>
           </div>
 
-          {/* Fuel and Oil */}
-          <div className="grid grid-cols-2 gap-4">
+          {/* Fuel, Oil, and Landings */}
+          <div className="grid grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label htmlFor="fuel">
                 <Fuel className="inline h-4 w-4 mr-1" />
@@ -453,6 +458,24 @@ export function FlightlogDialog({
                 disabled={isPending || (isEditMode && !canEdit)}
                 placeholder="0.00"
               />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="landings">
+                Landings *
+              </Label>
+              <Input
+                id="landings"
+                type="number"
+                min="1"
+                value={landings}
+                onChange={(e) => setLandings(e.target.value)}
+                disabled={isPending || (isEditMode && !canEdit)}
+                placeholder="1"
+                required
+              />
+              <p className="text-xs text-muted-foreground">
+                E.g., 3 for touch-and-go
+              </p>
             </div>
           </div>
 
