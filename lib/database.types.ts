@@ -1171,3 +1171,43 @@ export const Constants = {
     },
   },
 } as const
+
+// Convenience type exports for commonly used types
+export type User = Database['public']['Tables']['users']['Row']
+export type UserInsert = Database['public']['Tables']['users']['Insert']
+export type UserUpdate = Database['public']['Tables']['users']['Update']
+
+export type Plane = Database['public']['Tables']['planes']['Row']
+export type PlaneInsert = Database['public']['Tables']['planes']['Insert']
+export type PlaneUpdate = Database['public']['Tables']['planes']['Update']
+
+export type Reservation = Database['public']['Tables']['reservations']['Row']
+export type ReservationInsert = Database['public']['Tables']['reservations']['Insert']
+export type ReservationUpdate = Database['public']['Tables']['reservations']['Update']
+
+export type Flightlog = Database['public']['Tables']['flightlog']['Row']
+export type FlightlogInsert = Database['public']['Tables']['flightlog']['Insert']
+export type FlightlogUpdate = Database['public']['Tables']['flightlog']['Update']
+
+export type OperationType = Database['public']['Tables']['operation_types']['Row']
+export type OperationTypeInsert = Database['public']['Tables']['operation_types']['Insert']
+export type OperationTypeUpdate = Database['public']['Tables']['operation_types']['Update']
+
+export type Document = Database['public']['Tables']['documents']['Row']
+export type DocumentInsert = Database['public']['Tables']['documents']['Insert']
+export type DocumentUpdate = Database['public']['Tables']['documents']['Update']
+
+export type DocumentType = Database['public']['Tables']['document_types']['Row']
+export type DocumentTypeInsert = Database['public']['Tables']['document_types']['Insert']
+export type DocumentTypeUpdate = Database['public']['Tables']['document_types']['Update']
+
+export type FunctionMaster = Database['public']['Tables']['functions_master']['Row']
+export type FunctionMasterInsert = Database['public']['Tables']['functions_master']['Insert']
+export type FunctionMasterUpdate = Database['public']['Tables']['functions_master']['Update']
+
+// View types
+export type FlightlogWithTimes = Database['public']['Views']['flightlog_with_times']['Row']
+export type ActiveReservation = Database['public']['Views']['active_reservations']['Row']
+
+// Enum types
+export type ReservationStatus = Database['public']['Enums']['reservation_status']

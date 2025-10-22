@@ -84,13 +84,13 @@ export function FlightlogDialog({
       const defaultOpType = operationTypes.find(ot => ot.is_default)
 
       if (existingEntry) {
-        setPilotId(existingEntry.pilot_id)
+        setPilotId(existingEntry.pilot_id!)
         setAdditionalCrewId(existingEntry.copilot_id || '')
         setOperationTypeId(existingEntry.operation_type_id || '')
-        setBlockOff(format(new Date(existingEntry.block_off), "yyyy-MM-dd'T'HH:mm"))
-        setTakeoffTime(format(new Date(existingEntry.takeoff_time), "yyyy-MM-dd'T'HH:mm"))
-        setLandingTime(format(new Date(existingEntry.landing_time), "yyyy-MM-dd'T'HH:mm"))
-        setBlockOn(format(new Date(existingEntry.block_on), "yyyy-MM-dd'T'HH:mm"))
+        setBlockOff(format(new Date(existingEntry.block_off!), "yyyy-MM-dd'T'HH:mm"))
+        setTakeoffTime(format(new Date(existingEntry.takeoff_time!), "yyyy-MM-dd'T'HH:mm"))
+        setLandingTime(format(new Date(existingEntry.landing_time!), "yyyy-MM-dd'T'HH:mm"))
+        setBlockOn(format(new Date(existingEntry.block_on!), "yyyy-MM-dd'T'HH:mm"))
         setFuel(existingEntry.fuel?.toString() || '')
         setOil(existingEntry.oil?.toString() || '')
         setLandings(existingEntry.landings?.toString() || '1')
@@ -149,7 +149,7 @@ export function FlightlogDialog({
     }
 
     startTransition(async () => {
-      let mbUrl = mAndBPdfUrl
+      let mbUrl: string | null = mAndBPdfUrl
 
       // Upload M&B file if a new file is selected
       if (mAndBFile) {
@@ -158,7 +158,7 @@ export function FlightlogDialog({
         formData.append('file', mAndBFile)
         formData.append('planeId', aircraftId)
         if (isEditMode && existingEntry) {
-          formData.append('flightlogId', existingEntry.id)
+          formData.append('flightlogId', existingEntry.id!)
         }
 
         const uploadResult = await uploadMassAndBalanceDocument(formData)
@@ -174,7 +174,7 @@ export function FlightlogDialog({
       }
 
       if (isEditMode && existingEntry) {
-        const result = await updateFlightlog(existingEntry.id, {
+        const result = await updateFlightlog(existingEntry.id!, {
           plane_id: aircraftId,
           pilot_id: pilotId,
           copilot_id: additionalCrewId || null,
@@ -230,7 +230,7 @@ export function FlightlogDialog({
 
     setIsDeleting(true)
 
-    const result = await deleteFlightlog(existingEntry.id)
+    const result = await deleteFlightlog(existingEntry.id!)
 
     setIsDeleting(false)
 
