@@ -346,3 +346,126 @@ export async function batchChargeFlights(charges: Array<{
     message: `Charged ${results.success} flights successfully. ${results.failed} failed.`
   }
 }
+
+// ============================================================================
+// SPLIT CHARGE FLIGHT
+// ============================================================================
+
+export async function splitChargeFlight(data: {
+  flightlogId: string
+  splits: Array<{
+    type: 'user' | 'cost_center'
+    targetId: string
+    percentage: number
+  }>
+  totalAmount: number
+  description: string
+}) {
+  const auth = await verifyBoardMember()
+  if (!auth.authorized) {
+    return { success: false, error: auth.error }
+  }
+
+  // Validate percentages sum to 100
+  const totalPercentage = data.splits.reduce((sum, split) => sum + split.percentage, 0)
+  if (Math.abs(totalPercentage - 100) > 0.01) {
+    return { success: false, error: 'Split percentages must sum to 100%' }
+  }
+
+  // Verify flight exists and is not already charged
+  const { data: flight, error: flightError } = await auth.supabase
+    .from('flightlog')
+    .select('id, charged, locked')
+    .eq('id', data.flightlogId)
+    .single()
+
+  if (flightError || !flight) {
+    return { success: false, error: 'Flight not found' }
+  }
+
+  if (flight.charged) {
+    return { success: false, error: 'Flight has already been charged' }
+  }
+
+  // Create transactions for each split
+  const errors: string[] = []
+
+  for (const split of data.splits) {
+    const splitAmount = (data.totalAmount * split.percentage) / 100
+    const splitDescription = `${data.description} (${split.percentage.toFixed(1)}% split)`
+
+    if (split.type === 'user') {
+      // Create account transaction
+      const { error: accountError } = await auth.supabase
+        .from('accounts')
+        .insert({
+          user_id: split.targetId,
+          flightlog_id: data.flightlogId,
+          amount: -Math.abs(splitAmount), // Negative for debit
+          description: splitDescription,
+          created_by: auth.userId,
+        })
+
+      if (accountError) {
+        errors.push(`Failed to charge user: ${accountError.message}`)
+      }
+    } else {
+      // Verify cost center exists and is active
+      const { data: costCenter, error: costCenterError } = await auth.supabase
+        .from('cost_centers')
+        .select('id, active')
+        .eq('id', split.targetId)
+        .single()
+
+      if (costCenterError || !costCenter) {
+        errors.push(`Cost center ${split.targetId} not found`)
+        continue
+      }
+
+      if (!costCenter.active) {
+        errors.push(`Cost center ${split.targetId} is not active`)
+        continue
+      }
+
+      // Create cost center transaction
+      const { error: transactionError } = await auth.supabase
+        .from('cost_center_transactions')
+        .insert({
+          cost_center_id: split.targetId,
+          flightlog_id: data.flightlogId,
+          amount: -Math.abs(splitAmount), // Negative for charges/costs
+          description: splitDescription,
+          created_by: auth.userId,
+        })
+
+      if (transactionError) {
+        errors.push(`Failed to charge cost center: ${transactionError.message}`)
+      }
+    }
+  }
+
+  if (errors.length > 0) {
+    return { success: false, error: `Some charges failed: ${errors.join(', ')}` }
+  }
+
+  // Mark flight as charged and locked
+  const { error: updateError } = await auth.supabase
+    .from('flightlog')
+    .update({
+      charged: true,
+      locked: true,
+      charged_by: auth.userId,
+      charged_at: new Date().toISOString(),
+    })
+    .eq('id', data.flightlogId)
+
+  if (updateError) {
+    console.error('Error updating flight charged status:', updateError)
+    return { success: false, error: updateError.message }
+  }
+
+  revalidatePath('/billing')
+  revalidatePath('/flightlog')
+  revalidatePath('/accounting')
+  return { success: true, message: `Flight cost split among ${data.splits.length} targets successfully` }
+}

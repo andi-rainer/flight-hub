@@ -188,6 +188,7 @@ export default async function BillingPage() {
           <UnchargedFlightsTable
             flights={unchargedFlights}
             costCenters={costCenters.filter(cc => cc.active)}
+            userBalances={userBalances}
           />
         </TabsContent>
 

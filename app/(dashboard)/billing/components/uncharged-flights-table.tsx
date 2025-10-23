@@ -11,14 +11,15 @@ import { format } from 'date-fns'
 import { CreditCard, User, Building2, CheckCircle2, Loader2 } from 'lucide-react'
 import { ChargeFlightDialog } from './charge-flight-dialog'
 import { batchChargeFlights } from '@/lib/actions/billing'
-import type { UnchargedFlight, CostCenter } from '@/lib/database.types'
+import type { UnchargedFlight, CostCenter, UserBalance } from '@/lib/database.types'
 
 interface UnchargedFlightsTableProps {
   flights: UnchargedFlight[]
   costCenters: CostCenter[]
+  userBalances: UserBalance[]
 }
 
-export function UnchargedFlightsTable({ flights, costCenters }: UnchargedFlightsTableProps) {
+export function UnchargedFlightsTable({ flights, costCenters, userBalances }: UnchargedFlightsTableProps) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [selectedFlight, setSelectedFlight] = useState<UnchargedFlight | null>(null)
@@ -141,6 +142,9 @@ export function UnchargedFlightsTable({ flights, costCenters }: UnchargedFlights
                       <TableCell>
                         <div className="text-sm">
                           {flight.pilot_name} {flight.pilot_surname}
+                          {flight.copilot_id && flight.copilot_name && (
+                            <span> / {flight.copilot_name} {flight.copilot_surname}</span>
+                          )}
                         </div>
                       </TableCell>
                       <TableCell>
@@ -170,7 +174,12 @@ export function UnchargedFlightsTable({ flights, costCenters }: UnchargedFlights
                         ) : (
                           <div className="flex items-center gap-1 text-xs">
                             <User className="h-3 w-3" />
-                            <span className="text-muted-foreground">User</span>
+                            <span className="text-muted-foreground">
+                              {flight.pilot_surname}, {flight.pilot_name}
+                              {flight.copilot_id && flight.copilot_name && (
+                                <span> / {flight.copilot_surname}, {flight.copilot_name}</span>
+                              )}
+                            </span>
                           </div>
                         )}
                       </TableCell>
@@ -195,6 +204,7 @@ export function UnchargedFlightsTable({ flights, costCenters }: UnchargedFlights
         <ChargeFlightDialog
           flight={selectedFlight}
           costCenters={costCenters}
+          userBalances={userBalances}
           open={chargeDialogOpen}
           onOpenChange={setChargeDialogOpen}
         />
