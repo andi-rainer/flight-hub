@@ -79,45 +79,45 @@ export function ReverseChargeDialog({
             <Undo2 className="h-5 w-5 text-orange-600" />
             Reverse Flight Charge
           </AlertDialogTitle>
-          <AlertDialogDescription className="space-y-3">
-            <p>
-              This will <strong>reverse</strong> the following flight charge:
-            </p>
-
-            <div className="bg-muted p-3 rounded-md text-sm space-y-1">
-              <div className="font-medium">{transaction.description}</div>
-              <div className="text-muted-foreground">
-                Amount: €{Math.abs(transaction.amount).toFixed(2)}
-              </div>
-              {transaction.flight && (
-                <>
-                  <div className="text-muted-foreground">
-                    Aircraft: {transaction.flight.plane?.tail_number}
-                  </div>
-                  <div className="text-muted-foreground">
-                    Flight: {format(new Date(transaction.flight.block_off), 'dd.MM.yyyy HH:mm')} - {format(new Date(transaction.flight.block_on), 'HH:mm')}
-                  </div>
-                </>
-              )}
-            </div>
-
-            <div className="bg-orange-50 dark:bg-orange-950/20 p-3 rounded-md border border-orange-200 dark:border-orange-900">
-              <p className="text-sm font-medium text-orange-900 dark:text-orange-100">
-                What happens when you reverse:
-              </p>
-              <ul className="text-sm text-orange-800 dark:text-orange-200 mt-2 space-y-1 list-disc list-inside">
-                <li>A reverse transaction will be created with opposite amount</li>
-                <li>The flight will be unlocked and marked as not charged</li>
-                <li>The flight will appear in billing again</li>
-                <li>You can then charge it correctly (to different user/cost center if needed)</li>
-              </ul>
-            </div>
-
-            <p className="text-sm text-muted-foreground">
-              This action creates an audit trail - the original transaction remains visible with a reversal.
-            </p>
+          <AlertDialogDescription>
+            This will reverse the following flight charge.
           </AlertDialogDescription>
         </AlertDialogHeader>
+
+        <div className="space-y-3">
+          <div className="bg-muted p-3 rounded-md text-sm space-y-1">
+            <div className="font-medium">{transaction.description}</div>
+            <div className="text-muted-foreground">
+              Amount: €{Math.abs(transaction.amount).toFixed(2)}
+            </div>
+            {transaction.flight && (
+              <>
+                <div className="text-muted-foreground">
+                  Aircraft: {transaction.flight.plane?.tail_number}
+                </div>
+                <div className="text-muted-foreground">
+                  Flight: {format(new Date(transaction.flight.block_off), 'dd.MM.yyyy HH:mm')} - {format(new Date(transaction.flight.block_on), 'HH:mm')}
+                </div>
+              </>
+            )}
+          </div>
+
+          <div className="bg-orange-50 dark:bg-orange-950/20 p-3 rounded-md border border-orange-200 dark:border-orange-900">
+            <p className="text-sm font-medium text-orange-900 dark:text-orange-100">
+              What happens when you reverse:
+            </p>
+            <ul className="text-sm text-orange-800 dark:text-orange-200 mt-2 space-y-1 list-disc list-inside">
+              <li>A reverse transaction will be created with opposite amount</li>
+              <li>The flight will be unlocked and marked as not charged</li>
+              <li>The flight will appear in billing again</li>
+              <li>You can then charge it correctly (to different user/cost center if needed)</li>
+            </ul>
+          </div>
+
+          <p className="text-sm text-muted-foreground">
+            This action creates an audit trail - the original transaction remains visible with a reversal.
+          </p>
+        </div>
 
         {error && (
           <Alert variant="destructive">

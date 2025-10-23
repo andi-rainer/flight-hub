@@ -135,13 +135,12 @@ export function CostCentersAccountingTab() {
 
   const calculateRunningTotal = (index: number) => {
     // Calculate running total from newest to oldest
+    // Include ALL transactions - reversals will cancel out with their original transactions
     const reversedTransactions = [...transactions].reverse()
     let total = 0
     for (let i = 0; i <= reversedTransactions.length - 1 - index; i++) {
       const tx = reversedTransactions[i]
-      if (!tx.reversed_at) {
-        total += tx.amount
-      }
+      total += tx.amount
     }
     return total
   }

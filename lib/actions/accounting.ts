@@ -550,11 +550,12 @@ export async function getCostCentersWithTotals() {
   // Fetch transaction totals for each cost center
   const costCentersWithTotals = await Promise.all(
     costCenters.map(async (costCenter) => {
+      // Fetch ALL transactions to calculate total correctly
+      // (reversals will naturally cancel out with their original transactions)
       const { data: transactions, error: txError } = await auth.supabase
         .from('cost_center_transactions')
         .select('amount')
         .eq('cost_center_id', costCenter.id)
-        .is('reversed_at', null) // Only count non-reversed transactions
 
       if (txError) {
         console.error(`Error fetching transactions for cost center ${costCenter.id}:`, txError)

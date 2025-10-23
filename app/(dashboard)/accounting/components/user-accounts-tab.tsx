@@ -157,13 +157,12 @@ export function UserAccountsTab() {
 
   const calculateRunningBalance = (index: number) => {
     // Calculate running balance from newest to oldest
+    // Include ALL transactions - reversals will cancel out with their original transactions
     const reversedTransactions = [...transactions].reverse()
     let balance = 0
     for (let i = 0; i <= reversedTransactions.length - 1 - index; i++) {
       const tx = reversedTransactions[i]
-      if (!tx.reversed_at) {
-        balance += tx.amount
-      }
+      balance += tx.amount
     }
     return balance
   }

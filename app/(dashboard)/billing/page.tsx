@@ -50,7 +50,7 @@ async function getUserBalances(): Promise<UserBalance[]> {
     .order('name')
 
   if (error) {
-    console.error('Error fetching user balances:', error)
+    console.error('Error fetching user balances:', error.message || error)
     return []
   }
 
