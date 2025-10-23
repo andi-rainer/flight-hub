@@ -9,25 +9,39 @@ import { Textarea } from '@/components/ui/textarea'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Loader2, AlertCircle, TrendingUp, TrendingDown, Edit3 } from 'lucide-react'
+import { Loader2, AlertCircle, TrendingUp, TrendingDown, Edit3, Check, ChevronsUpDown } from 'lucide-react'
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { addPayment, addCharge, addAdjustment } from '@/lib/actions/accounts'
 import { format } from 'date-fns'
 import { toast } from 'sonner'
+import { cn } from '@/lib/utils'
 
 interface AddUserTransactionDialogProps {
-  user: {
+  user?: {
     user_id: string
     name: string
     surname: string
     email: string
-  }
+    balance?: number
+  } | null
+  users?: Array<{
+    user_id: string
+    name: string
+    surname: string
+    email: string
+    balance?: number
+  }>
   open: boolean
   onOpenChange: (open: boolean) => void
-  onSuccess?: () => void
+  onSuccess?: (userId?: string) => void
 }
 
+type TransactionType = 'payment' | 'charge' | 'adjustment';
+
 export function AddUserTransactionDialog({
-  user,
+  user: preSelectedUser,
+  users = [],
   open,
   onOpenChange,
   onSuccess
@@ -35,11 +49,23 @@ export function AddUserTransactionDialog({
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
 
-  const [transactionType, setTransactionType] = useState<'payment' | 'charge' | 'adjustment'>('payment')
+
+  const [selectedUserId, setSelectedUserId] = useState<string>('')
+  const [userSelectorOpen, setUserSelectorOpen] = useState(false)
+  const [transactionType, setTransactionType] = useState<TransactionType>('payment')
   const [amount, setAmount] = useState('')
   const [description, setDescription] = useState('')
   const [transactionDate, setTransactionDate] = useState('')
   const [isBankPayment, setIsBankPayment] = useState(true)
+
+  // If user is preselected, use their ID
+  useEffect(() => {
+    if (preSelectedUser) {
+      setSelectedUserId(preSelectedUser.user_id)
+    } else {
+      setSelectedUserId('')
+    }
+  }, [preSelectedUser, open])
 
   // Initialize date to today at 12:00
   useEffect(() => {
@@ -63,6 +89,11 @@ export function AddUserTransactionDialog({
     e.preventDefault()
     setError(null)
 
+    if (!selectedUserId) {
+      setError('Please select a user')
+      return
+    }
+
     const amountNum = parseFloat(amount)
     if (isNaN(amountNum) || amountNum === 0) {
       setError('Please enter a valid amount')
@@ -78,7 +109,7 @@ export function AddUserTransactionDialog({
       let result
 
       const data = {
-        userId: user.user_id,
+        userId: selectedUserId,
         amount: Math.abs(amountNum),
         description: description.trim(),
         created_at: new Date(transactionDate).toISOString(),
@@ -99,27 +130,110 @@ export function AddUserTransactionDialog({
         setTransactionType('payment')
         setIsBankPayment(true)
         onOpenChange(false)
-        onSuccess?.()
+        onSuccess?.(selectedUserId)
       } else {
         setError(result.error || 'Failed to add transaction')
       }
     })
   }
 
+  const selectedUser = preSelectedUser || users.find(u => u.user_id === selectedUserId)
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('de-DE', {
+      style: 'currency',
+      currency: 'EUR'
+    }).format(amount)
+  }
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Add Transaction</DialogTitle>
           <DialogDescription>
-            Add a manual transaction for {user.name} {user.surname}
+            {selectedUser ? `Add a manual transaction for ${selectedUser.name} ${selectedUser.surname}` : 'Add a manual transaction'}
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          {!preSelectedUser && (
+            <div className="space-y-2">
+              <Label>User *</Label>
+              <Popover open={userSelectorOpen} onOpenChange={setUserSelectorOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={userSelectorOpen}
+                    className="w-full justify-between"
+                  >
+                    {selectedUser ? (
+                      <span className="flex items-center justify-between w-full">
+                        <span>{selectedUser.surname}, {selectedUser.name}</span>
+                        {selectedUser.balance !== undefined && (
+                          <span className={`text-xs ml-2 ${selectedUser.balance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                            {formatCurrency(selectedUser.balance)}
+                          </span>
+                        )}
+                      </span>
+                    ) : (
+                      "Select user..."
+                    )}
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[400px] p-0">
+                  <Command>
+                    <CommandInput placeholder="Search users..." />
+                    <CommandList>
+                      <CommandEmpty>No user found.</CommandEmpty>
+                      <CommandGroup>
+                        {users.map((user) => (
+                          <CommandItem
+                            key={user.user_id}
+                            value={`${user.surname} ${user.name} ${user.email}`}
+                            onSelect={() => {
+                              setSelectedUserId(user.user_id)
+                              setUserSelectorOpen(false)
+                            }}
+                          >
+                            <Check
+                              className={cn(
+                                "mr-2 h-4 w-4",
+                                selectedUserId === user.user_id ? "opacity-100" : "opacity-0"
+                              )}
+                            />
+                            <div className="flex items-center justify-between w-full">
+                              <div className="flex flex-col">
+                                <span>{user.surname}, {user.name}</span>
+                                <span className="text-xs text-muted-foreground">{user.email}</span>
+                              </div>
+                              {user.balance !== undefined && (
+                                <span className={`text-xs ml-2 ${user.balance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                  {formatCurrency(user.balance)}
+                                </span>
+                              )}
+                            </div>
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
+              {selectedUser && (
+                <p className="text-xs text-muted-foreground">
+                  Current balance: <span className={selectedUser.balance && selectedUser.balance >= 0 ? 'text-green-600' : 'text-red-600'}>
+                    {formatCurrency(selectedUser.balance || 0)}
+                  </span>
+                </p>
+              )}
+            </div>
+          )}
+
           <div className="space-y-3">
-            <Label>Transaction Type</Label>
-            <RadioGroup value={transactionType} onValueChange={(value) => setTransactionType(value as any)}>
+            <Label>X - Transaction Type</Label>
+            <RadioGroup value={transactionType} onValueChange={(value) => setTransactionType(value as TransactionType)}>
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="payment" id="payment" />
                 <Label htmlFor="payment" className="font-normal cursor-pointer flex items-center gap-2">

@@ -128,10 +128,23 @@ export function UserAccountsTab() {
     setReverseChargeDialogOpen(true)
   }
 
-  const handleSuccess = () => {
-    // Reload both users (for balance update) and transactions
-    loadUsers()
-    if (selectedUser) {
+  const handleSuccess = async (userId?: string) => {
+    // Reload users (for balance update)
+    await loadUsers()
+
+    // If a userId is provided (from adding a transaction), select that user and load their transactions
+    if (userId) {
+      // Find the user after reload
+      const result = await getUserBalances()
+      if (result.success && result.data) {
+        const user = result.data.find(u => u.user_id === userId)
+        if (user) {
+          setSelectedUser(user)
+          loadTransactions(userId)
+        }
+      }
+    } else if (selectedUser) {
+      // Otherwise reload transactions for currently selected user
       loadTransactions(selectedUser.user_id)
     }
   }
@@ -173,8 +186,16 @@ export function UserAccountsTab() {
       <div className={`${showMobileList ? 'block' : 'hidden md:block'}`}>
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle>Users</CardTitle>
-            <CardDescription>Select a user to view their transaction history</CardDescription>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>Users</CardTitle>
+                <CardDescription>Select a user to view their transaction history</CardDescription>
+              </div>
+              <Button onClick={() => setAddDialogOpen(true)} size="sm">
+                <Plus className="h-4 w-4 mr-2" />
+                Add Transaction
+              </Button>
+            </div>
             <div className="relative mt-2">
               <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
@@ -368,46 +389,43 @@ export function UserAccountsTab() {
       </div>
 
       {/* Dialogs */}
-      {selectedUser && (
+      <AddUserTransactionDialog
+        user={selectedUser}
+        users={users}
+        open={addDialogOpen}
+        onOpenChange={setAddDialogOpen}
+        onSuccess={handleSuccess}
+      />
+      {selectedTransaction && (
         <>
-          <AddUserTransactionDialog
-            user={selectedUser}
-            open={addDialogOpen}
-            onOpenChange={setAddDialogOpen}
+          <EditTransactionDialog
+            transaction={selectedTransaction}
+            type="user"
+            open={editDialogOpen}
+            onOpenChange={setEditDialogOpen}
             onSuccess={handleSuccess}
           />
-          {selectedTransaction && (
-            <>
-              <EditTransactionDialog
-                transaction={selectedTransaction}
-                type="user"
-                open={editDialogOpen}
-                onOpenChange={setEditDialogOpen}
-                onSuccess={handleSuccess}
-              />
-              <UndoTransactionDialog
-                transaction={selectedTransaction}
-                type="user"
-                open={undoDialogOpen}
-                onOpenChange={setUndoDialogOpen}
-                onSuccess={handleSuccess}
-              />
-              <ReverseChargeDialog
-                transaction={{
-                  id: selectedTransaction.id,
-                  amount: selectedTransaction.amount,
-                  description: selectedTransaction.description,
-                  created_at: selectedTransaction.created_at,
-                  flightlog_id: selectedTransaction.flightlog_id,
-                  flight: selectedTransaction.flightlog,
-                }}
-                type="user"
-                open={reverseChargeDialogOpen}
-                onOpenChange={setReverseChargeDialogOpen}
-                onSuccess={handleSuccess}
-              />
-            </>
-          )}
+          <UndoTransactionDialog
+            transaction={selectedTransaction}
+            type="user"
+            open={undoDialogOpen}
+            onOpenChange={setUndoDialogOpen}
+            onSuccess={handleSuccess}
+          />
+          <ReverseChargeDialog
+            transaction={{
+              id: selectedTransaction.id,
+              amount: selectedTransaction.amount,
+              description: selectedTransaction.description,
+              created_at: selectedTransaction.created_at,
+              flightlog_id: selectedTransaction.flightlog_id,
+              flight: selectedTransaction.flightlog,
+            }}
+            type="user"
+            open={reverseChargeDialogOpen}
+            onOpenChange={setReverseChargeDialogOpen}
+            onSuccess={handleSuccess}
+          />
         </>
       )}
     </div>
