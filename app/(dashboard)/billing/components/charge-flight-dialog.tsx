@@ -290,6 +290,20 @@ export function ChargeFlightDialog({ flight, costCenters, userBalances, open, on
                   € {(flight.operation_rate || flight.plane_default_rate || 0).toFixed(2)}/{flight.billing_unit === 'minute' ? 'min' : 'hr'}
                 </span>
               </div>
+              <div>
+                <span className="text-muted-foreground">Route:</span>
+                <span className="ml-2 font-medium font-mono">
+                  {flight.icao_departure && flight.icao_destination ? (
+                    `${flight.icao_departure} → ${flight.icao_destination}`
+                  ) : flight.icao_departure ? (
+                    `${flight.icao_departure} →`
+                  ) : flight.icao_destination ? (
+                    `→ ${flight.icao_destination}`
+                  ) : (
+                    '—'
+                  )}
+                </span>
+              </div>
             </div>
             <div className="pt-2 border-t">
               <div className="flex items-center justify-between">

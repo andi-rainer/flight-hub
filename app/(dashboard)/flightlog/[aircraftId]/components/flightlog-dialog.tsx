@@ -56,16 +56,27 @@ export function FlightlogDialog({
   const [pilotId, setPilotId] = useState<string>(currentUserId)
   const [additionalCrewId, setAdditionalCrewId] = useState<string>('')
   const [operationTypeId, setOperationTypeId] = useState<string>('')
-  const [blockOff, setBlockOff] = useState('')
+  const [flightDate, setFlightDate] = useState('')
+  const [blockOffTime, setBlockOffTime] = useState('')
   const [takeoffTime, setTakeoffTime] = useState('')
   const [landingTime, setLandingTime] = useState('')
-  const [blockOn, setBlockOn] = useState('')
+  const [blockOnTime, setBlockOnTime] = useState('')
   const [fuel, setFuel] = useState('')
   const [oil, setOil] = useState('')
   const [landings, setLandings] = useState('1')
+  const [icaoDeparture, setIcaoDeparture] = useState('')
+  const [icaoDestination, setIcaoDestination] = useState('')
   const [mAndBPdfUrl, setMAndBPdfUrl] = useState('')
   const [mAndBFile, setMAndBFile] = useState<File | null>(null)
   const [isUploadingMB, setIsUploadingMB] = useState(false)
+  const [showConfirmation, setShowConfirmation] = useState(false)
+  const [calculatedDates, setCalculatedDates] = useState<{
+    blockOff: Date
+    takeoff: Date
+    landing: Date
+    blockOn: Date
+    hasDifferentDates: boolean
+  } | null>(null)
 
   const isEditMode = !!existingEntry
   const canEdit = isEditMode && (
@@ -74,11 +85,25 @@ export function FlightlogDialog({
   )
   const canDelete = isBoardMember
 
+  // Check if all mandatory fields are filled
+  const isFormValid = !!(
+    pilotId &&
+    flightDate &&
+    blockOffTime &&
+    takeoffTime &&
+    landingTime &&
+    blockOnTime &&
+    landings &&
+    // ICAO codes must be exactly 4 characters
+    icaoDeparture.length === 4 &&
+    icaoDestination.length === 4
+  )
+
   // Reset form when dialog opens or props change
   useEffect(() => {
     if (open) {
-      // Format today's date with empty time (user will fill in time)
-      const today = format(new Date(), "yyyy-MM-dd'T'00:00")
+      // Format today's date
+      const todayDate = format(new Date(), "yyyy-MM-dd")
 
       // Find default operation type
       const defaultOpType = operationTypes.find(ot => ot.is_default)
@@ -87,36 +112,118 @@ export function FlightlogDialog({
         setPilotId(existingEntry.pilot_id!)
         setAdditionalCrewId(existingEntry.copilot_id || '')
         setOperationTypeId(existingEntry.operation_type_id || '')
-        setBlockOff(format(new Date(existingEntry.block_off!), "yyyy-MM-dd'T'HH:mm"))
-        setTakeoffTime(format(new Date(existingEntry.takeoff_time!), "yyyy-MM-dd'T'HH:mm"))
-        setLandingTime(format(new Date(existingEntry.landing_time!), "yyyy-MM-dd'T'HH:mm"))
-        setBlockOn(format(new Date(existingEntry.block_on!), "yyyy-MM-dd'T'HH:mm"))
+        // Extract date from block_off and times from each field
+        setFlightDate(format(new Date(existingEntry.block_off!), "yyyy-MM-dd"))
+        setBlockOffTime(format(new Date(existingEntry.block_off!), "HH:mm"))
+        setTakeoffTime(format(new Date(existingEntry.takeoff_time!), "HH:mm"))
+        setLandingTime(format(new Date(existingEntry.landing_time!), "HH:mm"))
+        setBlockOnTime(format(new Date(existingEntry.block_on!), "HH:mm"))
         setFuel(existingEntry.fuel?.toString() || '')
         setOil(existingEntry.oil?.toString() || '')
         setLandings(existingEntry.landings?.toString() || '1')
+        setIcaoDeparture(existingEntry.icao_departure || '')
+        setIcaoDestination(existingEntry.icao_destination || '')
         setMAndBPdfUrl(existingEntry.m_and_b_pdf_url || '')
         setMAndBFile(null)
       } else {
         setPilotId(currentUserId)
         setAdditionalCrewId('')
         setOperationTypeId(defaultOpType?.id || '')
-        setBlockOff(today)
-        setTakeoffTime(today)
-        setLandingTime(today)
-        setBlockOn(today)
+        setFlightDate(todayDate)
+        setBlockOffTime('')
+        setTakeoffTime('')
+        setLandingTime('')
+        setBlockOnTime('')
         setFuel('')
         setOil('')
         setLandings('1')
+        setIcaoDeparture('')
+        setIcaoDestination('')
         setMAndBPdfUrl('')
         setMAndBFile(null)
       }
+      setShowConfirmation(false)
+      setCalculatedDates(null)
     }
   }, [open, existingEntry, currentUserId, operationTypes])
+
+  // Helper function to calculate dates with smart next-day detection
+  const calculateDates = () => {
+    if (!flightDate || !blockOffTime || !takeoffTime || !landingTime || !blockOnTime) {
+      return null
+    }
+
+    // Parse times (HH:mm format)
+    const [blockOffHour, blockOffMin] = blockOffTime.split(':').map(Number)
+    const [takeoffHour, takeoffMin] = takeoffTime.split(':').map(Number)
+    const [landingHour, landingMin] = landingTime.split(':').map(Number)
+    const [blockOnHour, blockOnMin] = blockOnTime.split(':').map(Number)
+
+    // Create base date from flight date
+    const baseDate = new Date(flightDate)
+
+    // Block off is always on flight date
+    const blockOffDate = new Date(baseDate)
+    blockOffDate.setHours(blockOffHour, blockOffMin, 0, 0)
+
+    // Takeoff must be >= block off
+    const takeoffDate = new Date(baseDate)
+    takeoffDate.setHours(takeoffHour, takeoffMin, 0, 0)
+    if (takeoffDate < blockOffDate) {
+      takeoffDate.setDate(takeoffDate.getDate() + 1)
+    }
+
+    // Landing: if landing time < takeoff time AND duration <= 12 hours, landing is next day
+    const landingDateSameDay = new Date(takeoffDate)
+    landingDateSameDay.setHours(landingHour, landingMin, 0, 0)
+
+    const landingDateNextDay = new Date(landingDateSameDay)
+    landingDateNextDay.setDate(landingDateNextDay.getDate() + 1)
+
+    let landingDate: Date
+    if (landingDateSameDay < takeoffDate) {
+      // Landing time is earlier than takeoff time - check if it should be next day
+      const durationHours = (landingDateNextDay.getTime() - takeoffDate.getTime()) / (1000 * 60 * 60)
+      if (durationHours <= 12) {
+        landingDate = landingDateNextDay
+      } else {
+        // Duration > 12 hours, something is wrong - use same day anyway
+        landingDate = landingDateSameDay
+      }
+    } else {
+      landingDate = landingDateSameDay
+    }
+
+    // Block on: if block on time < landing time, block on is next day
+    const blockOnDateSameDay = new Date(landingDate)
+    blockOnDateSameDay.setHours(blockOnHour, blockOnMin, 0, 0)
+
+    let blockOnDate: Date
+    if (blockOnDateSameDay < landingDate) {
+      blockOnDate = new Date(blockOnDateSameDay)
+      blockOnDate.setDate(blockOnDate.getDate() + 1)
+    } else {
+      blockOnDate = blockOnDateSameDay
+    }
+
+    // Check if any dates differ from base date
+    const hasDifferentDates =
+      landingDate.toDateString() !== baseDate.toDateString() ||
+      blockOnDate.toDateString() !== baseDate.toDateString()
+
+    return {
+      blockOff: blockOffDate,
+      takeoff: takeoffDate,
+      landing: landingDate,
+      blockOn: blockOnDate,
+      hasDifferentDates
+    }
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!pilotId || !blockOff || !takeoffTime || !landingTime || !blockOn) {
+    if (!pilotId || !flightDate || !blockOffTime || !takeoffTime || !landingTime || !blockOnTime) {
       toast.error('Please fill in all required fields')
       return
     }
@@ -127,26 +234,60 @@ export function FlightlogDialog({
       return
     }
 
-    const blockOffDate = new Date(blockOff)
-    const takeoffTimeDate = new Date(takeoffTime)
-    const landingTimeDate = new Date(landingTime)
-    const blockOnDate = new Date(blockOn)
+    // Validate ICAO codes (must be exactly 4 characters if provided)
+    if (icaoDeparture && icaoDeparture.length !== 4) {
+      toast.error('ICAO Departure code must be exactly 4 characters')
+      return
+    }
+    if (icaoDestination && icaoDestination.length !== 4) {
+      toast.error('ICAO Destination code must be exactly 4 characters')
+      return
+    }
+
+    // Calculate dates with smart next-day detection
+    const dates = calculateDates()
+    if (!dates) {
+      toast.error('Unable to calculate flight dates')
+      return
+    }
+
+    const { blockOff: blockOffDate, takeoff: takeoffDate, landing: landingDate, blockOn: blockOnDate } = dates
 
     // Chronological order: Block Off ≤ Takeoff ≤ Landing ≤ Block On
-    if (takeoffTimeDate < blockOffDate) {
+    if (takeoffDate < blockOffDate) {
       toast.error('Takeoff time must be after or at Block Off time')
       return
     }
 
-    if (landingTimeDate < takeoffTimeDate) {
-      toast.error('Landing time must be after or at takeoff time')
+    if (landingDate <= takeoffDate) {
+      toast.error('Landing time must be after takeoff time (minimum 1 minute flight time)')
       return
     }
 
-    if (blockOnDate < landingTimeDate) {
+    // Check minimum 1 minute flight time
+    const flightTimeMinutes = (landingDate.getTime() - takeoffDate.getTime()) / (1000 * 60)
+    if (flightTimeMinutes < 1) {
+      toast.error('Flight time must be at least 1 minute')
+      return
+    }
+
+    if (blockOnDate < landingDate) {
       toast.error('Block On time must be after or at landing time')
       return
     }
+
+    // Store calculated dates and show confirmation modal
+    setCalculatedDates(dates)
+    setShowConfirmation(true)
+    return
+  }
+
+  const handleConfirmAndCreate = async () => {
+    if (!calculatedDates) return
+
+    const { blockOff: blockOffDate, takeoff: takeoffDate, landing: landingDate, blockOn: blockOnDate } = calculatedDates
+
+    setShowConfirmation(false)
 
     startTransition(async () => {
       let mbUrl: string | null = mAndBPdfUrl
@@ -180,12 +321,14 @@ export function FlightlogDialog({
           copilot_id: additionalCrewId || null,
           operation_type_id: operationTypeId || null,
           block_off: blockOffDate.toISOString(),
-          takeoff_time: takeoffTimeDate.toISOString(),
-          landing_time: landingTimeDate.toISOString(),
+          takeoff_time: takeoffDate.toISOString(),
+          landing_time: landingDate.toISOString(),
           block_on: blockOnDate.toISOString(),
           fuel: fuel ? parseFloat(fuel) : null,
           oil: oil ? parseFloat(oil) : null,
           landings: landings ? parseInt(landings) : 1,
+          icao_departure: icaoDeparture.toUpperCase() || null,
+          icao_destination: icaoDestination.toUpperCase() || null,
           m_and_b_pdf_url: mbUrl || null,
         })
 
@@ -202,12 +345,14 @@ export function FlightlogDialog({
           copilot_id: additionalCrewId || null,
           operation_type_id: operationTypeId || null,
           block_off: blockOffDate.toISOString(),
-          takeoff_time: takeoffTimeDate.toISOString(),
-          landing_time: landingTimeDate.toISOString(),
+          takeoff_time: takeoffDate.toISOString(),
+          landing_time: landingDate.toISOString(),
           block_on: blockOnDate.toISOString(),
           fuel: fuel ? parseFloat(fuel) : null,
           oil: oil ? parseFloat(oil) : null,
           landings: landings ? parseInt(landings) : 1,
+          icao_departure: icaoDeparture.toUpperCase() || null,
+          icao_destination: icaoDestination.toUpperCase() || null,
           m_and_b_pdf_url: mbUrl || null,
         })
 
@@ -249,11 +394,6 @@ export function FlightlogDialog({
           <DialogTitle>
             {isEditMode ? 'Edit Flightlog Entry' : 'New Flightlog Entry'}
           </DialogTitle>
-          <DialogDescription>
-            {isEditMode
-              ? 'Update the flightlog entry details below.'
-              : 'Fill in the details to create a new flightlog entry.'}
-          </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -365,34 +505,95 @@ export function FlightlogDialog({
             </div>
           )}
 
+          {/* ICAO Departure and Destination */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="icao-departure">
+                ICAO Departure
+              </Label>
+              <Input
+                id="icao-departure"
+                type="text"
+                value={icaoDeparture}
+                onChange={(e) => setIcaoDeparture(e.target.value.toUpperCase())}
+                disabled={isPending || (isEditMode && !canEdit)}
+                placeholder="LSZB"
+                maxLength={4}
+                className="uppercase font-mono"
+              />
+              <p className="text-xs text-muted-foreground">
+                4-letter ICAO code
+              </p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="icao-destination">
+                ICAO Destination
+              </Label>
+              <Input
+                id="icao-destination"
+                type="text"
+                value={icaoDestination}
+                onChange={(e) => setIcaoDestination(e.target.value.toUpperCase())}
+                disabled={isPending || (isEditMode && !canEdit)}
+                placeholder="LSZH"
+                maxLength={4}
+                className="uppercase font-mono"
+              />
+              <p className="text-xs text-muted-foreground">
+                4-letter ICAO code
+              </p>
+            </div>
+          </div>
+
+          {/* Flight Date */}
+          <div className="space-y-2">
+            <Label htmlFor="flight-date">
+              <Clock className="inline h-4 w-4 mr-1" />
+              Flight Date *
+            </Label>
+            <Input
+              id="flight-date"
+              type="date"
+              value={flightDate}
+              onChange={(e) => setFlightDate(e.target.value)}
+              disabled={isPending || (isEditMode && !canEdit)}
+              required
+            />
+            <p className="text-xs text-muted-foreground">
+              Block Off will always be on this date. Landing/Block On dates are calculated automatically for overnight flights.
+            </p>
+          </div>
+
           {/* Time Fields - Block Off, Takeoff, Landing, Block On */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="block-off">
                 <Clock className="inline h-4 w-4 mr-1" />
-                Block Off *
+                Block Off Time *
               </Label>
               <Input
                 id="block-off"
-                type="datetime-local"
-                value={blockOff}
-                onChange={(e) => setBlockOff(e.target.value)}
+                type="time"
+                value={blockOffTime}
+                onChange={(e) => setBlockOffTime(e.target.value)}
                 disabled={isPending || (isEditMode && !canEdit)}
                 required
+                className="[&::-webkit-calendar-picker-indicator]:hidden"
               />
             </div>
             <div className="space-y-2">
               <Label htmlFor="takeoff">
                 <Clock className="inline h-4 w-4 mr-1" />
-                Takeoff *
+                Takeoff Time *
               </Label>
               <Input
                 id="takeoff"
-                type="datetime-local"
+                type="time"
                 value={takeoffTime}
                 onChange={(e) => setTakeoffTime(e.target.value)}
                 disabled={isPending || (isEditMode && !canEdit)}
                 required
+                className="[&::-webkit-calendar-picker-indicator]:hidden"
               />
             </div>
           </div>
@@ -401,29 +602,31 @@ export function FlightlogDialog({
             <div className="space-y-2">
               <Label htmlFor="landing">
                 <Clock className="inline h-4 w-4 mr-1" />
-                Landing *
+                Landing Time *
               </Label>
               <Input
                 id="landing"
-                type="datetime-local"
+                type="time"
                 value={landingTime}
                 onChange={(e) => setLandingTime(e.target.value)}
                 disabled={isPending || (isEditMode && !canEdit)}
                 required
+                className="[&::-webkit-calendar-picker-indicator]:hidden"
               />
             </div>
             <div className="space-y-2">
               <Label htmlFor="block-on">
                 <Clock className="inline h-4 w-4 mr-1" />
-                Block On *
+                Block On Time *
               </Label>
               <Input
                 id="block-on"
-                type="datetime-local"
-                value={blockOn}
-                onChange={(e) => setBlockOn(e.target.value)}
+                type="time"
+                value={blockOnTime}
+                onChange={(e) => setBlockOnTime(e.target.value)}
                 disabled={isPending || (isEditMode && !canEdit)}
                 required
+                className="[&::-webkit-calendar-picker-indicator]:hidden"
               />
             </div>
           </div>
@@ -627,7 +830,7 @@ export function FlightlogDialog({
               Cancel
             </Button>
             {(!isEditMode || canEdit) && (
-              <Button type="submit" disabled={isPending || isDeleting || isUploadingMB}>
+              <Button type="submit" disabled={isPending || isDeleting || isUploadingMB || !isFormValid}>
                 {isPending || isUploadingMB ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -641,6 +844,128 @@ export function FlightlogDialog({
           </DialogFooter>
         </form>
       </DialogContent>
+
+      {/* Confirmation Modal */}
+      {showConfirmation && calculatedDates && (
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Confirm Flight Entry</DialogTitle>
+            <DialogDescription>
+              Please review the flight details before creating the entry
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            {/* Warning for different dates */}
+            {calculatedDates.hasDifferentDates && (
+              <div className="rounded-md bg-orange-50 border border-orange-200 p-3">
+                <p className="text-sm font-semibold text-orange-800">
+                  ⚠️ CAREFUL - Different dates detected
+                </p>
+                <p className="text-xs text-orange-700 mt-1">
+                  This flight crosses midnight. Please verify the dates below are correct.
+                </p>
+              </div>
+            )}
+
+            {/* Flight Summary */}
+            <div className="rounded-lg border bg-card p-4 space-y-3">
+              <div className="grid grid-cols-2 gap-2 text-sm">
+                <div className="font-medium">Aircraft:</div>
+                <div>{aircraft.tail_number} - {aircraft.type}</div>
+
+                <div className="font-medium">Route:</div>
+                <div className="font-mono">{icaoDeparture} → {icaoDestination}</div>
+
+                <div className="font-medium">Pilot:</div>
+                <div>
+                  {users.find(u => u.id === pilotId)?.name} {users.find(u => u.id === pilotId)?.surname}
+                </div>
+
+                {additionalCrewId && (
+                  <>
+                    <div className="font-medium">Additional Crew:</div>
+                    <div>
+                      {users.find(u => u.id === additionalCrewId)?.name} {users.find(u => u.id === additionalCrewId)?.surname}
+                    </div>
+                  </>
+                )}
+              </div>
+
+              <div className="border-t pt-3 space-y-2">
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <div className="font-medium">Block Off:</div>
+                  <div className="font-mono">
+                    {format(calculatedDates.blockOff, 'dd.MM.yyyy')} - {format(calculatedDates.blockOff, 'HH:mm')}
+                  </div>
+
+                  <div className="font-medium">Takeoff:</div>
+                  <div className="font-mono">
+                    {format(calculatedDates.takeoff, 'dd.MM.yyyy')} - {format(calculatedDates.takeoff, 'HH:mm')}
+                  </div>
+
+                  <div className="font-medium">Landing:</div>
+                  <div className={`font-mono ${calculatedDates.landing.toDateString() !== calculatedDates.blockOff.toDateString() ? 'text-orange-600 font-semibold' : ''}`}>
+                    {format(calculatedDates.landing, 'dd.MM.yyyy')} - {format(calculatedDates.landing, 'HH:mm')}
+                  </div>
+
+                  <div className="font-medium">Block On:</div>
+                  <div className={`font-mono ${calculatedDates.blockOn.toDateString() !== calculatedDates.blockOff.toDateString() ? 'text-orange-600 font-semibold' : ''}`}>
+                    {format(calculatedDates.blockOn, 'dd.MM.yyyy')} - {format(calculatedDates.blockOn, 'HH:mm')}
+                  </div>
+                </div>
+
+                <div className="border-t pt-2 grid grid-cols-2 gap-2 text-sm">
+                  <div className="font-medium">Flight Time:</div>
+                  <div className="font-mono">
+                    {(() => {
+                      const totalMinutes = Math.floor((calculatedDates.landing.getTime() - calculatedDates.takeoff.getTime()) / (1000 * 60))
+                      const hours = Math.floor(totalMinutes / 60)
+                      const minutes = totalMinutes % 60
+                      return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`
+                    })()}
+                  </div>
+
+                  <div className="font-medium">Block Time:</div>
+                  <div className="font-mono">
+                    {(() => {
+                      const totalMinutes = Math.floor((calculatedDates.blockOn.getTime() - calculatedDates.blockOff.getTime()) / (1000 * 60))
+                      const hours = Math.floor(totalMinutes / 60)
+                      const minutes = totalMinutes % 60
+                      return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`
+                    })()}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setShowConfirmation(false)}
+              disabled={isPending || isUploadingMB}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              onClick={handleConfirmAndCreate}
+              disabled={isPending || isUploadingMB}
+            >
+              {isPending || isUploadingMB ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  {isUploadingMB ? 'Uploading...' : isEditMode ? 'Updating...' : 'Creating...'}
+                </>
+              ) : (
+                <>{isEditMode ? 'Update Entry' : 'Create Entry'}</>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      )}
     </Dialog>
   )
 }

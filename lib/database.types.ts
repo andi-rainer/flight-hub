@@ -396,6 +396,8 @@ export type Database = {
           copilot_id: string | null
           created_at: string
           fuel: number | null
+          icao_departure: string | null
+          icao_destination: string | null
           id: string
           landing_time: string
           landings: number
@@ -417,6 +419,8 @@ export type Database = {
           copilot_id?: string | null
           created_at?: string
           fuel?: number | null
+          icao_departure?: string | null
+          icao_destination?: string | null
           id?: string
           landing_time: string
           landings?: number
@@ -438,6 +442,8 @@ export type Database = {
           copilot_id?: string | null
           created_at?: string
           fuel?: number | null
+          icao_departure?: string | null
+          icao_destination?: string | null
           id?: string
           landing_time?: string
           landings?: number
@@ -1002,6 +1008,8 @@ export type Database = {
           created_at: string | null
           flight_time_hours: number | null
           fuel: number | null
+          icao_departure: string | null
+          icao_destination: string | null
           id: string | null
           landing_time: string | null
           landings: number | null
@@ -1089,6 +1097,8 @@ export type Database = {
           default_cost_center_name: string | null
           flight_time_hours: number | null
           fuel: number | null
+          icao_departure: string | null
+          icao_destination: string | null
           id: string | null
           landing_time: string | null
           landings: number | null

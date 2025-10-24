@@ -117,6 +117,7 @@ export function UnchargedFlightsTable({ flights, costCenters, userBalances }: Un
                 <TableHeader>
                   <TableRow>
                     <TableHead>Date</TableHead>
+                    <TableHead className="hidden lg:table-cell">Route</TableHead>
                     <TableHead>Aircraft</TableHead>
                     <TableHead>Pilot</TableHead>
                     <TableHead>Operation</TableHead>
@@ -132,6 +133,17 @@ export function UnchargedFlightsTable({ flights, costCenters, userBalances }: Un
                     <TableRow key={flight.id}>
                       <TableCell className="font-medium">
                         {flight.block_off ? format(new Date(flight.block_off), 'dd.MM.yyyy') : '-'}
+                      </TableCell>
+                      <TableCell className="font-mono text-xs hidden lg:table-cell">
+                        {flight.icao_departure && flight.icao_destination ? (
+                          <span>{flight.icao_departure} → {flight.icao_destination}</span>
+                        ) : flight.icao_departure ? (
+                          <span>{flight.icao_departure} →</span>
+                        ) : flight.icao_destination ? (
+                          <span>→ {flight.icao_destination}</span>
+                        ) : (
+                          <span className="text-muted-foreground">—</span>
+                        )}
                       </TableCell>
                       <TableCell>
                         <div className="text-sm">

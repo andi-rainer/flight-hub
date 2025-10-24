@@ -260,6 +260,7 @@ export function FlightlogContent({ aircraftId, userId, isBoardMember }: Flightlo
           <TableHeader>
             <TableRow>
               <TableHead className="w-[100px]">Date</TableHead>
+              <TableHead className="hidden md:table-cell">Route</TableHead>
               <TableHead>Times / Landings</TableHead>
               <TableHead>Crew</TableHead>
               <TableHead className="text-right">
@@ -277,7 +278,7 @@ export function FlightlogContent({ aircraftId, userId, isBoardMember }: Flightlo
           <TableBody>
             {filteredFlightlogs.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
+                <TableCell colSpan={9} className="text-center text-muted-foreground py-8">
                   No flightlog entries found
                 </TableCell>
               </TableRow>
@@ -331,6 +332,17 @@ export function FlightlogContent({ aircraftId, userId, isBoardMember }: Flightlo
                           <span className="sm:hidden">{format(new Date(entry.block_off), 'MMM dd')}</span>
                         </div>
                       </div>
+                    </TableCell>
+                    <TableCell className="font-mono text-xs hidden md:table-cell">
+                      {entry.icao_departure && entry.icao_destination ? (
+                        <span>{entry.icao_departure} → {entry.icao_destination}</span>
+                      ) : entry.icao_departure ? (
+                        <span>{entry.icao_departure} →</span>
+                      ) : entry.icao_destination ? (
+                        <span>→ {entry.icao_destination}</span>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
                     </TableCell>
                     <TableCell className="font-mono text-xs">
                       <div className="flex items-center gap-2">
