@@ -1483,5 +1483,46 @@ export type Account = Database['public']['Tables']['accounts']['Row']
 export type AccountInsert = Database['public']['Tables']['accounts']['Insert']
 export type AccountUpdate = Database['public']['Tables']['accounts']['Update']
 
-export type UnchargedFlight = Database['public']['Views']['uncharged_flights']['Row']
+export type UnchargedFlight = Database['public']['Views']['uncharged_flights']['Row'] & {
+  flight_amount?: number
+  airport_fees?: number
+  passengers?: number
+  passenger_seats?: number | null
+}
 export type UserBalance = Database['public']['Views']['user_balances']['Row']
+
+// Airport fees types - NOTE: These are manually defined until types can be regenerated
+export type Airport = {
+  id: string
+  icao_code: string
+  airport_name: string
+  notes: string | null
+  created_at: string
+  updated_at: string
+}
+
+export type AirportInsert = Omit<Airport, 'id' | 'created_at' | 'updated_at'>
+export type AirportUpdate = Partial<AirportInsert>
+
+// Aircraft-specific airport fees
+export type AircraftAirportFee = {
+  id: string
+  airport_id: string
+  plane_id: string
+  landing_fee: number
+  approach_fee: number
+  parking_fee: number
+  noise_fee: number
+  passenger_fee: number
+  notes: string | null
+  created_at: string
+  updated_at: string
+}
+
+export type AircraftAirportFeeInsert = Omit<AircraftAirportFee, 'id' | 'created_at' | 'updated_at'>
+export type AircraftAirportFeeUpdate = Partial<AircraftAirportFeeInsert>
+
+// Combined type for airport with aircraft fees
+export type AirportWithAircraftFees = Airport & {
+  aircraft_fees?: AircraftAirportFee[]
+}

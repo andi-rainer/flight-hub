@@ -7,8 +7,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { format } from 'date-fns'
-import { CreditCard, User, Building2, CheckCircle2, Loader2 } from 'lucide-react'
+import { CreditCard, User, Building2, CheckCircle2, Loader2, Info } from 'lucide-react'
 import { ChargeFlightDialog } from './charge-flight-dialog'
 import { batchChargeFlights } from '@/lib/actions/billing'
 import type { UnchargedFlight, CostCenter, UserBalance } from '@/lib/database.types'
@@ -172,8 +173,36 @@ export function UnchargedFlightsTable({ flights, costCenters, userBalances }: Un
                       <TableCell className="text-sm">
                         € {(flight.operation_rate || flight.plane_default_rate || 0).toFixed(2)}/{flight.billing_unit === 'minute' ? 'min' : 'hr'}
                       </TableCell>
-                      <TableCell className="text-right font-medium">
-                        € {(flight.calculated_amount || 0).toFixed(2)}
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end gap-1">
+                          <span className="font-medium">€ {(flight.calculated_amount || 0).toFixed(2)}</span>
+                          {flight.airport_fees && flight.airport_fees > 0 && (
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Info className="h-3 w-3 text-muted-foreground cursor-help" />
+                                </TooltipTrigger>
+                                <TooltipContent side="left" className="max-w-xs">
+                                  <div className="space-y-1 text-xs">
+                                    <div className="font-semibold">Amount Breakdown:</div>
+                                    <div className="flex justify-between gap-4">
+                                      <span>Flight:</span>
+                                      <span>€ {(flight.flight_amount || 0).toFixed(2)}</span>
+                                    </div>
+                                    <div className="flex justify-between gap-4">
+                                      <span>Airport Fees:</span>
+                                      <span>€ {flight.airport_fees.toFixed(2)}</span>
+                                    </div>
+                                    <div className="border-t pt-1 flex justify-between gap-4 font-semibold">
+                                      <span>Total:</span>
+                                      <span>€ {(flight.calculated_amount || 0).toFixed(2)}</span>
+                                    </div>
+                                  </div>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell>
                         {flight.default_cost_center_id ? (
