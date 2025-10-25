@@ -300,7 +300,7 @@ export function Sidebar({ user }: SidebarProps) {
   return (
     <aside className={cn(
       "hidden md:flex h-screen flex-col border-r bg-background transition-all duration-300",
-      collapsed ? "w-16" : "w-56"
+      collapsed ? "w-16" : "w-40"
     )}>
       <SidebarContent user={user} collapsed={collapsed} onToggle={handleToggle} />
     </aside>
