@@ -6,6 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { Loader2, ArrowLeft, Edit, Undo2, Plus, Search, RotateCcw } from 'lucide-react'
 import { getUserBalances, getUserTransactions } from '@/lib/actions/accounting'
 import { format } from 'date-fns'
@@ -163,9 +164,20 @@ export function UserAccountsTab() {
   }
 
   const getTransactionType = (transaction: UserTransaction) => {
-    if (transaction.reverses_transaction_id) return 'reversal'
-    if (transaction.amount > 0) return 'payment'
-    return 'charge'
+    if (transaction.reverses_transaction_id) return 'REV'
+    if (transaction.amount > 0) return 'PAY'
+    if (transaction.flightlog_id) return 'FLT'
+    return 'CHG'
+  }
+
+  const getTransactionTypeLabel = (type: string) => {
+    switch (type) {
+      case 'REV': return 'Reversal'
+      case 'PAY': return 'Payment'
+      case 'FLT': return 'Flight costs'
+      case 'CHG': return 'Charge'
+      default: return type
+    }
   }
 
   const calculateRunningBalance = (index: number) => {
@@ -181,9 +193,9 @@ export function UserAccountsTab() {
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div className="flex flex-col xl:flex-row gap-6">
       {/* Left Panel - User List */}
-      <div className={`${showMobileList ? 'block' : 'hidden md:block'}`}>
+      <div className={`${showMobileList ? 'block' : 'hidden xl:block'} xl:flex-[1]`}>
         <Card>
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
@@ -245,7 +257,7 @@ export function UserAccountsTab() {
       </div>
 
       {/* Right Panel - Transaction History */}
-      <div className={`${showMobileList ? 'hidden md:block' : 'block'}`}>
+      <div className={`${showMobileList ? 'hidden xl:block' : 'block'} xl:flex-[2]`}>
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
@@ -255,7 +267,7 @@ export function UserAccountsTab() {
                     variant="ghost"
                     size="sm"
                     onClick={handleBackToList}
-                    className="md:hidden -ml-2"
+                    className="xl:hidden -ml-2"
                   >
                     <ArrowLeft className="h-4 w-4" />
                   </Button>
@@ -294,33 +306,62 @@ export function UserAccountsTab() {
                 No transactions found
               </div>
             ) : (
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Type</TableHead>
-                      <TableHead>Description</TableHead>
-                      <TableHead className="text-right">Amount</TableHead>
-                      <TableHead className="text-right">Balance</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {transactions.map((transaction, index) => (
-                      <TableRow key={transaction.id}>
-                        <TableCell className="whitespace-nowrap">
-                          {format(new Date(transaction.created_at), 'dd.MM.yyyy HH:mm')}
-                        </TableCell>
+              <div className="space-y-2">
+                <div className="text-xs text-muted-foreground flex gap-4">
+                  <span><strong>FLT:</strong> Flight costs</span>
+                  <span><strong>PAY:</strong> Payment</span>
+                  <span><strong>CHG:</strong> Charge</span>
+                  <span><strong>REV:</strong> Reversal</span>
+                </div>
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Date</TableHead>
+                        <TableHead>Type</TableHead>
+                        <TableHead>Description</TableHead>
+                        <TableHead className="text-right">Amount</TableHead>
+                        <TableHead className="text-right">Balance</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {transactions.map((transaction, index) => {
+                        const txType = getTransactionType(transaction)
+                        return (
+                        <TableRow key={transaction.id}>
+                          <TableCell className="whitespace-nowrap">
+                            {format(new Date(transaction.created_at), 'dd.MM.')}
+                          </TableCell>
+                          <TableCell>
+                            <Badge
+                              variant={txType === 'PAY' ? 'default' : 'secondary'}
+                              title={getTransactionTypeLabel(txType)}
+                            >
+                              {txType}
+                            </Badge>
+                          </TableCell>
                         <TableCell>
-                          <Badge variant={getTransactionType(transaction) === 'payment' ? 'default' : 'secondary'}>
-                            {getTransactionType(transaction)}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <div className="max-w-xs truncate">
-                            {transaction.description}
-                          </div>
+                          {transaction.description.length > 60 ? (
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <div className="max-w-xs truncate cursor-help">
+                                    {transaction.description.substring(0, 60)}...
+                                  </div>
+                                </TooltipTrigger>
+                                <TooltipContent side="top" className="max-w-md">
+                                  <div className="text-sm whitespace-pre-wrap">
+                                    {transaction.description}
+                                  </div>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          ) : (
+                            <div className="max-w-xs">
+                              {transaction.description}
+                            </div>
+                          )}
                           {transaction.reversed_at && (
                             <Badge variant="destructive" className="mt-1">
                               Reversed
@@ -379,9 +420,11 @@ export function UserAccountsTab() {
                           </div>
                         </TableCell>
                       </TableRow>
-                    ))}
+                      )
+                    })}
                   </TableBody>
                 </Table>
+              </div>
               </div>
             )}
           </CardContent>

@@ -15,6 +15,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { format } from 'date-fns'
 import { Loader2, AlertCircle, User, Building2, Check, ChevronsUpDown, X, Plus } from 'lucide-react'
 import { chargeFlightToUser, chargeFlightToCostCenter, splitChargeFlight } from '@/lib/actions/billing'
+import { calculateAirportFeesForFlight } from '@/lib/actions/airport-fees'
 import { Checkbox } from '@/components/ui/checkbox'
 import { cn } from '@/lib/utils'
 import type { UnchargedFlight, CostCenter, UserBalance } from '@/lib/database.types'
@@ -51,15 +52,80 @@ export function ChargeFlightDialog({ flight, costCenters, userBalances, open, on
   const [selectedCostCenterId, setSelectedCostCenterId] = useState<string>(
     flight.default_cost_center_id || ''
   )
-  const [description, setDescription] = useState(
-    `Flight ${flight.tail_number} on ${flight.block_off ? format(new Date(flight.block_off), 'dd.MM.yyyy') : ''}`
-  )
+  const [description, setDescription] = useState('')
   const [splitTargets, setSplitTargets] = useState<SplitTarget[]>([])
   const [splitMode, setSplitMode] = useState<SplitMode>('percentage')
+  const [includeAirportFees, setIncludeAirportFees] = useState(true)
+  const [airportFeesBreakdown, setAirportFeesBreakdown] = useState<{
+    fees: Array<{ airport: string; icao_code: string; fee_type: string; amount: number }>
+    totalAmount: number
+  } | null>(null)
+
+  // Generate detailed description with cost breakdown
+  const generateDetailedDescription = async () => {
+    if (!flight.id || !flight.plane_id) return
+
+    const blockOffTime = flight.block_off ? format(new Date(flight.block_off), 'dd.MM.yyyy, HH:mm') : ''
+    const rate = (flight.operation_rate || flight.plane_default_rate || 0).toFixed(2)
+    const rateUnit = flight.billing_unit === 'minute' ? 'min' : 'hr'
+
+    let desc = `Flight ${flight.tail_number} on ${blockOffTime} @ €${rate}/${rateUnit}`
+
+    // Fetch airport fees breakdown if applicable
+    if (flight.icao_departure || flight.icao_destination) {
+      const feesResult = await calculateAirportFeesForFlight(
+        flight.icao_departure,
+        flight.icao_destination,
+        flight.plane_id,
+        flight.landings || 0,
+        flight.passengers || 0
+      )
+
+      if (feesResult.success && feesResult.fees && feesResult.fees.length > 0) {
+        setAirportFeesBreakdown({
+          fees: feesResult.fees,
+          totalAmount: feesResult.totalAmount
+        })
+
+        // Add fees to description if included
+        if (includeAirportFees) {
+          const feeBreakdown = feesResult.fees.map(fee =>
+            `${fee.icao_code} ${fee.fee_type} €${fee.amount.toFixed(2)}`
+          ).join(', ')
+          desc += `, ${feeBreakdown}`
+        }
+      }
+    }
+
+    setDescription(desc)
+  }
+
+  // Update description when includeAirportFees changes
+  useEffect(() => {
+    if (!airportFeesBreakdown) return
+
+    const blockOffTime = flight.block_off ? format(new Date(flight.block_off), 'dd.MM.yyyy, HH:mm') : ''
+    const rate = (flight.operation_rate || flight.plane_default_rate || 0).toFixed(2)
+    const rateUnit = flight.billing_unit === 'minute' ? 'min' : 'hr'
+
+    let desc = `Flight ${flight.tail_number} on ${blockOffTime} @ €${rate}/${rateUnit}`
+
+    if (includeAirportFees && airportFeesBreakdown.fees.length > 0) {
+      const feeBreakdown = airportFeesBreakdown.fees.map(fee =>
+        `${fee.icao_code} ${fee.fee_type} €${fee.amount.toFixed(2)}`
+      ).join(', ')
+      desc += `, ${feeBreakdown}`
+    }
+
+    setDescription(desc)
+  }, [includeAirportFees, airportFeesBreakdown])
 
   // Auto-initialize split targets if there's a copilot and no default cost center
   useEffect(() => {
     if (open) {
+      // Generate detailed description
+      generateDetailedDescription()
+
       // Check if this flight should have split enabled
       const shouldEnableSplit = !!(flight.copilot_id && !flight.default_cost_center_id && flight.pilot_id)
 
@@ -155,6 +221,11 @@ export function ChargeFlightDialog({ flight, costCenters, userBalances, open, on
 
     setError(null)
 
+    // Calculate total amount based on whether airport fees are included
+    const flightAmount = flight.flight_amount || 0
+    const airportFeesAmount = includeAirportFees && airportFeesBreakdown ? airportFeesBreakdown.totalAmount : 0
+    const totalAmount = flightAmount + airportFeesAmount
+
     startTransition(async () => {
       let result
 
@@ -194,7 +265,7 @@ export function ChargeFlightDialog({ flight, costCenters, userBalances, open, on
             targetId: t.targetId,
             percentage: t.percentage
           })),
-          totalAmount: flight.calculated_amount || 0,
+          totalAmount,
           description
         })
       } else {
@@ -208,7 +279,7 @@ export function ChargeFlightDialog({ flight, costCenters, userBalances, open, on
           result = await chargeFlightToUser({
             flightlogId: flight.id!,
             userId: selectedUserId,
-            amount: flight.calculated_amount || 0,
+            amount: totalAmount,
             description,
           })
         } else {
@@ -220,7 +291,7 @@ export function ChargeFlightDialog({ flight, costCenters, userBalances, open, on
           result = await chargeFlightToCostCenter({
             flightlogId: flight.id!,
             costCenterId: selectedCostCenterId,
-            amount: flight.calculated_amount || 0,
+            amount: totalAmount,
             description,
           })
         }
@@ -305,13 +376,48 @@ export function ChargeFlightDialog({ flight, costCenters, userBalances, open, on
                 </span>
               </div>
             </div>
-            <div className="pt-2 border-t">
+            <div className="pt-2 border-t space-y-2">
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground text-sm">
-                  {formatDuration(flight.flight_time_hours)} × € {(flight.operation_rate || flight.plane_default_rate || 0).toFixed(2)}/{flight.billing_unit === 'minute' ? 'min' : 'hr'}
+                  Flight: {formatDuration(flight.flight_time_hours)} × € {(flight.operation_rate || flight.plane_default_rate || 0).toFixed(2)}/{flight.billing_unit === 'minute' ? 'min' : 'hr'}
                 </span>
+                <span className="font-medium">
+                  € {(flight.flight_amount || 0).toFixed(2)}
+                </span>
+              </div>
+              {airportFeesBreakdown && airportFeesBreakdown.totalAmount > 0 && (
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Checkbox
+                        id="include-airport-fees"
+                        checked={includeAirportFees}
+                        onCheckedChange={(checked) => setIncludeAirportFees(checked as boolean)}
+                      />
+                      <Label htmlFor="include-airport-fees" className="text-sm text-muted-foreground cursor-pointer">
+                        Airport Fees:
+                      </Label>
+                    </div>
+                    <span className={`font-medium ${!includeAirportFees ? 'line-through text-muted-foreground' : ''}`}>
+                      € {airportFeesBreakdown.totalAmount.toFixed(2)}
+                    </span>
+                  </div>
+                  {includeAirportFees && airportFeesBreakdown.fees.length > 0 && (
+                    <div className="pl-8 space-y-0.5 text-xs text-muted-foreground">
+                      {airportFeesBreakdown.fees.map((fee, idx) => (
+                        <div key={idx} className="flex justify-between">
+                          <span>{fee.icao_code} {fee.fee_type}:</span>
+                          <span>€ {fee.amount.toFixed(2)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+              <div className="flex items-center justify-between pt-2 border-t">
+                <span className="font-semibold">Total Amount:</span>
                 <span className="font-bold text-lg">
-                  € {(flight.calculated_amount || 0).toFixed(2)}
+                  € {((flight.flight_amount || 0) + (includeAirportFees && airportFeesBreakdown ? airportFeesBreakdown.totalAmount : 0)).toFixed(2)}
                 </span>
               </div>
             </div>
@@ -535,7 +641,7 @@ export function ChargeFlightDialog({ flight, costCenters, userBalances, open, on
                       }
                     </span>
                     <span className="font-medium">
-                      € {((flight.calculated_amount || 0) * target.percentage / 100).toFixed(2)}
+                      € {(((flight.flight_amount || 0) + (includeAirportFees && airportFeesBreakdown ? airportFeesBreakdown.totalAmount : 0)) * target.percentage / 100).toFixed(2)}
                     </span>
                   </div>
                 </div>

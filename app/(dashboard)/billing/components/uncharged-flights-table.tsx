@@ -47,13 +47,21 @@ export function UnchargedFlightsTable({ flights, costCenters, userBalances }: Un
     setBatchResult(null)
     startTransition(async () => {
       // Build charges array - charge to default cost center if available, otherwise to pilot
-      const charges = flights.map(flight => ({
-        flightlogId: flight.id!,
-        targetType: flight.default_cost_center_id ? ('cost_center' as const) : ('user' as const),
-        targetId: flight.default_cost_center_id || flight.pilot_id!,
-        amount: flight.calculated_amount || 0,
-        description: `Flight ${flight.tail_number} on ${flight.block_off ? format(new Date(flight.block_off), 'dd.MM.yyyy') : ''}`,
-      }))
+      const charges = flights.map(flight => {
+        // Generate simple description for batch (without async fee lookup for performance)
+        const blockOffTime = flight.block_off ? format(new Date(flight.block_off), 'dd.MM.yyyy, HH:mm') : ''
+        const rate = (flight.operation_rate || flight.plane_default_rate || 0).toFixed(2)
+        const rateUnit = flight.billing_unit === 'minute' ? 'min' : 'hr'
+        const description = `Flight ${flight.tail_number} on ${blockOffTime} @ €${rate}/${rateUnit}`
+
+        return {
+          flightlogId: flight.id!,
+          targetType: flight.default_cost_center_id ? ('cost_center' as const) : ('user' as const),
+          targetId: flight.default_cost_center_id || flight.pilot_id!,
+          amount: flight.calculated_amount || 0,
+          description,
+        }
+      })
 
       const result = await batchChargeFlights(charges)
       if (result.success && result.data) {

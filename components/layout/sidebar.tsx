@@ -21,6 +21,8 @@ import {
   Menu,
   CreditCard,
   Calculator,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react'
 
 interface NavItem {
@@ -33,6 +35,8 @@ interface NavItem {
 
 interface SidebarProps {
   user: User
+  collapsed?: boolean
+  onToggle?: () => void
 }
 
 const navItems: NavItem[] = [
@@ -86,7 +90,7 @@ const navItems: NavItem[] = [
   },
 ]
 
-function SidebarContent({ user, onNavigate }: { user: User; onNavigate?: () => void }) {
+function SidebarContent({ user, onNavigate, collapsed, onToggle }: { user: User; onNavigate?: () => void; collapsed?: boolean; onToggle?: () => void }) {
   const pathname = usePathname()
   const isBoardMember = user.role?.includes('board') ?? false
   const [pendingApprovalsCount, setPendingApprovalsCount] = useState(0)
@@ -176,12 +180,12 @@ function SidebarContent({ user, onNavigate }: { user: User; onNavigate?: () => v
   return (
     <div className="flex h-full flex-col">
       {/* Logo */}
-      <div className="flex h-16 items-center border-b px-6">
-        <Link href="/dashboard" className="flex items-center gap-2 font-semibold" onClick={onNavigate}>
-          <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
+      <div className="flex h-16 items-center border-b px-3">
+        <Link href="/dashboard" className="flex items-center gap-2 font-semibold overflow-hidden" onClick={onNavigate}>
+          <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center flex-shrink-0">
             <Plane className="h-4 w-4 text-primary-foreground" />
           </div>
-          <span className="text-lg">FlightHub</span>
+          {!collapsed && <span className="text-lg">FlightHub</span>}
         </Link>
       </div>
 
@@ -213,13 +217,15 @@ function SidebarContent({ user, onNavigate }: { user: User; onNavigate?: () => v
                 <Button
                   variant={isActive ? 'secondary' : 'ghost'}
                   className={cn(
-                    'w-full justify-start gap-3',
+                    'w-full gap-3',
+                    collapsed ? 'justify-center px-2' : 'justify-start',
                     isActive && 'bg-secondary font-medium'
                   )}
+                  title={collapsed ? item.title : undefined}
                 >
-                  <Icon className="h-4 w-4" />
-                  <span className="flex-1 text-left">{item.title}</span>
-                  {showBadge && (
+                  <Icon className="h-4 w-4 flex-shrink-0" />
+                  {!collapsed && <span className="flex-1 text-left">{item.title}</span>}
+                  {!collapsed && showBadge && (
                     badgeContent ? (
                       <Badge
                         variant="destructive"
@@ -231,6 +237,14 @@ function SidebarContent({ user, onNavigate }: { user: User; onNavigate?: () => v
                       <span className="ml-auto h-2 w-2 rounded-full bg-destructive"></span>
                     )
                   )}
+                  {collapsed && showBadge && badgeContent && (
+                    <span className="absolute top-1 right-1 h-4 w-4 rounded-full bg-destructive text-[10px] font-semibold flex items-center justify-center text-white">
+                      {badgeContent}
+                    </span>
+                  )}
+                  {collapsed && showBadge && !badgeContent && (
+                    <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-destructive"></span>
+                  )}
                 </Button>
               </Link>
             )
@@ -238,20 +252,57 @@ function SidebarContent({ user, onNavigate }: { user: User; onNavigate?: () => v
         </nav>
       </ScrollArea>
 
-      {/* Footer */}
-      <div className="border-t p-4">
-        <p className="text-xs text-muted-foreground text-center">
-          FlightHub v1.0
-        </p>
+      {/* Footer with Toggle Button */}
+      <div className="border-t">
+        {!collapsed && (
+          <div className="p-4 pb-2">
+            <p className="text-xs text-muted-foreground text-center">
+              FlightHub v1.0
+            </p>
+          </div>
+        )}
+        {onToggle && (
+          <div className={cn("p-2", collapsed ? "flex justify-center" : "flex justify-end")}>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onToggle}
+              title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+              className="h-8 w-8"
+            >
+              {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   )
 }
 
 export function Sidebar({ user }: SidebarProps) {
+  const [collapsed, setCollapsed] = useState(false)
+
+  // Load collapsed state from localStorage on mount
+  useEffect(() => {
+    const savedState = localStorage.getItem('sidebar-collapsed')
+    if (savedState !== null) {
+      setCollapsed(savedState === 'true')
+    }
+  }, [])
+
+  // Save collapsed state to localStorage when it changes
+  const handleToggle = () => {
+    const newState = !collapsed
+    setCollapsed(newState)
+    localStorage.setItem('sidebar-collapsed', String(newState))
+  }
+
   return (
-    <aside className="hidden md:flex h-screen w-64 flex-col border-r bg-background">
-      <SidebarContent user={user} />
+    <aside className={cn(
+      "hidden md:flex h-screen flex-col border-r bg-background transition-all duration-300",
+      collapsed ? "w-16" : "w-56"
+    )}>
+      <SidebarContent user={user} collapsed={collapsed} onToggle={handleToggle} />
     </aside>
   )
 }

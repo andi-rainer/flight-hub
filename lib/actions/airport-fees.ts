@@ -360,40 +360,57 @@ export async function calculateAirportFeesForFlight(
 
   // Get fees for departure airport (approach only)
   if (icaoDeparture) {
-    const { data: feeConfig } = await supabase
-      .from('aircraft_airport_fees')
-      .select(`
-        *,
-        airport:airports(*)
-      `)
-      .eq('airport_id', icaoDeparture)
-      .eq('plane_id', planeId)
+    // First, get the airport ID from the ICAO code
+    const { data: departureAirport } = await supabase
+      .from('airports')
+      .select('id')
+      .eq('icao_code', icaoDeparture.toUpperCase())
       .single()
 
-    if (feeConfig && feeConfig.airport) {
-      if (feeConfig.approach_fee > 0) {
-        fees.push({
-          airport: feeConfig.airport.airport_name,
-          icao_code: feeConfig.airport.icao_code,
-          fee_type: 'Approach',
-          amount: feeConfig.approach_fee
-        })
-        totalAmount += feeConfig.approach_fee
+    if (departureAirport) {
+      const { data: feeConfig } = await supabase
+        .from('aircraft_airport_fees')
+        .select(`
+          *,
+          airport:airports(*)
+        `)
+        .eq('airport_id', departureAirport.id)
+        .eq('plane_id', planeId)
+        .single()
+
+      if (feeConfig && feeConfig.airport) {
+        if (feeConfig.approach_fee > 0) {
+          fees.push({
+            airport: feeConfig.airport.airport_name,
+            icao_code: feeConfig.airport.icao_code,
+            fee_type: 'Approach',
+            amount: feeConfig.approach_fee
+          })
+          totalAmount += feeConfig.approach_fee
+        }
       }
     }
   }
 
   // Get fees for destination airport (landing, approach, parking, noise, passenger)
   if (icaoDestination) {
-    const { data: feeConfig } = await supabase
-      .from('aircraft_airport_fees')
-      .select(`
-        *,
-        airport:airports(*)
-      `)
-      .eq('airport_id', icaoDestination)
-      .eq('plane_id', planeId)
+    // First, get the airport ID from the ICAO code
+    const { data: destinationAirport } = await supabase
+      .from('airports')
+      .select('id')
+      .eq('icao_code', icaoDestination.toUpperCase())
       .single()
+
+    if (destinationAirport) {
+      const { data: feeConfig } = await supabase
+        .from('aircraft_airport_fees')
+        .select(`
+          *,
+          airport:airports(*)
+        `)
+        .eq('airport_id', destinationAirport.id)
+        .eq('plane_id', planeId)
+        .single()
 
     if (feeConfig && feeConfig.airport) {
       // Landing fees
@@ -452,6 +469,7 @@ export async function calculateAirportFeesForFlight(
         })
         totalAmount += passengerAmount
       }
+    }
     }
   }
 

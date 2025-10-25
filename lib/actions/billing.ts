@@ -121,6 +121,7 @@ export async function chargeFlightToUser(data: {
 
   revalidatePath('/billing')
   revalidatePath('/flightlog')
+  revalidatePath('/accounting')
   return { success: true, message: 'Flight charged to user successfully' }
 }
 

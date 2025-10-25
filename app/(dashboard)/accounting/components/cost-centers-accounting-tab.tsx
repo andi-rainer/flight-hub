@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { Loader2, ArrowLeft, Edit, Undo2, Plus, RotateCcw } from 'lucide-react'
 import { getCostCentersWithTotals, getCostCenterTransactions } from '@/lib/actions/accounting'
 import { format } from 'date-fns'
@@ -128,9 +129,20 @@ export function CostCentersAccountingTab() {
   }
 
   const getTransactionType = (transaction: CostCenterTransaction) => {
-    if (transaction.reverses_transaction_id) return 'reversal'
-    if (transaction.amount > 0) return 'credit'
-    return 'charge'
+    if (transaction.reverses_transaction_id) return 'REV'
+    if (transaction.amount > 0) return 'CRD'
+    if (transaction.flightlog_id) return 'FLT'
+    return 'CHG'
+  }
+
+  const getTransactionTypeLabel = (type: string) => {
+    switch (type) {
+      case 'REV': return 'Reversal'
+      case 'CRD': return 'Credit'
+      case 'FLT': return 'Flight costs'
+      case 'CHG': return 'Charge'
+      default: return type
+    }
   }
 
   const calculateRunningTotal = (index: number) => {
@@ -146,9 +158,9 @@ export function CostCentersAccountingTab() {
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div className="flex flex-col lg:flex-row gap-6">
       {/* Left Panel - Cost Center List */}
-      <div className={`${showMobileList ? 'block' : 'hidden md:block'}`}>
+      <div className={`${showMobileList ? 'block' : 'hidden lg:block'} lg:flex-[1]`}>
         <Card>
           <CardHeader>
             <CardTitle>Cost Centers</CardTitle>
@@ -198,7 +210,7 @@ export function CostCentersAccountingTab() {
       </div>
 
       {/* Right Panel - Transaction History */}
-      <div className={`${showMobileList ? 'hidden md:block' : 'block'}`}>
+      <div className={`${showMobileList ? 'hidden lg:block' : 'block'} lg:flex-[2]`}>
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
@@ -208,7 +220,7 @@ export function CostCentersAccountingTab() {
                     variant="ghost"
                     size="sm"
                     onClick={handleBackToList}
-                    className="md:hidden -ml-2"
+                    className="lg:hidden -ml-2"
                   >
                     <ArrowLeft className="h-4 w-4" />
                   </Button>
@@ -244,38 +256,67 @@ export function CostCentersAccountingTab() {
                 No transactions found
               </div>
             ) : (
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Type</TableHead>
-                      <TableHead>Description</TableHead>
-                      <TableHead className="text-right">Amount</TableHead>
-                      <TableHead className="text-right">Running Total</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {transactions.map((transaction, index) => (
-                      <TableRow key={transaction.id}>
-                        <TableCell className="whitespace-nowrap">
-                          {format(new Date(transaction.created_at), 'dd.MM.yyyy HH:mm')}
-                        </TableCell>
+              <div className="space-y-2">
+                <div className="text-xs text-muted-foreground flex gap-4">
+                  <span><strong>FLT:</strong> Flight costs</span>
+                  <span><strong>CRD:</strong> Credit</span>
+                  <span><strong>CHG:</strong> Charge</span>
+                  <span><strong>REV:</strong> Reversal</span>
+                </div>
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Date</TableHead>
+                        <TableHead>Type</TableHead>
+                        <TableHead>Description</TableHead>
+                        <TableHead className="text-right">Amount</TableHead>
+                        <TableHead className="text-right">Running Total</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {transactions.map((transaction, index) => {
+                        const txType = getTransactionType(transaction)
+                        return (
+                        <TableRow key={transaction.id}>
+                          <TableCell className="whitespace-nowrap">
+                            {format(new Date(transaction.created_at), 'dd.MM.')}
+                          </TableCell>
+                          <TableCell>
+                            <Badge
+                              variant={txType === 'CRD' ? 'default' : 'secondary'}
+                              title={getTransactionTypeLabel(txType)}
+                            >
+                              {txType}
+                            </Badge>
+                          </TableCell>
                         <TableCell>
-                          <Badge variant={getTransactionType(transaction) === 'charge' ? 'default' : 'secondary'}>
-                            {getTransactionType(transaction)}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <div className="max-w-xs">
-                            <div className="truncate">{transaction.description}</div>
-                            {transaction.flightlog && (
-                              <div className="text-xs text-muted-foreground mt-1">
-                                Flight: {format(new Date(transaction.flightlog.block_off), 'dd.MM.yyyy HH:mm')}
-                              </div>
-                            )}
-                          </div>
+                          {transaction.description.length > 60 ? (
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <div className="max-w-xs truncate cursor-help">
+                                    {transaction.description.substring(0, 60)}...
+                                  </div>
+                                </TooltipTrigger>
+                                <TooltipContent side="top" className="max-w-md">
+                                  <div className="text-sm whitespace-pre-wrap">
+                                    {transaction.description}
+                                  </div>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          ) : (
+                            <div className="max-w-xs">
+                              {transaction.description}
+                            </div>
+                          )}
+                          {transaction.flightlog && (
+                            <div className="text-xs text-muted-foreground mt-1">
+                              Flight: {format(new Date(transaction.flightlog.block_off), 'dd.MM.yyyy HH:mm')}
+                            </div>
+                          )}
                           {transaction.reversed_at && (
                             <Badge variant="destructive" className="mt-1">
                               Reversed
@@ -334,9 +375,11 @@ export function CostCentersAccountingTab() {
                           </div>
                         </TableCell>
                       </TableRow>
-                    ))}
+                      )
+                    })}
                   </TableBody>
                 </Table>
+              </div>
               </div>
             )}
           </CardContent>
