@@ -293,6 +293,8 @@ export function FlightlogDialog({
         aircraftId,
         blockOffDate.toISOString(),
         blockOnDate.toISOString(),
+        takeoffDate.toISOString(),
+        landingDate.toISOString(),
         icaoDeparture || null,
         icaoDestination || null
       )

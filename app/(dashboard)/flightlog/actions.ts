@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import type { FlightlogInsert, FlightlogUpdate, NotificationInsert } from '@/lib/database.types'
 
 export type FlightWarning = {
-  type: 'location_disconnect' | 'flight_overlap'
+  type: 'location_disconnect' | 'flight_overlap' | 'excessive_ground_time'
   message: string
   severity: 'warning'
 }
@@ -329,6 +329,8 @@ export async function checkFlightWarnings(
   planeId: string,
   blockOff: string,
   blockOn: string,
+  takeoffTime: string,
+  landingTime: string,
   icaoDeparture: string | null,
   icaoDestination: string | null
 ): Promise<{ data: FlightWarningCheckResult | null; error: string | null }> {
@@ -339,6 +341,8 @@ export async function checkFlightWarnings(
   // Parse dates
   const newBlockOff = new Date(blockOff)
   const newBlockOn = new Date(blockOn)
+  const newTakeoffTime = new Date(takeoffTime)
+  const newLandingTime = new Date(landingTime)
 
   // Get the flight date (from block_off)
   const flightDate = new Date(newBlockOff)
@@ -353,13 +357,37 @@ export async function checkFlightWarnings(
   currentDayEnd.setDate(currentDayEnd.getDate() + 1)
   currentDayEnd.setHours(23, 59, 59, 999)
 
-  // 1. Check for location disconnect - get the most recent flight for this aircraft on the same day or previous day
+  // 1. Check for excessive ground time (>45 minutes)
+  const GROUND_TIME_THRESHOLD_MINUTES = 45
+
+  // Check block-off to takeoff time
+  const preFlightGroundTimeMinutes = (newTakeoffTime.getTime() - newBlockOff.getTime()) / (1000 * 60)
+  if (preFlightGroundTimeMinutes > GROUND_TIME_THRESHOLD_MINUTES) {
+    const roundedMinutes = Math.round(preFlightGroundTimeMinutes)
+    warnings.push({
+      type: 'excessive_ground_time',
+      message: `Excessive pre-flight ground time: ${roundedMinutes} minutes between Block Off and Takeoff (threshold: ${GROUND_TIME_THRESHOLD_MINUTES} minutes)`,
+      severity: 'warning'
+    })
+  }
+
+  // Check landing to block-on time
+  const postFlightGroundTimeMinutes = (newBlockOn.getTime() - newLandingTime.getTime()) / (1000 * 60)
+  if (postFlightGroundTimeMinutes > GROUND_TIME_THRESHOLD_MINUTES) {
+    const roundedMinutes = Math.round(postFlightGroundTimeMinutes)
+    warnings.push({
+      type: 'excessive_ground_time',
+      message: `Excessive post-flight ground time: ${roundedMinutes} minutes between Landing and Block On (threshold: ${GROUND_TIME_THRESHOLD_MINUTES} minutes)`,
+      severity: 'warning'
+    })
+  }
+
+  // 2. Check for location disconnect - get the most recent flight for this aircraft before the new flight
   if (icaoDeparture) {
     const { data: previousFlights, error: prevFlightError } = await supabase
       .from('flightlog')
       .select('icao_destination, block_on, landing_time')
       .eq('plane_id', planeId)
-      .gte('block_off', previousDayStart.toISOString())
       .lt('block_off', newBlockOff.toISOString())
       .order('block_on', { ascending: false })
       .limit(1)
@@ -384,7 +412,7 @@ export async function checkFlightWarnings(
     }
   }
 
-  // 2. Check for flight overlap - check if this flight's time overlaps with any existing flight for the same aircraft on the same day
+  // 3. Check for flight overlap - check if this flight's time overlaps with any existing flight for the same aircraft on the same day
   const { data: overlappingFlights, error: overlapError } = await supabase
     .from('flightlog')
     .select('id, block_off, block_on')

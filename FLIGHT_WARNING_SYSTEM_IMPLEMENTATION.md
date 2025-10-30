@@ -1,23 +1,29 @@
 # Flight Log Warning System - Implementation Summary
 
 ## Overview
-This document outlines the complete implementation of the flight log warning system that detects location disconnects and flight overlaps, allowing users to create entries despite warnings while flagging them for board review.
+This document outlines the complete implementation of the flight log warning system that detects excessive ground times, location disconnects, and flight overlaps, allowing users to create entries despite warnings while flagging them for board review.
 
 ## Requirements Implemented
 
-### 1. Location Disconnect Warning
-- When creating a flight, the system checks if the departure ICAO code matches the destination ICAO code of the previous flight for the same aircraft on the same day or previous day
+### 1. Excessive Ground Time Warning
+- Checks if the time between Block Off and Takeoff exceeds 45 minutes
+- Checks if the time between Landing and Block On exceeds 45 minutes
+- If either threshold is exceeded, displays: "Excessive pre-flight ground time: [X] minutes between Block Off and Takeoff (threshold: 45 minutes)" or "Excessive post-flight ground time: [X] minutes between Landing and Block On (threshold: 45 minutes)"
+
+### 2. Location Disconnect Warning
+- When creating a flight, the system checks if the departure ICAO code matches the destination ICAO code of the most recent previous flight for the same aircraft
+- No time restriction - checks all previous flights to find the most recent one
 - If they don't match, displays: "Location disconnect: Previous flight landed at [LAST_ICAO] but new flight departs from [NEW_ICAO]"
 
-### 2. Flight Overlap Warning
+### 3. Flight Overlap Warning
 - Checks if the new flight times (block off to block on) overlap with any existing flight for the same aircraft on the same day
 - If overlap detected, displays: "Flight overlap detected with another flight on [DATE]"
 
-### 3. Allow Creation Despite Warnings
+### 4. Allow Creation Despite Warnings
 - Users can still create flights even with warnings present
 - Confirmation modal shows warnings prominently with clear messaging
 
-### 4. Flag for Board Review
+### 5. Flag for Board Review
 - Flights created with warnings are marked with `needs_board_review = true`
 - Notifications are automatically created for all board members
 - Notifications link directly to the aircraft's flight log and the specific entry
@@ -122,10 +128,18 @@ npx supabase migration up
 
 ## Warning Logic Details
 
+### Excessive Ground Time Check
+```
+1. Calculate time difference between Takeoff and Block Off in minutes
+2. If difference > 45 minutes, create warning for pre-flight ground time
+3. Calculate time difference between Block On and Landing in minutes
+4. If difference > 45 minutes, create warning for post-flight ground time
+```
+
 ### Location Disconnect Check
 ```
-1. Get the most recent flight for the same aircraft
-2. Search within same day or previous day
+1. Get the most recent flight for the same aircraft before the new flight
+2. No time restriction - searches all historical flights
 3. Compare previous flight's icao_destination with new flight's icao_departure
 4. If mismatch detected, create warning
 ```
@@ -200,9 +214,12 @@ When a flight is created with warnings, notifications are created with:
 
 - [ ] Apply database migration successfully
 - [ ] Create flight without warnings - should work normally
+- [ ] Create flight with excessive pre-flight ground time (>45 min between block-off and takeoff) - warning should appear
+- [ ] Create flight with excessive post-flight ground time (>45 min between landing and block-on) - warning should appear
 - [ ] Create flight with location disconnect - warning should appear
+- [ ] Create flight with location disconnect after several days gap - warning should appear
 - [ ] Create flight with time overlap - warning should appear
-- [ ] Create flight with both warnings - both should appear
+- [ ] Create flight with multiple warnings - all should appear
 - [ ] Confirm creation with warnings - entry should be created
 - [ ] Verify `needs_board_review` flag is set to true
 - [ ] Verify board members receive notifications
@@ -249,7 +266,9 @@ For questions or issues with this implementation:
 ## Summary
 
 This implementation provides a production-ready warning system that:
-- ✅ Detects location disconnects and flight overlaps
+- ✅ Detects excessive ground times (>45 minutes between block-off/takeoff or landing/block-on)
+- ✅ Detects location disconnects (regardless of time gap between flights)
+- ✅ Detects flight overlaps
 - ✅ Shows clear warnings to users before creation
 - ✅ Allows flight creation despite warnings
 - ✅ Flags entries for board review with `needs_board_review`
