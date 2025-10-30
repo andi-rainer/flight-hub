@@ -174,7 +174,7 @@ export async function AircraftFlightLogsTab({ aircraftId, page = 1 }: AircraftFl
                         {log.locked && (
                           <Badge variant="secondary" className="text-xs">
                             <Lock className="h-3 w-3 mr-1" />
-                            Locked
+                            Gesperrt
                           </Badge>
                         )}
                         {log.charged && (

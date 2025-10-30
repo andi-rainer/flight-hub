@@ -126,6 +126,15 @@ export function FlightlogContent({ aircraftId, userId, isBoardMember }: Flightlo
   }
 
   const handleSelectEntry = (entry: FlightlogWithTimes) => {
+    if (entry.charged) {
+      return toast.error('This entry is charged and cannot be edited. Please charge back to the user before editing.')
+    }
+    if (entry.locked && !isBoardMember) {
+      return toast.error('This entry is locked and cannot be edited.')
+    }
+    else if ((entry.pilot_id !== userId) && (entry.copilot_id !== userId) && !isBoardMember) {
+      return toast.error('Only the pilot(s) or board members can edit this entry.')
+    }
     setSelectedEntry(entry)
     setDialogOpen(true)
   }
