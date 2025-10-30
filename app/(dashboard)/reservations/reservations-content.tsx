@@ -23,9 +23,15 @@ interface ReservationsContentProps {
   isBoardMember: boolean
 }
 
+type AircraftWithMaintenance = Pick<Plane, 'id' | 'tail_number' | 'type' | 'color'> & {
+  total_flight_hours?: number
+  hours_until_maintenance?: number | null
+  maintenance_status?: string
+}
+
 export function ReservationsContent({ userId, isBoardMember }: ReservationsContentProps) {
   const [reservations, setReservations] = useState<ActiveReservation[]>([])
-  const [aircraft, setAircraft] = useState<Pick<Plane, 'id' | 'tail_number' | 'type' | 'color'>[]>([])
+  const [aircraft, setAircraft] = useState<AircraftWithMaintenance[]>([])
   const [filteredReservations, setFilteredReservations] = useState<ActiveReservation[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [selectedAircraft, setSelectedAircraft] = useState<string>('all')

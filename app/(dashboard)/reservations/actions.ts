@@ -456,14 +456,14 @@ export async function deleteReservation(id: string) {
 }
 
 /**
- * Get all active aircraft for reservation dropdown
+ * Get all active aircraft for reservation dropdown with maintenance status
  */
 export async function getActiveAircraft() {
   const supabase = await createClient()
 
   const { data, error } = await supabase
-    .from('planes')
-    .select('id, tail_number, type, color')
+    .from('aircraft_with_maintenance')
+    .select('id, tail_number, type, color, total_flight_hours, hours_until_maintenance, maintenance_status')
     .eq('active', true)
     .order('tail_number', { ascending: true })
 

@@ -7,17 +7,20 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import Link from 'next/link'
 import { AircraftFilters } from './components/aircraft-filters'
 import { AddAircraftDialog } from './components/add-aircraft-dialog'
-import { Eye } from 'lucide-react'
+import { Eye, AlertTriangle, CheckCircle, Clock, Wrench } from 'lucide-react'
 
 interface AircraftWithAvailability extends Plane {
   isAvailable: boolean
+  total_flight_hours?: number
+  hours_until_maintenance?: number | null
+  maintenance_status?: string
 }
 
 async function getAircrafts(searchParams: { status?: string; search?: string }): Promise<AircraftWithAvailability[]> {
   const supabase = await createClient()
 
   let query = supabase
-    .from('planes')
+    .from('aircraft_with_maintenance')
     .select('*')
     .order('tail_number', { ascending: true })
 
@@ -85,6 +88,50 @@ async function getCurrentUser(): Promise<User | null> {
   return profile
 }
 
+function getMaintenanceStatusBadge(status?: string, hoursRemaining?: number | null) {
+  if (!status || status === 'not_scheduled') {
+    return (
+      <Badge variant="secondary" className="gap-1 text-xs">
+        <Clock className="h-3 w-3" />
+        Not Set
+      </Badge>
+    )
+  }
+
+  switch (status) {
+    case 'ok':
+      return (
+        <Badge variant="default" className="gap-1 bg-green-600 hover:bg-green-700 text-xs">
+          <CheckCircle className="h-3 w-3" />
+          {hoursRemaining?.toFixed(0)}h
+        </Badge>
+      )
+    case 'warning':
+      return (
+        <Badge variant="default" className="gap-1 bg-yellow-600 hover:bg-yellow-700 text-xs">
+          <AlertTriangle className="h-3 w-3" />
+          {hoursRemaining?.toFixed(0)}h
+        </Badge>
+      )
+    case 'critical':
+      return (
+        <Badge variant="default" className="gap-1 bg-orange-600 hover:bg-orange-700 text-xs">
+          <AlertTriangle className="h-3 w-3" />
+          {hoursRemaining?.toFixed(0)}h
+        </Badge>
+      )
+    case 'overdue':
+      return (
+        <Badge variant="destructive" className="gap-1 text-xs">
+          <AlertTriangle className="h-3 w-3" />
+          Overdue
+        </Badge>
+      )
+    default:
+      return <Badge variant="secondary" className="text-xs">Unknown</Badge>
+  }
+}
+
 export default async function AircraftsPage({
   searchParams,
 }: {
@@ -118,13 +165,19 @@ export default async function AircraftsPage({
               <TableHead>Type</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Availability</TableHead>
+              <TableHead>
+                <div className="flex items-center gap-1">
+                  <Wrench className="h-3 w-3" />
+                  Maintenance
+                </div>
+              </TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {aircrafts.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center text-muted-foreground">
+                <TableCell colSpan={6} className="text-center text-muted-foreground">
                   No aircrafts found
                 </TableCell>
               </TableRow>
@@ -142,6 +195,9 @@ export default async function AircraftsPage({
                     <Badge variant={aircraft.isAvailable ? 'outline' : 'destructive'}>
                       {aircraft.isAvailable ? 'Available' : 'Reserved'}
                     </Badge>
+                  </TableCell>
+                  <TableCell>
+                    {getMaintenanceStatusBadge(aircraft.maintenance_status, aircraft.hours_until_maintenance)}
                   </TableCell>
                   <TableCell className="text-right">
                     <Button variant="ghost" size="sm" asChild>
@@ -182,6 +238,7 @@ export default async function AircraftsPage({
                     <Badge variant={aircraft.isAvailable ? 'outline' : 'destructive'}>
                       {aircraft.isAvailable ? 'Available' : 'Reserved'}
                     </Badge>
+                    {getMaintenanceStatusBadge(aircraft.maintenance_status, aircraft.hours_until_maintenance)}
                   </div>
                 </div>
               </CardHeader>

@@ -22,15 +22,22 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { toast } from 'sonner'
 import { createReservation, updateReservation, deleteReservation } from '../actions'
-import type { ActiveReservation, Plane, ReservationStatus } from '@/lib/database.types'
-import { Loader2, Plane as PlaneIcon, Clock, User, MessageSquare, AlertCircle } from 'lucide-react'
+import { type ActiveReservation, type Plane, type ReservationStatus } from '@/lib/database.types'
+import { Loader2, Plane as PlaneIcon, Clock, User, MessageSquare, AlertCircle, AlertTriangle, Wrench } from 'lucide-react'
+
+type AircraftWithMaintenance = Pick<Plane, 'id' | 'tail_number' | 'type' | 'color'> & {
+  total_flight_hours?: number
+  hours_until_maintenance?: number | null
+  maintenance_status?: string
+}
 
 interface ReservationDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  aircraft: Pick<Plane, 'id' | 'tail_number' | 'type' | 'color'>[]
+  aircraft: AircraftWithMaintenance[]
   initialStartTime?: Date
   initialEndTime?: Date
   initialAircraftId?: string
@@ -223,14 +230,74 @@ export function ReservationDialog({
                 <SelectValue placeholder="Select aircraft" />
               </SelectTrigger>
               <SelectContent>
-                {aircraft.map((plane) => (
-                  <SelectItem key={plane.id} value={plane.id}>
-                    {plane.tail_number} - {plane.type}
-                  </SelectItem>
-                ))}
+                {aircraft.map((plane) => {
+                  const maintenanceIcon = plane.maintenance_status === 'overdue' || plane.maintenance_status === 'critical'
+                    ? <AlertTriangle className="h-3 w-3 inline ml-1 text-destructive" />
+                    : null
+
+                  return (
+                    <SelectItem key={plane.id} value={plane.id}>
+                      <div className="flex items-center gap-2">
+                        <span>{plane.tail_number} - {plane.type}</span>
+                        {maintenanceIcon}
+                        {plane.hours_until_maintenance !== undefined && plane.hours_until_maintenance !== null && (
+                          <span className="text-xs text-muted-foreground">
+                            ({plane.hours_until_maintenance > 0 ? `${plane.hours_until_maintenance.toFixed(0)}h left` : 'Overdue'})
+                          </span>
+                        )}
+                      </div>
+                    </SelectItem>
+                  )
+                })}
               </SelectContent>
             </Select>
           </div>
+
+          {/* Maintenance Warning */}
+          {planeId && (() => {
+            const selectedAircraft = aircraft.find(a => a.id === planeId)
+            if (!selectedAircraft) return null
+
+            if (selectedAircraft.maintenance_status === 'overdue') {
+              return (
+                <Alert variant="destructive">
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertTitle>Maintenance Overdue</AlertTitle>
+                  <AlertDescription>
+                    This aircraft is {Math.abs(selectedAircraft.hours_until_maintenance || 0).toFixed(0)} hours overdue for
+                    maintenance. Consider selecting a different aircraft or confirming maintenance status before flying.
+                  </AlertDescription>
+                </Alert>
+              )
+            }
+
+            if (selectedAircraft.maintenance_status === 'critical') {
+              return (
+                <Alert variant="destructive" className="border-orange-600 bg-orange-50">
+                  <AlertTriangle className="h-4 w-4 text-orange-800" />
+                  <AlertTitle className="text-orange-800">Maintenance Critical</AlertTitle>
+                  <AlertDescription className="text-orange-700">
+                    Only {selectedAircraft.hours_until_maintenance?.toFixed(0)} hours remaining until maintenance is due.
+                    Ensure your flight duration is within this limit.
+                  </AlertDescription>
+                </Alert>
+              )
+            }
+
+            if (selectedAircraft.maintenance_status === 'warning' && selectedAircraft.hours_until_maintenance !== null) {
+              return (
+                <Alert className="border-yellow-600 bg-yellow-50">
+                  <Wrench className="h-4 w-4 text-yellow-800" />
+                  <AlertTitle className="text-yellow-800">Maintenance Due Soon</AlertTitle>
+                  <AlertDescription className="text-yellow-700">
+                    {selectedAircraft.hours_until_maintenance.toFixed(0)} hours remaining until maintenance is due.
+                  </AlertDescription>
+                </Alert>
+              )
+            }
+
+            return null
+          })()}
 
           {/* Time Range */}
           <div className="grid grid-cols-2 gap-4">
