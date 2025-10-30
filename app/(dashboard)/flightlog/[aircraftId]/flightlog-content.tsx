@@ -22,7 +22,7 @@ import { FlightlogDialog } from './components/flightlog-dialog'
 import { getFlightlogs, getAllUsers, getActiveAircraftForFlightlog, getOperationTypesForPlane } from '../actions'
 import { createClient } from '@/lib/supabase/client'
 import type { FlightlogWithTimes, OperationType } from '@/lib/database.types'
-import { Plus, Filter, Loader2, Lock, ExternalLink, Plane as PlaneIcon, ArrowLeft, Clock, Target } from 'lucide-react'
+import { Plus, Filter, Loader2, Lock, ExternalLink, Plane as PlaneIcon, ArrowLeft, Clock, Target, AlertTriangle } from 'lucide-react'
 import { toast } from 'sonner'
 import { format } from 'date-fns'
 import Link from 'next/link'
@@ -398,6 +398,13 @@ export function FlightlogContent({ aircraftId, userId, isBoardMember }: Flightlo
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-1 flex-wrap">
+                        {entry.needs_board_review && (
+                          <Badge variant="destructive" className="text-xs">
+                            <AlertTriangle className="mr-1 h-2 w-2" />
+                            <span className="hidden sm:inline">Review</span>
+                            <span className="sm:hidden">!</span>
+                          </Badge>
+                        )}
                         {entry.locked && (
                           <Badge variant="secondary" className="text-xs">
                             <Lock className="mr-1 h-2 w-2" />
@@ -410,7 +417,7 @@ export function FlightlogContent({ aircraftId, userId, isBoardMember }: Flightlo
                             <span className="sm:hidden">C</span>
                           </Badge>
                         )}
-                        {!entry.locked && !entry.charged && (
+                        {!entry.locked && !entry.charged && !entry.needs_board_review && (
                           <Badge variant="outline" className="text-xs hidden sm:inline-flex">Editable</Badge>
                         )}
                       </div>

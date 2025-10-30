@@ -10,10 +10,10 @@ FlightHub Database Schema - Entity Relationship Diagram
 │  │ raw_user_meta_data │  │                                  │
 │  └────────────────────┘  │                                  │
 └──────────────────────────┘                                  │
-           │                                                   │
+           │                                                  │
            │ Trigger: on_auth_user_created                    │
            │ (auto-creates public.users)                      │
-           ▼                                                   │
+           ▼                                                  │
 ┌─────────────────────────────────────┐                       │
 │        public.users                 │                       │
 ├─────────────────────────────────────┤                       │
@@ -25,16 +25,16 @@ FlightHub Database Schema - Entity Relationship Diagram
 │ functions (TEXT[], FK logical)      │                       │
 │ created_at, updated_at              │                       │
 └─────────────────────────────────────┘                       │
-           │                                                   │
+           │                                                  │
            │ Referenced by multiple tables                    │
-           │                                                   │
+           │                                                  │
     ┌──────┴────────┬─────────────┬──────────────┐            │
     │               │             │              │            │
     ▼               ▼             ▼              ▼            │
-┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐      │
-│reserva-  │  │flightlog │  │documents │  │accounts  │      │
-│tions     │  │          │  │          │  │          │      │
-└──────────┘  └──────────┘  └──────────┘  └──────────┘      │
+┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐        │
+│reserva-  │  │flightlog │  │documents │  │accounts  │        │
+│tions     │  │          │  │          │  │          │        │
+└──────────┘  └──────────┘  └──────────┘  └──────────┘        │
     │               │             │              │            │
     └───────────────┴─────────────┴──────────────┴────────────┘
                     (All tables reference users)
@@ -98,12 +98,12 @@ FlightHub Database Schema - Entity Relationship Diagram
 │ remarks (TEXT)                       │    │   │
 │ created_at, updated_at               │    │   │
 └──────────────────────────────────────┘    │   │
-                                             │   │
-           Constraints:                      │   │
-           - end_time > start_time           │   │
-           - future_check                    │   │
-                                             │   │
-                                             │   │
+           Constraints:                     │   │
+           - end_time > start_time          │   │
+           - future_check                   │   │
+                                            │   │
+                                            │   │
+                                            │   │
 ┌──────────────────────────────────────┐    │   │
 │          flightlog                   │    │   │
 ├──────────────────────────────────────┤    │   │
@@ -119,18 +119,18 @@ FlightHub Database Schema - Entity Relationship Diagram
 │ charged (BOOLEAN)                    │        │
 │ created_at, updated_at               │        │
 └──────────────────────────────────────┘        │
-                                                 │
-           Constraints:                          │
-           - block_off > block_on                │
-           - landing > takeoff                   │
-           - times in sequence                   │
-           - pilot ≠ copilot                     │
-           - charged requires locked             │
-                                                 │
-           Trigger:                              │
-           - Prevents locked entry modification  │
-                                                 │
-                                                 │
+                                                │
+           Constraints:                         │
+           - block_off > block_on               │
+           - landing > takeoff                  │
+           - times in sequence                  │
+           - pilot ≠ copilot                    │
+           - charged requires locked            │
+                                                │
+           Trigger:                             │
+           - Prevents locked entry modification │
+                                                │
+                                                │
 ┌──────────────────────────────────────┐        │
 │         documents                    │        │
 ├──────────────────────────────────────┤        │
@@ -147,14 +147,14 @@ FlightHub Database Schema - Entity Relationship Diagram
 │ blocks_aircraft (BOOLEAN)            │    │   │
 │  ← prevents reservation if expired   │    │   │
 └──────────────────────────────────────┘    │   │
-                                             │   │
-           Constraint:                       │   │
-           - Exactly one of: plane_id,       │   │
-             user_id, category must be set   │   │
-           - blocks_aircraft only if         │   │
-             plane_id is set                 │   │
-                                             │   │
-                                             │   │
+                                            │   │
+           Constraint:                      │   │
+           - Exactly one of: plane_id,      │   │
+             user_id, category must be set  │   │
+           - blocks_aircraft only if        │   │
+             plane_id is set                │   │
+                                            │   │
+                                            │   │
 ┌──────────────────────────────────────┐    │   │
 │          accounts                    │    │   │
 ├──────────────────────────────────────┤    │   │

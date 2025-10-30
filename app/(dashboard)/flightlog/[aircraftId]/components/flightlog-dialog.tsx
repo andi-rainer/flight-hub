@@ -22,9 +22,10 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { toast } from 'sonner'
-import { createFlightlog, updateFlightlog, deleteFlightlog, uploadMassAndBalanceDocument } from '../../actions'
+import { createFlightlog, updateFlightlog, deleteFlightlog, uploadMassAndBalanceDocument, checkFlightWarnings, markFlightlogAsReviewed, getPreviousFlightDestination, type FlightWarning } from '../../actions'
 import type { FlightlogWithTimes, OperationType } from '@/lib/database.types'
-import { Loader2, Plane as PlaneIcon, User, Clock, Fuel, Lock, ExternalLink, Upload, FileText, Wrench } from 'lucide-react'
+import { Loader2, Plane as PlaneIcon, User, Clock, Fuel, Lock, ExternalLink, Upload, FileText, Wrench, AlertTriangle, CheckCircle } from 'lucide-react'
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 
 interface FlightlogDialogProps {
   open: boolean
@@ -51,6 +52,7 @@ export function FlightlogDialog({
 }: FlightlogDialogProps) {
   const [isPending, startTransition] = useTransition()
   const [isDeleting, setIsDeleting] = useState(false)
+  const [isMarkingReviewed, setIsMarkingReviewed] = useState(false)
 
   // Form state - aircraft is fixed, so no need for planeId state
   const [pilotId, setPilotId] = useState<string>(currentUserId)
@@ -70,6 +72,7 @@ export function FlightlogDialog({
   const [mAndBFile, setMAndBFile] = useState<File | null>(null)
   const [isUploadingMB, setIsUploadingMB] = useState(false)
   const [showConfirmation, setShowConfirmation] = useState(false)
+  const [flightWarnings, setFlightWarnings] = useState<FlightWarning[]>([])
   const [calculatedDates, setCalculatedDates] = useState<{
     blockOff: Date
     takeoff: Date
@@ -137,15 +140,23 @@ export function FlightlogDialog({
         setFuel('')
         setOil('')
         setLandings('1')
-        setIcaoDeparture('')
         setIcaoDestination('')
         setMAndBPdfUrl('')
         setMAndBFile(null)
+
+        // Pre-fill ICAO departure with previous flight's destination
+        getPreviousFlightDestination(aircraftId).then(result => {
+          if (result.data) {
+            setIcaoDeparture(result.data)
+          } else {
+            setIcaoDeparture('')
+          }
+        })
       }
       setShowConfirmation(false)
       setCalculatedDates(null)
     }
-  }, [open, existingEntry, currentUserId, operationTypes])
+  }, [open, existingEntry, currentUserId, operationTypes, aircraftId])
 
   // Helper function to calculate dates with smart next-day detection
   const calculateDates = () => {
@@ -276,6 +287,26 @@ export function FlightlogDialog({
       return
     }
 
+    // Check for warnings (only for new entries, not edits)
+    if (!isEditMode) {
+      const warningCheck = await checkFlightWarnings(
+        aircraftId,
+        blockOffDate.toISOString(),
+        blockOnDate.toISOString(),
+        icaoDeparture || null,
+        icaoDestination || null
+      )
+
+      if (warningCheck.error) {
+        toast.error(`Warning check failed: ${warningCheck.error}`)
+        return
+      }
+
+      if (warningCheck.data) {
+        setFlightWarnings(warningCheck.data.warnings)
+      }
+    }
+
     // Store calculated dates and show confirmation modal
     setCalculatedDates(dates)
     setShowConfirmation(true)
@@ -339,27 +370,35 @@ export function FlightlogDialog({
           onOpenChange(false)
         }
       } else {
-        const result = await createFlightlog({
-          plane_id: aircraftId,
-          pilot_id: pilotId,
-          copilot_id: additionalCrewId || null,
-          operation_type_id: operationTypeId || null,
-          block_off: blockOffDate.toISOString(),
-          takeoff_time: takeoffDate.toISOString(),
-          landing_time: landingDate.toISOString(),
-          block_on: blockOnDate.toISOString(),
-          fuel: fuel ? parseFloat(fuel) : null,
-          oil: oil ? parseFloat(oil) : null,
-          landings: landings ? parseInt(landings) : 1,
-          icao_departure: icaoDeparture.toUpperCase() || null,
-          icao_destination: icaoDestination.toUpperCase() || null,
-          m_and_b_pdf_url: mbUrl || null,
-        })
+        const result = await createFlightlog(
+          {
+            plane_id: aircraftId,
+            pilot_id: pilotId,
+            copilot_id: additionalCrewId || null,
+            operation_type_id: operationTypeId || null,
+            block_off: blockOffDate.toISOString(),
+            takeoff_time: takeoffDate.toISOString(),
+            landing_time: landingDate.toISOString(),
+            block_on: blockOnDate.toISOString(),
+            fuel: fuel ? parseFloat(fuel) : null,
+            oil: oil ? parseFloat(oil) : null,
+            landings: landings ? parseInt(landings) : 1,
+            icao_departure: icaoDeparture.toUpperCase() || null,
+            icao_destination: icaoDestination.toUpperCase() || null,
+            m_and_b_pdf_url: mbUrl || null,
+          },
+          flightWarnings.length > 0, // overrideWarnings
+          flightWarnings // warnings
+        )
 
         if (result.error) {
           toast.error(result.error)
         } else {
-          toast.success('Flightlog entry created successfully')
+          if (flightWarnings.length > 0) {
+            toast.success('Flightlog entry created successfully. Board members have been notified for review.')
+          } else {
+            toast.success('Flightlog entry created successfully')
+          }
           onOpenChange(false)
         }
       }
@@ -383,6 +422,23 @@ export function FlightlogDialog({
       toast.error(result.error)
     } else {
       toast.success('Flightlog entry deleted successfully')
+      onOpenChange(false)
+    }
+  }
+
+  const handleMarkAsReviewed = async () => {
+    if (!existingEntry) return
+
+    setIsMarkingReviewed(true)
+
+    const result = await markFlightlogAsReviewed(existingEntry.id!)
+
+    setIsMarkingReviewed(false)
+
+    if (result.error) {
+      toast.error(result.error)
+    } else {
+      toast.success('Flight entry marked as reviewed')
       onOpenChange(false)
     }
   }
@@ -743,7 +799,13 @@ export function FlightlogDialog({
           {isEditMode && existingEntry && (
             <div className="space-y-2">
               <Label>Status</Label>
-              <div className="flex gap-2">
+              <div className="flex gap-2 flex-wrap">
+                {existingEntry.needs_board_review && (
+                  <Badge variant="destructive">
+                    <AlertTriangle className="mr-1 h-3 w-3" />
+                    Needs Review
+                  </Badge>
+                )}
                 {existingEntry.locked && (
                   <Badge variant="secondary">
                     <Lock className="mr-1 h-3 w-3" />
@@ -753,10 +815,32 @@ export function FlightlogDialog({
                 {existingEntry.charged && (
                   <Badge variant="default">Charged</Badge>
                 )}
-                {!existingEntry.locked && !existingEntry.charged && (
+                {!existingEntry.locked && !existingEntry.charged && !existingEntry.needs_board_review && (
                   <Badge variant="outline">Editable</Badge>
                 )}
               </div>
+              {isBoardMember && existingEntry.needs_board_review && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleMarkAsReviewed}
+                  disabled={isMarkingReviewed || isPending || isDeleting}
+                  className="w-full"
+                >
+                  {isMarkingReviewed ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Marking as Reviewed...
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle className="mr-2 h-4 w-4" />
+                      Mark as Reviewed
+                    </>
+                  )}
+                </Button>
+              )}
             </div>
           )}
 
@@ -808,7 +892,7 @@ export function FlightlogDialog({
                 type="button"
                 variant="destructive"
                 onClick={handleDelete}
-                disabled={isPending || isDeleting}
+                disabled={isPending || isDeleting || isMarkingReviewed}
                 className="mr-auto"
               >
                 {isDeleting ? (
@@ -825,12 +909,12 @@ export function FlightlogDialog({
               type="button"
               variant="outline"
               onClick={() => onOpenChange(false)}
-              disabled={isPending || isDeleting}
+              disabled={isPending || isDeleting || isMarkingReviewed}
             >
               Cancel
             </Button>
             {(!isEditMode || canEdit) && (
-              <Button type="submit" disabled={isPending || isDeleting || isUploadingMB || !isFormValid}>
+              <Button type="submit" disabled={isPending || isDeleting || isUploadingMB || isMarkingReviewed || !isFormValid}>
                 {isPending || isUploadingMB ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -858,14 +942,32 @@ export function FlightlogDialog({
           <div className="space-y-4">
             {/* Warning for different dates */}
             {calculatedDates.hasDifferentDates && (
-              <div className="rounded-md bg-orange-50 border border-orange-200 p-3">
-                <p className="text-sm font-semibold text-orange-800">
-                  ⚠️ CAREFUL - Different dates detected
-                </p>
-                <p className="text-xs text-orange-700 mt-1">
+              <Alert variant="default" className="border-orange-200 bg-orange-50">
+                <AlertTriangle className="h-4 w-4 text-orange-800" />
+                <AlertTitle className="text-orange-800">CAREFUL - Different dates detected</AlertTitle>
+                <AlertDescription className="text-orange-700">
                   This flight crosses midnight. Please verify the dates below are correct.
-                </p>
-              </div>
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {/* Flight warnings */}
+            {flightWarnings.length > 0 && (
+              <Alert variant="destructive" className="border-red-200 bg-red-50">
+                <AlertTriangle className="h-4 w-4 text-red-800" />
+                <AlertTitle className="text-red-800">Flight Warnings Detected</AlertTitle>
+                <AlertDescription className="text-red-700 space-y-1">
+                  {flightWarnings.map((warning, index) => (
+                    <div key={index} className="flex items-start gap-2">
+                      <span className="mt-0.5">•</span>
+                      <span>{warning.message}</span>
+                    </div>
+                  ))}
+                  <p className="mt-2 text-sm font-medium">
+                    By continuing, this entry will be flagged for board review and all board members will be notified.
+                  </p>
+                </AlertDescription>
+              </Alert>
             )}
 
             {/* Flight Summary */}

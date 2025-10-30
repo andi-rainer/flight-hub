@@ -403,6 +403,7 @@ export type Database = {
           landings: number
           locked: boolean
           m_and_b_pdf_url: string | null
+          needs_board_review: boolean
           oil: number | null
           operation_type_id: string | null
           pilot_id: string
@@ -426,6 +427,7 @@ export type Database = {
           landings?: number
           locked?: boolean
           m_and_b_pdf_url?: string | null
+          needs_board_review?: boolean
           oil?: number | null
           operation_type_id?: string | null
           pilot_id: string
@@ -449,6 +451,7 @@ export type Database = {
           landings?: number
           locked?: boolean
           m_and_b_pdf_url?: string | null
+          needs_board_review?: boolean
           oil?: number | null
           operation_type_id?: string | null
           pilot_id?: string
@@ -547,6 +550,7 @@ export type Database = {
         Row: {
           created_at: string
           document_id: string | null
+          flightlog_id: string | null
           id: string
           link: string | null
           message: string
@@ -558,6 +562,7 @@ export type Database = {
         Insert: {
           created_at?: string
           document_id?: string | null
+          flightlog_id?: string | null
           id?: string
           link?: string | null
           message: string
@@ -569,6 +574,7 @@ export type Database = {
         Update: {
           created_at?: string
           document_id?: string | null
+          flightlog_id?: string | null
           id?: string
           link?: string | null
           message?: string
@@ -1015,6 +1021,7 @@ export type Database = {
           landings: number | null
           locked: boolean | null
           m_and_b_pdf_url: string | null
+          needs_board_review: boolean | null
           oil: number | null
           operation_rate: number | null
           operation_type_color: string | null

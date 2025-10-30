@@ -5,9 +5,9 @@ import { FlightlogContent } from './flightlog-content'
 import { Loader2 } from 'lucide-react'
 
 interface FlightlogAircraftPageProps {
-  params: {
+  params: Promise<{
     aircraftId: string
-  }
+  }>
 }
 
 export default async function FlightlogAircraftPage({ params }: FlightlogAircraftPageProps) {
@@ -16,6 +16,9 @@ export default async function FlightlogAircraftPage({ params }: FlightlogAircraf
   if (!userProfile) {
     redirect('/login')
   }
+
+  // Await params before accessing its properties (Next.js 15 requirement)
+  const { aircraftId } = await params
 
   return (
     <Suspense
@@ -26,7 +29,7 @@ export default async function FlightlogAircraftPage({ params }: FlightlogAircraf
       }
     >
       <FlightlogContent
-        aircraftId={params.aircraftId}
+        aircraftId={aircraftId}
         userId={userProfile.id}
         isBoardMember={userProfile.role?.includes('board') || false}
       />

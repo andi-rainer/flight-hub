@@ -1,7 +1,18 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
-import type { FlightlogInsert, FlightlogUpdate } from '@/lib/database.types'
+import type { FlightlogInsert, FlightlogUpdate, NotificationInsert } from '@/lib/database.types'
+
+export type FlightWarning = {
+  type: 'location_disconnect' | 'flight_overlap'
+  message: string
+  severity: 'warning'
+}
+
+export type FlightWarningCheckResult = {
+  warnings: FlightWarning[]
+  hasWarnings: boolean
+}
 
 export async function getFlightlogs() {
   const supabase = await createClient()
@@ -36,7 +47,11 @@ export async function getFlightlogById(id: string) {
   return { data, error: null }
 }
 
-export async function createFlightlog(entry: FlightlogInsert) {
+export async function createFlightlog(
+  entry: FlightlogInsert,
+  overrideWarnings: boolean = false,
+  warnings: FlightWarning[] = []
+) {
   const supabase = await createClient()
 
   // Get current user
@@ -82,16 +97,59 @@ export async function createFlightlog(entry: FlightlogInsert) {
     return { data: null, error: 'Additional crewmember cannot be the same as pilot' }
   }
 
-  // Insert flightlog entry
+  // Insert flightlog entry with needs_board_review flag set based on overrideWarnings
   const { data, error } = await supabase
     .from('flightlog')
-    .insert(entry)
+    .insert({
+      ...entry,
+      needs_board_review: overrideWarnings
+    })
     .select()
     .single()
 
   if (error) {
     console.error('Error creating flightlog:', error)
     return { data: null, error: error.message }
+  }
+
+  // If warnings were overridden, create notifications for board members
+  if (overrideWarnings && data) {
+    const { data: boardMembers } = await getBoardMembers()
+
+    if (boardMembers && boardMembers.length > 0) {
+      // Get aircraft details
+      const { data: aircraft } = await supabase
+        .from('planes')
+        .select('tail_number')
+        .eq('id', entry.plane_id)
+        .single()
+
+      const tailNumber = aircraft?.tail_number || 'Unknown'
+
+      // Create notification message
+      const warningMessages = warnings.map(w => w.message).join('; ')
+      const notificationMessage = `Flight entry for ${tailNumber} created with warnings: ${warningMessages}`
+
+      // Create notifications for all board members
+      const notifications: NotificationInsert[] = boardMembers.map(member => ({
+        user_id: member.id,
+        type: 'flight_warning',
+        title: 'Flight Entry Needs Review',
+        message: notificationMessage,
+        link: `/flightlog/${entry.plane_id}`,
+        flightlog_id: data.id,
+        read: false
+      }))
+
+      const { error: notificationError } = await supabase
+        .from('notifications')
+        .insert(notifications)
+
+      if (notificationError) {
+        console.error('Error creating notifications:', notificationError)
+        // Don't fail the flight creation if notifications fail
+      }
+    }
   }
 
   return { data, error: null }
@@ -265,6 +323,200 @@ export async function getOperationTypesForPlane(planeId: string) {
   }
 
   return { data, error: null }
+}
+
+export async function checkFlightWarnings(
+  planeId: string,
+  blockOff: string,
+  blockOn: string,
+  icaoDeparture: string | null,
+  icaoDestination: string | null
+): Promise<{ data: FlightWarningCheckResult | null; error: string | null }> {
+  const supabase = await createClient()
+
+  const warnings: FlightWarning[] = []
+
+  // Parse dates
+  const newBlockOff = new Date(blockOff)
+  const newBlockOn = new Date(blockOn)
+
+  // Get the flight date (from block_off)
+  const flightDate = new Date(newBlockOff)
+  flightDate.setHours(0, 0, 0, 0)
+
+  // Get previous day start/end
+  const previousDayStart = new Date(flightDate)
+  previousDayStart.setDate(previousDayStart.getDate() - 1)
+  previousDayStart.setHours(0, 0, 0, 0)
+
+  const currentDayEnd = new Date(flightDate)
+  currentDayEnd.setDate(currentDayEnd.getDate() + 1)
+  currentDayEnd.setHours(23, 59, 59, 999)
+
+  // 1. Check for location disconnect - get the most recent flight for this aircraft on the same day or previous day
+  if (icaoDeparture) {
+    const { data: previousFlights, error: prevFlightError } = await supabase
+      .from('flightlog')
+      .select('icao_destination, block_on, landing_time')
+      .eq('plane_id', planeId)
+      .gte('block_off', previousDayStart.toISOString())
+      .lt('block_off', newBlockOff.toISOString())
+      .order('block_on', { ascending: false })
+      .limit(1)
+
+    if (prevFlightError) {
+      console.error('Error checking previous flights:', prevFlightError)
+      return { data: null, error: 'Failed to check previous flights' }
+    }
+
+    if (previousFlights && previousFlights.length > 0) {
+      const lastFlight = previousFlights[0]
+      const lastDestination = lastFlight.icao_destination
+
+      // Check if there's a location mismatch
+      if (lastDestination && lastDestination !== icaoDeparture) {
+        warnings.push({
+          type: 'location_disconnect',
+          message: `Location disconnect: Previous flight landed at ${lastDestination} but new flight departs from ${icaoDeparture}`,
+          severity: 'warning'
+        })
+      }
+    }
+  }
+
+  // 2. Check for flight overlap - check if this flight's time overlaps with any existing flight for the same aircraft on the same day
+  const { data: overlappingFlights, error: overlapError } = await supabase
+    .from('flightlog')
+    .select('id, block_off, block_on')
+    .eq('plane_id', planeId)
+    .gte('block_off', flightDate.toISOString())
+    .lt('block_off', currentDayEnd.toISOString())
+
+  if (overlapError) {
+    console.error('Error checking overlapping flights:', overlapError)
+    return { data: null, error: 'Failed to check for overlapping flights' }
+  }
+
+  if (overlappingFlights && overlappingFlights.length > 0) {
+    // Check each flight for time overlap
+    for (const flight of overlappingFlights) {
+      const existingBlockOff = new Date(flight.block_off)
+      const existingBlockOn = new Date(flight.block_on)
+
+      // Check if times overlap: new flight starts before existing ends AND new flight ends after existing starts
+      const hasOverlap =
+        newBlockOff < existingBlockOn && newBlockOn > existingBlockOff
+
+      if (hasOverlap) {
+        const overlapDate = new Date(existingBlockOff).toLocaleDateString('en-GB', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric'
+        })
+        warnings.push({
+          type: 'flight_overlap',
+          message: `Flight overlap detected with another flight on ${overlapDate}`,
+          severity: 'warning'
+        })
+        break // Only report one overlap warning
+      }
+    }
+  }
+
+  return {
+    data: {
+      warnings,
+      hasWarnings: warnings.length > 0
+    },
+    error: null
+  }
+}
+
+export async function getBoardMembers() {
+  const supabase = await createClient()
+
+  const { data, error } = await supabase
+    .from('users')
+    .select('id, name, surname, email')
+    .contains('role', ['board'])
+
+  if (error) {
+    console.error('Error fetching board members:', error)
+    return { data: null, error: error.message }
+  }
+
+  return { data, error: null }
+}
+
+export async function getPreviousFlightDestination(planeId: string): Promise<{ data: string | null; error: string | null }> {
+  const supabase = await createClient()
+
+  // Get the most recent flight for this aircraft
+  const { data, error } = await supabase
+    .from('flightlog')
+    .select('icao_destination, block_on')
+    .eq('plane_id', planeId)
+    .order('block_on', { ascending: false })
+    .limit(1)
+    .single()
+
+  if (error) {
+    // If no previous flights found, that's okay - return null
+    if (error.code === 'PGRST116') {
+      return { data: null, error: null }
+    }
+    console.error('Error fetching previous flight:', error)
+    return { data: null, error: error.message }
+  }
+
+  return { data: data?.icao_destination || null, error: null }
+}
+
+export async function markFlightlogAsReviewed(flightlogId: string) {
+  const supabase = await createClient()
+
+  // Get current user
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) {
+    return { error: 'Not authenticated' }
+  }
+
+  // Check if user is board member
+  const { data: userProfile } = await supabase
+    .from('users')
+    .select('role')
+    .eq('id', user.id)
+    .single()
+
+  const isBoardMember = userProfile?.role?.includes('board') || false
+
+  if (!isBoardMember) {
+    return { error: 'Only board members can mark flight entries as reviewed' }
+  }
+
+  // Update flightlog entry to clear needs_board_review flag
+  const { error: updateError } = await supabase
+    .from('flightlog')
+    .update({ needs_board_review: false })
+    .eq('id', flightlogId)
+
+  if (updateError) {
+    console.error('Error updating flightlog:', updateError)
+    return { error: 'Failed to mark flightlog as reviewed' }
+  }
+
+  // Mark all notifications associated with this flightlog as read
+  const { error: notificationError } = await supabase
+    .from('notifications')
+    .update({ read: true })
+    .eq('flightlog_id', flightlogId)
+
+  if (notificationError) {
+    console.error('Error updating notifications:', notificationError)
+    // Don't fail the operation if notification update fails
+  }
+
+  return { error: null }
 }
 
 export async function uploadMassAndBalanceDocument(formData: FormData) {
