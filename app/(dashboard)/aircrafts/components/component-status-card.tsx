@@ -2,9 +2,11 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
-import { AlertTriangle, CheckCircle, Clock, Wrench, Info } from 'lucide-react'
+import { AlertTriangle, CheckCircle, Clock, Wrench, Info, Edit, Trash2 } from 'lucide-react'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { formatHours } from '@/lib/format'
 
 export type ComponentWithStatus = {
   id: string
@@ -14,6 +16,9 @@ export type ComponentWithStatus = {
   model: string | null
   serial_number: string | null
   tbo_hours: number
+  hours_at_installation: number | null
+  component_hours_offset: number | null
+  aircraft_current_hours: number | null
   component_current_hours: number | null
   hours_remaining: number | null
   percentage_used: number | null
@@ -25,6 +30,7 @@ interface ComponentStatusCardProps {
   component: ComponentWithStatus
   detailed?: boolean
   onEdit?: () => void
+  onRemove?: () => void
   isBoardMember?: boolean
 }
 
@@ -103,6 +109,7 @@ export function ComponentStatusCard({
   component,
   detailed = false,
   onEdit,
+  onRemove,
   isBoardMember = false,
 }: ComponentStatusCardProps) {
   const componentName = component.position
@@ -134,14 +141,14 @@ export function ComponentStatusCard({
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <span className="font-medium cursor-help">
-                        {hoursRemaining.toFixed(1)}h
+                        {formatHours(hoursRemaining)}
                         <span className="text-muted-foreground ml-1">
                           ({(100 - percentageUsed).toFixed(0)}% remaining)
                         </span>
                       </span>
                     </TooltipTrigger>
                     <TooltipContent>
-                      <p>Current: {currentHours.toFixed(1)}h / TBO: {component.tbo_hours}h</p>
+                      <p>Current: {formatHours(currentHours)} / TBO: {formatHours(component.tbo_hours)}</p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
@@ -193,7 +200,7 @@ export function ComponentStatusCard({
           )}
           <div>
             <span className="text-muted-foreground">TBO:</span>
-            <span className="ml-2 font-medium">{component.tbo_hours}h</span>
+            <span className="ml-2 font-medium">{formatHours(component.tbo_hours)}</span>
           </div>
         </div>
 
@@ -203,12 +210,12 @@ export function ComponentStatusCard({
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Current Hours:</span>
-                <span className="font-medium">{currentHours.toFixed(1)}h</span>
+                <span className="font-medium">{formatHours(currentHours)}</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Hours Remaining:</span>
                 <span className={`font-medium ${hoursRemaining < 0 ? 'text-red-600' : ''}`}>
-                  {hoursRemaining.toFixed(1)}h
+                  {formatHours(hoursRemaining)}
                 </span>
               </div>
             </div>
@@ -216,8 +223,8 @@ export function ComponentStatusCard({
             {/* Progress Bar */}
             <div className="space-y-2">
               <div className="flex justify-between text-xs text-muted-foreground">
-                <span>0h</span>
-                <span>{component.tbo_hours}h TBO</span>
+                <span>0:00</span>
+                <span>{formatHours(component.tbo_hours)} TBO</span>
               </div>
               <div className="relative">
                 <Progress
@@ -238,6 +245,34 @@ export function ComponentStatusCard({
         {component.status !== 'active' && (
           <div className="text-sm text-muted-foreground italic">
             Component is {component.status}
+          </div>
+        )}
+
+        {/* Actions */}
+        {isBoardMember && component.status === 'active' && (
+          <div className="flex gap-2 pt-2 border-t">
+            {onEdit && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onEdit}
+                className="flex-1"
+              >
+                <Edit className="h-4 w-4 mr-2" />
+                Edit
+              </Button>
+            )}
+            {onRemove && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onRemove}
+                className="flex-1 text-red-600 hover:text-red-700"
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Remove
+              </Button>
+            )}
           </div>
         )}
       </CardContent>

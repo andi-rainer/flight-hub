@@ -40,7 +40,7 @@ export function BillingSection({ aircrafts }: BillingSectionProps) {
         {/* Placeholder UI for when schema is updated */}
         <div className="mt-4 rounded-md border bg-muted/50 p-4 text-center text-sm text-muted-foreground">
           <p>Aircraft hourly rate configuration will appear here once the schema is updated.</p>
-          <p className="mt-1">Current default rate: CHF 150.00/hour</p>
+          <p className="mt-1">Current default rate: €150.00/hour</p>
         </div>
 
         {/* TODO: Uncomment when schema is updated
@@ -50,7 +50,7 @@ export function BillingSection({ aircrafts }: BillingSectionProps) {
               <TableRow>
                 <TableHead>Tail Number</TableHead>
                 <TableHead>Type</TableHead>
-                <TableHead>Hourly Rate (CHF)</TableHead>
+                <TableHead>Hourly Rate (€)</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>

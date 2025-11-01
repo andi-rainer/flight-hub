@@ -9,9 +9,11 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Wrench, AlertTriangle, CheckCircle, Clock, Plus, TrendingUp } from 'lucide-react'
 import { AddMaintenanceRecordDialog } from './add-maintenance-record-dialog'
 import { UpdateMaintenanceScheduleDialog } from './update-maintenance-schedule-dialog'
+import { UpdateMeterReadingsDialog } from './update-meter-readings-dialog'
 import { MaintenanceRecordRow } from './maintenance-record-row'
 import { ComponentStatusCard, type ComponentWithStatus } from './component-status-card'
 import { getActiveAircraftComponents } from '@/lib/actions/aircraft-components'
+import { formatHours, formatEuro } from '@/lib/format'
 
 export type AircraftWithMaintenance = {
   id: string
@@ -45,6 +47,8 @@ export type MaintenanceRecord = {
   cost: number | null
   vendor: string | null
   notes: string | null
+  tach_hours: number | null
+  hobbs_hours: number | null
   created_at: string
   updated_at: string
   performed_by_user: {
@@ -109,6 +113,7 @@ export function AircraftMaintenanceTab({
 }: AircraftMaintenanceTabProps) {
   const [addDialogOpen, setAddDialogOpen] = useState(false)
   const [scheduleDialogOpen, setScheduleDialogOpen] = useState(false)
+  const [meterReadingsDialogOpen, setMeterReadingsDialogOpen] = useState(false)
   const [components, setComponents] = useState<ComponentWithStatus[]>([])
 
   // Load components
@@ -127,6 +132,15 @@ export function AircraftMaintenanceTab({
     c => c.tbo_status === 'critical' || c.tbo_status === 'overdue'
   )
   const warningComponents = components.filter(c => c.tbo_status === 'warning')
+
+  // Get latest meter readings
+  const latestTachRecord = maintenanceHistory
+    .filter(r => r.tach_hours !== null)
+    .sort((a, b) => new Date(b.performed_at).getTime() - new Date(a.performed_at).getTime())[0]
+
+  const latestHobbsRecord = maintenanceHistory
+    .filter(r => r.hobbs_hours !== null)
+    .sort((a, b) => new Date(b.performed_at).getTime() - new Date(a.performed_at).getTime())[0]
 
   return (
     <div className="space-y-6">
@@ -208,14 +222,14 @@ export function AircraftMaintenanceTab({
             {/* Total Hours */}
             <div className="space-y-2">
               <p className="text-sm font-medium text-muted-foreground">Total Aircraft Hours</p>
-              <p className="text-3xl font-bold">{aircraft.total_flight_hours.toFixed(1)}</p>
+              <p className="text-3xl font-bold">{formatHours(aircraft.total_flight_hours)}</p>
             </div>
 
             {/* Next Maintenance Due */}
             <div className="space-y-2">
               <p className="text-sm font-medium text-muted-foreground">Next Maintenance Due</p>
               {aircraft.next_maintenance_hours !== null ? (
-                <p className="text-3xl font-bold">{aircraft.next_maintenance_hours.toFixed(1)}</p>
+                <p className="text-3xl font-bold">{formatHours(aircraft.next_maintenance_hours)}</p>
               ) : (
                 <p className="text-muted-foreground">Not scheduled</p>
               )}
@@ -236,7 +250,7 @@ export function AircraftMaintenanceTab({
                       : 'text-green-600'
                   }`}
                 >
-                  {aircraft.hours_until_maintenance.toFixed(1)}
+                  {formatHours(aircraft.hours_until_maintenance)}
                 </p>
               ) : (
                 <p className="text-muted-foreground">-</p>
@@ -249,8 +263,44 @@ export function AircraftMaintenanceTab({
             <div className="mt-4 pt-4 border-t">
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <TrendingUp className="h-4 w-4" />
-                Standard maintenance interval: {aircraft.maintenance_interval_hours} hours
+                Standard maintenance interval: {formatHours(aircraft.maintenance_interval_hours)}
               </div>
+            </div>
+          )}
+
+          {/* Meter Readings (TACH/HOBBS) */}
+          {(latestTachRecord || latestHobbsRecord || isBoardMember) && (
+            <div className="mt-4 pt-4 border-t">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-sm font-medium">Latest Meter Readings</p>
+                {isBoardMember && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setMeterReadingsDialogOpen(true)}
+                  >
+                    Update Readings
+                  </Button>
+                )}
+              </div>
+              {(latestTachRecord || latestHobbsRecord) ? (
+                <div className="text-sm text-muted-foreground space-y-1">
+                  {latestHobbsRecord && (
+                    <p>
+                      <span className="font-medium">HOBBS:</span>{' '}
+                      {formatHours(latestHobbsRecord.hobbs_hours!)} @ {new Date(latestHobbsRecord.performed_at).toLocaleDateString()}
+                    </p>
+                  )}
+                  {latestTachRecord && (
+                    <p>
+                      <span className="font-medium">TACH:</span>{' '}
+                      {formatHours(latestTachRecord.tach_hours!)} @ {new Date(latestTachRecord.performed_at).toLocaleDateString()}
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">No meter readings recorded yet</p>
+              )}
             </div>
           )}
 
@@ -265,7 +315,7 @@ export function AircraftMaintenanceTab({
                 <p>
                   <span className="font-medium">Performed:</span>{' '}
                   {new Date(aircraft.last_maintenance.performed_at).toLocaleDateString()} at{' '}
-                  {aircraft.last_maintenance.performed_at_hours.toFixed(1)} hours
+                  {formatHours(aircraft.last_maintenance.performed_at_hours)}
                 </p>
                 {aircraft.last_maintenance.description && (
                   <p>
@@ -328,7 +378,7 @@ export function AircraftMaintenanceTab({
               <p className="text-muted-foreground">No maintenance records yet</p>
               {isBoardMember && (
                 <p className="text-sm text-muted-foreground mt-2">
-                  Click "Record Maintenance" to add the first record
+                  Click &quot;Record Maintenance&quot; to add the first record
                 </p>
               )}
             </div>
@@ -343,7 +393,7 @@ export function AircraftMaintenanceTab({
                       <TableHead>At Hours</TableHead>
                       <TableHead>Type</TableHead>
                       <TableHead>Description</TableHead>
-                      <TableHead>Performed By</TableHead>
+                      <TableHead>Workshop/Vendor</TableHead>
                       <TableHead>Cost</TableHead>
                       {isBoardMember && <TableHead className="text-right">Actions</TableHead>}
                     </TableRow>
@@ -371,7 +421,7 @@ export function AircraftMaintenanceTab({
                           <CardTitle className="text-base">{record.maintenance_type}</CardTitle>
                           <CardDescription className="text-xs">
                             {new Date(record.performed_at).toLocaleDateString()} • At{' '}
-                            {record.performed_at_hours.toFixed(1)} hours
+                            {formatHours(record.performed_at_hours)}
                           </CardDescription>
                         </div>
                       </div>
@@ -382,13 +432,10 @@ export function AircraftMaintenanceTab({
                       )}
                       <div className="flex items-center justify-between">
                         <span className="text-muted-foreground">
-                          By:{' '}
-                          {record.performed_by_user
-                            ? `${record.performed_by_user.name} ${record.performed_by_user.surname}`
-                            : 'Unknown'}
+                          Workshop: {record.vendor || '-'}
                         </span>
                         {record.cost && (
-                          <span className="font-medium">CHF {record.cost.toFixed(2)}</span>
+                          <span className="font-medium">{formatEuro(record.cost)}</span>
                         )}
                       </div>
                     </CardContent>
@@ -416,6 +463,14 @@ export function AircraftMaintenanceTab({
             aircraftId={aircraft.id}
             currentNextDue={aircraft.next_maintenance_hours}
             currentInterval={aircraft.maintenance_interval_hours}
+          />
+          <UpdateMeterReadingsDialog
+            open={meterReadingsDialogOpen}
+            onOpenChange={setMeterReadingsDialogOpen}
+            aircraftId={aircraft.id}
+            currentHours={aircraft.total_flight_hours}
+            latestTachHours={latestTachRecord?.tach_hours}
+            latestHobbsHours={latestHobbsRecord?.hobbs_hours}
           />
         </>
       )}

@@ -4,11 +4,22 @@ import { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Plus, AlertTriangle, Wrench } from 'lucide-react'
+import { Plus, AlertTriangle, Wrench, History } from 'lucide-react'
 import { ComponentStatusCard, type ComponentWithStatus } from './component-status-card'
 import { AddComponentDialog } from './add-component-dialog'
-import { getActiveAircraftComponents } from '@/lib/actions/aircraft-components'
+import { EditComponentDialog } from './edit-component-dialog'
+import { getAircraftComponents, removeComponent } from '@/lib/actions/aircraft-components'
 import { toast } from 'sonner'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 
 interface AircraftComponentsTabProps {
   aircraftId: string
@@ -25,7 +36,11 @@ export function AircraftComponentsTab({
 }: AircraftComponentsTabProps) {
   const [components, setComponents] = useState<ComponentWithStatus[]>([])
   const [loading, setLoading] = useState(true)
+  const [showHistory, setShowHistory] = useState(false)
   const [addDialogOpen, setAddDialogOpen] = useState(false)
+  const [editDialogOpen, setEditDialogOpen] = useState(false)
+  const [removeDialogOpen, setRemoveDialogOpen] = useState(false)
+  const [selectedComponent, setSelectedComponent] = useState<ComponentWithStatus | null>(null)
 
   useEffect(() => {
     loadComponents()
@@ -33,7 +48,7 @@ export function AircraftComponentsTab({
 
   async function loadComponents() {
     setLoading(true)
-    const result = await getActiveAircraftComponents(aircraftId)
+    const result = await getAircraftComponents(aircraftId)
 
     if (result.success && result.data) {
       setComponents(result.data as ComponentWithStatus[])
@@ -43,8 +58,27 @@ export function AircraftComponentsTab({
     setLoading(false)
   }
 
+  async function handleRemove() {
+    if (!selectedComponent) return
+
+    const result = await removeComponent(selectedComponent.id, 'Removed via UI')
+    if (result.success) {
+      toast.success('Component removed successfully')
+      loadComponents()
+    } else {
+      toast.error(result.error || 'Failed to remove component')
+    }
+    setRemoveDialogOpen(false)
+    setSelectedComponent(null)
+  }
+
+  // Filter components
+  const activeComponents = components.filter(c => c.status === 'active')
+  const inactiveComponents = components.filter(c => c.status !== 'active')
+  const displayedComponents = showHistory ? components : activeComponents
+
   // Group components by type
-  const componentsByType = components.reduce((acc, component) => {
+  const componentsByType = displayedComponents.reduce((acc, component) => {
     const type = component.component_type
     if (!acc[type]) {
       acc[type] = []
@@ -54,7 +88,7 @@ export function AircraftComponentsTab({
   }, {} as Record<string, ComponentWithStatus[]>)
 
   // Check for critical or overdue components
-  const criticalComponents = components.filter(
+  const criticalComponents = activeComponents.filter(
     c => c.tbo_status === 'critical' || c.tbo_status === 'overdue'
   )
 
@@ -82,10 +116,21 @@ export function AircraftComponentsTab({
           </p>
         </div>
         {isBoardMember && (
-          <Button onClick={() => setAddDialogOpen(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            Add Component
-          </Button>
+          <div className="flex gap-2">
+            {inactiveComponents.length > 0 && (
+              <Button
+                variant={showHistory ? "default" : "outline"}
+                onClick={() => setShowHistory(!showHistory)}
+              >
+                <History className="h-4 w-4 mr-2" />
+                {showHistory ? 'Hide History' : `History (${inactiveComponents.length})`}
+              </Button>
+            )}
+            <Button onClick={() => setAddDialogOpen(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              Add Component
+            </Button>
+          </div>
         )}
       </div>
 
@@ -147,8 +192,12 @@ export function AircraftComponentsTab({
                     detailed={true}
                     isBoardMember={isBoardMember}
                     onEdit={() => {
-                      // TODO: Open edit dialog
-                      toast.info('Edit component dialog coming soon')
+                      setSelectedComponent(component)
+                      setEditDialogOpen(true)
+                    }}
+                    onRemove={() => {
+                      setSelectedComponent(component)
+                      setRemoveDialogOpen(true)
                     }}
                   />
                 ))}
@@ -167,6 +216,35 @@ export function AircraftComponentsTab({
         aircraftTailNumber={aircraftTailNumber}
         currentAircraftHours={aircraftCurrentHours}
       />
+
+      {/* Edit Component Dialog */}
+      {selectedComponent && (
+        <EditComponentDialog
+          open={editDialogOpen}
+          onOpenChange={setEditDialogOpen}
+          onSuccess={loadComponents}
+          component={selectedComponent}
+        />
+      )}
+
+      {/* Remove Confirmation Dialog */}
+      <AlertDialog open={removeDialogOpen} onOpenChange={setRemoveDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove Component?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will mark the component as removed. The component and its history will still be visible
+              in the history view. This action can be reversed if needed.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleRemove} className="bg-red-600 hover:bg-red-700">
+              Remove
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

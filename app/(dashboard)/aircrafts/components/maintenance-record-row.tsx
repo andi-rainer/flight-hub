@@ -8,6 +8,7 @@ import { Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { deleteMaintenanceRecord } from '../maintenance-actions'
 import type { MaintenanceRecord } from './aircraft-maintenance-tab'
+import { formatHours, formatEuro } from '@/lib/format'
 
 interface MaintenanceRecordRowProps {
   record: MaintenanceRecord
@@ -44,7 +45,7 @@ export function MaintenanceRecordRow({ record, aircraftId, isBoardMember }: Main
         {new Date(record.performed_at).toLocaleDateString()}
       </TableCell>
       <TableCell className="font-mono">
-        {record.performed_at_hours.toFixed(1)}
+        {formatHours(record.performed_at_hours)}
       </TableCell>
       <TableCell className="font-medium">
         {record.maintenance_type}
@@ -53,12 +54,10 @@ export function MaintenanceRecordRow({ record, aircraftId, isBoardMember }: Main
         {record.description || '-'}
       </TableCell>
       <TableCell>
-        {record.performed_by_user
-          ? `${record.performed_by_user.name} ${record.performed_by_user.surname}`
-          : 'Unknown'}
+        {record.vendor || '-'}
       </TableCell>
       <TableCell>
-        {record.cost ? `CHF ${record.cost.toFixed(2)}` : '-'}
+        {record.cost ? formatEuro(record.cost) : '-'}
       </TableCell>
       {isBoardMember && (
         <TableCell className="text-right">

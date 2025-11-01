@@ -13,6 +13,8 @@ export type MaintenanceRecordInsert = {
   cost?: number | null
   vendor?: string | null
   notes?: string | null
+  tach_hours?: number | null
+  hobbs_hours?: number | null
 }
 
 export type MaintenanceRecordUpdate = {
@@ -24,6 +26,8 @@ export type MaintenanceRecordUpdate = {
   cost?: number | null
   vendor?: string | null
   notes?: string | null
+  tach_hours?: number | null
+  hobbs_hours?: number | null
 }
 
 /**

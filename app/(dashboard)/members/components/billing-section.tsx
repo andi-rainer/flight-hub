@@ -32,7 +32,7 @@ export function BillingSection({ aircrafts }: BillingSectionProps) {
               <TableRow>
                 <TableHead>Tail Number</TableHead>
                 <TableHead>Type</TableHead>
-                <TableHead>Hourly Rate (CHF)</TableHead>
+                <TableHead>Hourly Rate (€)</TableHead>
                 <div className="text-right">
                   <TableHead>Actions</TableHead>
                 </div>
