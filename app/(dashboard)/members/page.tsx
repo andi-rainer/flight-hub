@@ -9,14 +9,21 @@ import { Shield, AlertCircle } from 'lucide-react'
 import { InviteUserDialog } from './components/invite-user-dialog'
 import { EditMemberDialog } from './components/edit-member-dialog'
 import { MemberDocumentsDialog } from './components/member-documents-dialog'
+import { ManageMembershipDialog } from './components/manage-membership-dialog'
 import { FunctionsSection } from './components/functions-section'
-import type { User, FunctionMaster, Document } from '@/lib/database.types'
+import type { User, FunctionMaster, Document, UserMembership, MembershipType } from '@/lib/database.types'
+
+type UserMembershipWithType = UserMembership & {
+  membership_types: MembershipType | null
+}
 
 interface UserWithDocuments extends User {
   documents: Document[]
   document_status: 'ok' | 'warning' | 'expired' | 'pending'
   mandatory_uploaded: number
   mandatory_required: number
+  active_membership: UserMembershipWithType | null
+  is_active: boolean
 }
 
 async function getCurrentUser(): Promise<User | null> {
@@ -37,7 +44,7 @@ async function getCurrentUser(): Promise<User | null> {
 async function getMembers(): Promise<UserWithDocuments[]> {
   const supabase = await createClient()
 
-  // Get all users with their documents and document types
+  // Get all users with their documents, document types, and active memberships
   const [usersResult, documentTypesResult] = await Promise.all([
     supabase
       .from('users')
@@ -60,10 +67,30 @@ async function getMembers(): Promise<UserWithDocuments[]> {
 
   const documentTypes = documentTypesResult.data || []
 
-  // Calculate document status for each user
+  // Fetch active memberships for all users
+  const { data: memberships } = await supabase
+    .from('user_memberships')
+    .select('*, membership_types(*)')
+    .eq('status', 'active')
+    .order('end_date', { ascending: false })
+
+  const membershipsMap = new Map<string, UserMembershipWithType>()
+  if (memberships) {
+    for (const membership of memberships) {
+      // Keep only the first (latest) active membership per user
+      if (!membershipsMap.has(membership.user_id)) {
+        membershipsMap.set(membership.user_id, membership as UserMembershipWithType)
+      }
+    }
+  }
+
+  // Calculate document status and active status for each user
+  const today = new Date().toISOString().split('T')[0]
+
   return usersResult.data.map(user => {
     const userDocs = user.documents as Document[]
     const userFunctions = user.functions || []
+    const activeMembership = membershipsMap.get(user.id)
 
     // Get mandatory document types for this user's functions
     const mandatoryForUser = documentTypes.filter(docType => {
@@ -131,12 +158,17 @@ async function getMembers(): Promise<UserWithDocuments[]> {
       }
     }
 
+    // Determine if user is active based on membership status
+    const isActive = activeMembership ? activeMembership.end_date >= today : false
+
     return {
       ...user,
       documents: userDocs,
       document_status: documentStatus,
       mandatory_uploaded: uploadedMandatoryCount,
       mandatory_required: mandatoryCount,
+      active_membership: activeMembership || null,
+      is_active: isActive,
     }
   })
 }
@@ -258,6 +290,10 @@ export default async function MembersPage() {
     getFunctions(),
   ])
 
+  // Separate active and inactive members
+  const activeMembers = members.filter(m => m.is_active)
+  const inactiveMembers = members.filter(m => !m.is_active)
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -270,13 +306,20 @@ export default async function MembersPage() {
       </div>
 
       {/* Tabs */}
-      <Tabs defaultValue="members" className="space-y-6">
+      <Tabs defaultValue="active" className="space-y-6">
         <TabsList>
-          <TabsTrigger value="members">Members</TabsTrigger>
+          <TabsTrigger value="active">
+            Active Members
+            <Badge variant="secondary" className="ml-2">{activeMembers.length}</Badge>
+          </TabsTrigger>
+          <TabsTrigger value="inactive">
+            Inactive Members
+            <Badge variant="outline" className="ml-2">{inactiveMembers.length}</Badge>
+          </TabsTrigger>
           <TabsTrigger value="functions">Functions</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="members" className="space-y-4">
+        <TabsContent value="active" className="space-y-4">
           {/* Info Alert */}
           <Alert>
             <AlertCircle className="h-4 w-4" />
@@ -287,12 +330,12 @@ export default async function MembersPage() {
             </AlertDescription>
           </Alert>
 
-          {/* Members Table */}
+          {/* Active Members Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Club Members</CardTitle>
+          <CardTitle>Active Club Members</CardTitle>
           <CardDescription>
-            {members.length} {members.length === 1 ? 'member' : 'members'} registered
+            {activeMembers.length} active {activeMembers.length === 1 ? 'member' : 'members'}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -302,30 +345,28 @@ export default async function MembersPage() {
                 <TableRow>
                   <TableHead>Name</TableHead>
                   <TableHead>Email</TableHead>
-                  <TableHead>License</TableHead>
                   <TableHead>Roles</TableHead>
                   <TableHead>Functions</TableHead>
+                  <TableHead>Membership</TableHead>
+                  <TableHead>Payment</TableHead>
                   <TableHead>Documents</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {members.length === 0 ? (
+                {activeMembers.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center text-muted-foreground">
-                      No members found
+                    <TableCell colSpan={8} className="text-center text-muted-foreground">
+                      No active members found
                     </TableCell>
                   </TableRow>
                 ) : (
-                  members.map((member) => (
+                  activeMembers.map((member) => (
                     <TableRow key={member.id}>
                       <TableCell className="font-medium">
                         {member.name} {member.surname}
                       </TableCell>
                       <TableCell>{member.email}</TableCell>
-                      <TableCell className="text-sm">
-                        {member.license_number || '-'}
-                      </TableCell>
                       <TableCell>
                         <div className="flex flex-wrap gap-1">
                           {member.role?.includes('board') && (
@@ -336,6 +377,47 @@ export default async function MembersPage() {
                       </TableCell>
                       <TableCell className="text-sm max-w-xs truncate">
                         {getFunctionNames(member.functions || [], functions)}
+                      </TableCell>
+                      <TableCell>
+                        {member.active_membership ? (
+                          <div className="flex flex-col gap-1">
+                            <Badge variant="default">
+                              {member.active_membership.membership_types?.name || 'Active'}
+                            </Badge>
+                            <span className="text-xs text-muted-foreground">
+                              {member.active_membership.member_number}
+                            </span>
+                            <span className="text-xs text-muted-foreground">
+                              {member.active_membership.auto_renew ? 'Renewal' : 'Until'}: {new Date(member.active_membership.end_date).toLocaleDateString()}
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="text-sm text-muted-foreground">No membership</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {member.active_membership ? (
+                          <Badge
+                            variant={
+                              member.active_membership.payment_status === 'paid'
+                                ? 'default'
+                                : member.active_membership.payment_status === 'pending'
+                                ? 'secondary'
+                                : 'destructive'
+                            }
+                            className={
+                              member.active_membership.payment_status === 'paid'
+                                ? 'bg-green-600'
+                                : member.active_membership.payment_status === 'pending'
+                                ? 'bg-yellow-600'
+                                : ''
+                            }
+                          >
+                            {member.active_membership.payment_status}
+                          </Badge>
+                        ) : (
+                          <span className="text-sm text-muted-foreground">-</span>
+                        )}
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
@@ -352,6 +434,88 @@ export default async function MembersPage() {
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-1">
                           <MemberDocumentsDialog member={member} documents={member.documents} />
+                          <ManageMembershipDialog user={member} activeMembership={member.active_membership} />
+                          <EditMemberDialog member={member} functions={functions} />
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
+        </TabsContent>
+
+        <TabsContent value="inactive" className="space-y-4">
+          {/* Info Alert */}
+          <Alert>
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Inactive Members</AlertTitle>
+            <AlertDescription>
+              These members have expired or cancelled memberships and cannot access the system or be selected for flights.
+              Board members can renew memberships to reactivate these users.
+            </AlertDescription>
+          </Alert>
+
+          {/* Inactive Members Table */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Inactive Club Members</CardTitle>
+          <CardDescription>
+            {inactiveMembers.length} inactive {inactiveMembers.length === 1 ? 'member' : 'members'}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Membership Status</TableHead>
+                  <TableHead>Last Active</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {inactiveMembers.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={5} className="text-center text-muted-foreground">
+                      No inactive members
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  inactiveMembers.map((member) => (
+                    <TableRow key={member.id}>
+                      <TableCell className="font-medium">
+                        {member.name} {member.surname}
+                      </TableCell>
+                      <TableCell>{member.email}</TableCell>
+                      <TableCell>
+                        {member.active_membership ? (
+                          <div className="flex flex-col gap-1">
+                            <Badge variant="destructive">Expired</Badge>
+                            <span className="text-xs text-muted-foreground">
+                              {member.active_membership.member_number}
+                            </span>
+                            <span className="text-xs text-muted-foreground">
+                              Ended: {new Date(member.active_membership.end_date).toLocaleDateString()}
+                            </span>
+                          </div>
+                        ) : (
+                          <Badge variant="outline">No membership</Badge>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {member.active_membership
+                          ? new Date(member.active_membership.end_date).toLocaleDateString()
+                          : 'Never'}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end gap-1">
+                          <ManageMembershipDialog user={member} activeMembership={member.active_membership} />
                           <EditMemberDialog member={member} functions={functions} />
                         </div>
                       </TableCell>

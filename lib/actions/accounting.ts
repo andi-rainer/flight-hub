@@ -479,6 +479,9 @@ export async function getUserBalances() {
     return { success: false, error: auth.error }
   }
 
+  // Get today's date for filtering active memberships
+  const today = new Date().toISOString().split('T')[0]
+
   const { data: users, error } = await auth.supabase
     .from('user_balances')
     .select('*')
@@ -488,9 +491,43 @@ export async function getUserBalances() {
     return { success: false, error: error.message }
   }
 
-  // Fetch the most recent transaction date for each user
+  // Get active memberships for all users
+  const { data: memberships, error: membershipsError } = await auth.supabase
+    .from('user_memberships')
+    .select('user_id, end_date')
+    .eq('status', 'active')
+    .gte('end_date', today)
+
+  if (membershipsError) {
+    console.error('Error fetching memberships:', membershipsError)
+    return { success: false, error: membershipsError.message }
+  }
+
+  // Create a set of user IDs with active memberships
+  const activeUserIds = new Set(memberships?.map(m => m.user_id) || [])
+
+  // Get user roles to check for board members
+  const { data: userRoles, error: rolesError } = await auth.supabase
+    .from('users')
+    .select('id, role')
+
+  if (rolesError) {
+    console.error('Error fetching user roles:', rolesError)
+    return { success: false, error: rolesError.message }
+  }
+
+  const boardMemberIds = new Set(
+    userRoles?.filter(u => u.role?.includes('board')).map(u => u.id) || []
+  )
+
+  // Filter to only include users with active memberships or board members
+  const activeUsers = users.filter(user =>
+    user.user_id && (activeUserIds.has(user.user_id) || boardMemberIds.has(user.user_id))
+  )
+
+  // Fetch the most recent transaction date for each active user
   const usersWithLastTransaction = await Promise.all(
-    users.map(async (user) => {
+    activeUsers.map(async (user) => {
       const { data: latestTx } = await auth.supabase
         .from('accounts')
         .select('created_at')

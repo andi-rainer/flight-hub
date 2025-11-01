@@ -1,7 +1,26 @@
 import { redirect } from 'next/navigation'
-import { getUserProfile } from '@/lib/supabase/server'
+import { getUserProfile, createClient } from '@/lib/supabase/server'
 import { Sidebar } from '@/components/layout/sidebar'
 import { Header } from '@/components/layout/header'
+
+/**
+ * Check if user has an active membership
+ */
+async function hasActiveMembership(userId: string): Promise<boolean> {
+  const supabase = await createClient()
+  const today = new Date().toISOString().split('T')[0]
+
+  const { data: membership } = await supabase
+    .from('user_memberships')
+    .select('end_date')
+    .eq('user_id', userId)
+    .eq('status', 'active')
+    .gte('end_date', today)
+    .limit(1)
+    .single()
+
+  return !!membership
+}
 
 /**
  * Layout for authenticated dashboard routes
@@ -17,6 +36,19 @@ export default async function DashboardLayout({
 
   if (!userProfile) {
     redirect('/login')
+  }
+
+  // Check if user has active membership (board members are exempt)
+  const isBoardMember = userProfile.role?.includes('board') ?? false
+
+  // Only check membership status for non-board members and non-account-inactive page
+  if (!isBoardMember) {
+    const isActive = await hasActiveMembership(userProfile.id)
+
+    // If user is not active and not already on the account-inactive page, redirect
+    if (!isActive) {
+      redirect('/account-inactive')
+    }
   }
 
   return (

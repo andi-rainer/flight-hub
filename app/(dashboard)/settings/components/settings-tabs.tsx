@@ -5,6 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { PilotDocumentsSection } from './pilot-documents-section'
 import { DocumentTypesSection } from './document-types-section'
 import { AirportFeesSection } from './airport-fees-section'
+import { MembershipTypesSection } from './membership-types-section'
 import { createClient } from '@/lib/supabase/client'
 import type { User } from '@/lib/database.types'
 
@@ -78,6 +79,7 @@ export function SettingsTabs({ user, isBoardMember }: SettingsTabsProps) {
           )}
         </TabsTrigger>
         {isBoardMember && <TabsTrigger value="document-types">Document Types</TabsTrigger>}
+        {isBoardMember && <TabsTrigger value="membership-types">Membership Types</TabsTrigger>}
         {isBoardMember && <TabsTrigger value="airport-fees">Airport Fees</TabsTrigger>}
       </TabsList>
 
@@ -88,6 +90,12 @@ export function SettingsTabs({ user, isBoardMember }: SettingsTabsProps) {
       {isBoardMember && (
         <TabsContent value="document-types" className="space-y-4">
           <DocumentTypesSection />
+        </TabsContent>
+      )}
+
+      {isBoardMember && (
+        <TabsContent value="membership-types" className="space-y-4">
+          <MembershipTypesSection />
         </TabsContent>
       )}
 

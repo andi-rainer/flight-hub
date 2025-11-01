@@ -43,6 +43,9 @@ async function getUnchargedFlights(): Promise<UnchargedFlight[]> {
 async function getUserBalances(): Promise<UserBalance[]> {
   const supabase = await createClient()
 
+  // Get today's date for filtering active memberships
+  const today = new Date().toISOString().split('T')[0]
+
   const { data, error } = await supabase
     .from('user_balances')
     .select('*')
@@ -54,7 +57,31 @@ async function getUserBalances(): Promise<UserBalance[]> {
     return []
   }
 
-  return data || []
+  // Get active memberships for all users
+  const { data: memberships } = await supabase
+    .from('user_memberships')
+    .select('user_id, end_date')
+    .eq('status', 'active')
+    .gte('end_date', today)
+
+  // Create a set of user IDs with active memberships
+  const activeUserIds = new Set(memberships?.map(m => m.user_id) || [])
+
+  // Get user roles to check for board members
+  const { data: userRoles } = await supabase
+    .from('users')
+    .select('id, role')
+
+  const boardMemberIds = new Set(
+    userRoles?.filter(u => u.role?.includes('board')).map(u => u.id) || []
+  )
+
+  // Filter to only include users with active memberships or board members
+  const activeUsers = data?.filter(user =>
+    user.user_id && (activeUserIds.has(user.user_id) || boardMemberIds.has(user.user_id))
+  ) || []
+
+  return activeUsers
 }
 
 async function getCostCenters(): Promise<CostCenter[]> {

@@ -277,17 +277,44 @@ export async function deleteFlightlog(id: string) {
 export async function getAllUsers() {
   const supabase = await createClient()
 
-  const { data, error } = await supabase
+  // Get today's date for comparison
+  const today = new Date().toISOString().split('T')[0]
+
+  // Get all users with their active memberships
+  const { data: users, error: usersError } = await supabase
     .from('users')
-    .select('id, name, surname, email')
+    .select('id, name, surname, email, role')
     .order('surname', { ascending: true })
 
-  if (error) {
-    console.error('Error fetching users:', error)
-    return { data: null, error: error.message }
+  if (usersError) {
+    console.error('Error fetching users:', usersError)
+    return { data: null, error: usersError.message }
   }
 
-  return { data, error: null }
+  // Get active memberships for all users
+  const { data: memberships, error: membershipsError } = await supabase
+    .from('user_memberships')
+    .select('user_id, end_date')
+    .eq('status', 'active')
+    .gte('end_date', today)
+
+  if (membershipsError) {
+    console.error('Error fetching memberships:', membershipsError)
+    return { data: null, error: membershipsError.message }
+  }
+
+  // Create a set of user IDs with active memberships
+  const activeUserIds = new Set(memberships?.map(m => m.user_id) || [])
+
+  // Filter to only include users with active memberships or board members
+  const activeUsers = users.filter(user =>
+    activeUserIds.has(user.id) || user.role?.includes('board')
+  )
+
+  // Remove role field from response (not needed in UI)
+  const sanitizedUsers = activeUsers.map(({ role, ...user }) => user)
+
+  return { data: sanitizedUsers, error: null }
 }
 
 export async function getActiveAircraftForFlightlog() {

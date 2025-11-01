@@ -3,6 +3,7 @@
 import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import type { UserUpdate } from '@/lib/database.types'
+import { assignMembership } from './memberships'
 
 /**
  * Server actions for Members page
@@ -58,6 +59,7 @@ export async function inviteUser(data: {
   surname: string
   functions: string[]
   role?: string[]
+  membershipTypeId: string
 }) {
   const supabase = await createClient()
 
@@ -127,10 +129,26 @@ export async function inviteUser(data: {
     return { success: false, error: profileError.message }
   }
 
+  // Assign membership to the new user (required)
+  const membershipResult = await assignMembership({
+    user_id: authData.user.id,
+    membership_type_id: data.membershipTypeId,
+    start_date: new Date().toISOString().split('T')[0],
+    payment_status: 'unpaid',
+    notes: 'Membership assigned during user invitation',
+  })
+
+  if (!membershipResult.success) {
+    console.error('Error assigning membership:', membershipResult.error)
+    // If membership assignment fails, delete the auth user and profile
+    await adminClient.auth.admin.deleteUser(authData.user.id)
+    return { success: false, error: `User created but membership assignment failed: ${membershipResult.error}` }
+  }
+
   revalidatePath('/members')
   return {
     success: true,
-    message: 'User invited successfully. They will receive an email to set their password.'
+    message: 'User invited successfully with membership assigned. They will receive an email to set their password.'
   }
 }
 
@@ -245,30 +263,35 @@ export async function deleteMember(userId: string) {
     .delete()
     .eq('user_id', userId)
 
-  // Delete from users table (this should cascade in most cases)
-  const { error: deleteError } = await supabase
+  // Soft delete: Mark user as left and keep data for historical records
+  // This ensures flight logs and other records still show the user's name
+  const { error: updateError } = await supabase
     .from('users')
-    .delete()
+    .update({
+      left_at: new Date().toISOString(),
+      email: `deleted_${userId}@deleted.local`, // Prevent email conflicts if they rejoin
+      updated_at: new Date().toISOString(),
+    })
     .eq('id', userId)
 
-  if (deleteError) {
-    console.error('Error deleting user profile:', deleteError)
-    return { success: false, error: deleteError.message }
+  if (updateError) {
+    console.error('Error soft deleting user profile:', updateError)
+    return { success: false, error: updateError.message }
   }
 
-  // Delete from auth using admin client
+  // Delete from auth using admin client (removes login capability but keeps DB record)
   const adminClient = createAdminClient()
   const { error: authDeleteError } = await adminClient.auth.admin.deleteUser(userId)
 
   if (authDeleteError) {
     console.error('Error deleting auth user:', authDeleteError)
-    // Don't fail here as the profile is already deleted
+    return { success: false, error: 'Failed to remove authentication access' }
   }
 
   revalidatePath('/members')
   return {
     success: true,
-    message: 'User deleted successfully'
+    message: 'User removed successfully. User data retained for historical records.'
   }
 }
 

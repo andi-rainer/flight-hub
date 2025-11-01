@@ -46,6 +46,10 @@ export async function middleware(request: NextRequest) {
   const publicRoutes = ['/login', '/auth/callback', '/auth/auth-code-error']
   const isPublicRoute = publicRoutes.some((route) => pathname.startsWith(route))
 
+  // Routes that require authentication but bypass dashboard layout checks
+  const specialAuthRoutes = ['/account-inactive']
+  const isSpecialAuthRoute = specialAuthRoutes.some((route) => pathname.startsWith(route))
+
   // Dashboard routes that require authentication
   const isDashboardRoute = pathname.startsWith('/dashboard') ||
     pathname.startsWith('/aircrafts') ||
@@ -56,7 +60,7 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith('/settings')
 
   // Redirect unauthenticated users trying to access protected routes
-  if (!user && isDashboardRoute) {
+  if (!user && (isDashboardRoute || isSpecialAuthRoute)) {
     const redirectUrl = request.nextUrl.clone()
     redirectUrl.pathname = '/login'
     redirectUrl.searchParams.set('redirect', pathname)

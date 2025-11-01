@@ -1036,6 +1036,54 @@ export type Database = {
           },
         ]
       }
+      membership_types: {
+        Row: {
+          active: boolean | null
+          auto_renew: boolean | null
+          created_at: string | null
+          currency: string | null
+          description: string | null
+          duration_unit: string
+          duration_value: number
+          id: string
+          member_category: string | null
+          member_number_prefix: string
+          name: string
+          price: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          active?: boolean | null
+          auto_renew?: boolean | null
+          created_at?: string | null
+          currency?: string | null
+          description?: string | null
+          duration_unit: string
+          duration_value: number
+          id?: string
+          member_category?: string | null
+          member_number_prefix: string
+          name: string
+          price?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          active?: boolean | null
+          auto_renew?: boolean | null
+          created_at?: string | null
+          currency?: string | null
+          description?: string | null
+          duration_unit?: string
+          duration_value?: number
+          id?: string
+          member_category?: string | null
+          member_number_prefix?: string
+          name?: string
+          price?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           created_at: string
@@ -1353,6 +1401,181 @@ export type Database = {
           },
         ]
       }
+      terms_and_conditions: {
+        Row: {
+          active: boolean | null
+          content: string
+          created_at: string | null
+          created_by: string | null
+          effective_date: string
+          id: string
+          version: string
+        }
+        Insert: {
+          active?: boolean | null
+          content: string
+          created_at?: string | null
+          created_by?: string | null
+          effective_date: string
+          id?: string
+          version: string
+        }
+        Update: {
+          active?: boolean | null
+          content?: string
+          created_at?: string | null
+          created_by?: string | null
+          effective_date?: string
+          id?: string
+          version?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "terms_and_conditions_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "user_balances"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "terms_and_conditions_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_memberships: {
+        Row: {
+          auto_renew: boolean | null
+          created_at: string | null
+          created_by: string | null
+          end_date: string
+          id: string
+          member_number: string
+          membership_type_id: string
+          notes: string | null
+          payment_status: string | null
+          start_date: string
+          status: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          auto_renew?: boolean | null
+          created_at?: string | null
+          created_by?: string | null
+          end_date: string
+          id?: string
+          member_number: string
+          membership_type_id: string
+          notes?: string | null
+          payment_status?: string | null
+          start_date: string
+          status?: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          auto_renew?: boolean | null
+          created_at?: string | null
+          created_by?: string | null
+          end_date?: string
+          id?: string
+          member_number?: string
+          membership_type_id?: string
+          notes?: string | null
+          payment_status?: string | null
+          start_date?: string
+          status?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_memberships_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "user_balances"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "user_memberships_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_memberships_membership_type_id_fkey"
+            columns: ["membership_type_id"]
+            isOneToOne: false
+            referencedRelation: "membership_types"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_memberships_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_balances"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "user_memberships_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_terms_acceptance: {
+        Row: {
+          accepted_at: string | null
+          id: string
+          ip_address: string | null
+          terms_id: string
+          user_id: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          id?: string
+          ip_address?: string | null
+          terms_id: string
+          user_id: string
+        }
+        Update: {
+          accepted_at?: string | null
+          id?: string
+          ip_address?: string | null
+          terms_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_terms_acceptance_terms_id_fkey"
+            columns: ["terms_id"]
+            isOneToOne: false
+            referencedRelation: "terms_and_conditions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_terms_acceptance_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_balances"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "user_terms_acceptance_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       users: {
         Row: {
           birthday: string | null
@@ -1368,6 +1591,7 @@ export type Database = {
           joined_at: string | null
           left_at: string | null
           license_number: string | null
+          member_category: string | null
           name: string
           role: string[]
           street: string | null
@@ -1390,6 +1614,7 @@ export type Database = {
           joined_at?: string | null
           left_at?: string | null
           license_number?: string | null
+          member_category?: string | null
           name: string
           role?: string[]
           street?: string | null
@@ -1412,6 +1637,7 @@ export type Database = {
           joined_at?: string | null
           left_at?: string | null
           license_number?: string | null
+          member_category?: string | null
           name?: string
           role?: string[]
           street?: string | null

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -11,13 +11,23 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Plus, Loader2 } from 'lucide-react'
+import { Plus, Loader2, AlertCircle, ExternalLink } from 'lucide-react'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 import { inviteUser } from '@/lib/actions/members'
+import { getMembershipTypes } from '@/lib/actions/memberships'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
-import type { FunctionMaster } from '@/lib/database.types'
+import Link from 'next/link'
+import type { FunctionMaster, MembershipType } from '@/lib/database.types'
 import { Checkbox } from '@/components/ui/checkbox'
 
 interface InviteUserDialogProps {
@@ -27,6 +37,8 @@ interface InviteUserDialogProps {
 export function InviteUserDialog({ functions }: InviteUserDialogProps) {
   const [open, setOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [membershipTypes, setMembershipTypes] = useState<MembershipType[]>([])
+  const [loadingTypes, setLoadingTypes] = useState(false)
   const router = useRouter()
 
   const [formData, setFormData] = useState({
@@ -35,7 +47,23 @@ export function InviteUserDialog({ functions }: InviteUserDialogProps) {
     surname: '',
     selectedFunctions: [] as string[],
     isBoardMember: false,
+    membershipTypeId: '',
   })
+
+  useEffect(() => {
+    if (open) {
+      loadMembershipTypes()
+    }
+  }, [open])
+
+  const loadMembershipTypes = async () => {
+    setLoadingTypes(true)
+    const result = await getMembershipTypes()
+    if (result.success) {
+      setMembershipTypes(result.data.filter(t => t.active))
+    }
+    setLoadingTypes(false)
+  }
 
   const resetForm = () => {
     setFormData({
@@ -44,11 +72,19 @@ export function InviteUserDialog({ functions }: InviteUserDialogProps) {
       surname: '',
       selectedFunctions: [],
       isBoardMember: false,
+      membershipTypeId: '',
     })
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    // Validate membership type is selected
+    if (!formData.membershipTypeId) {
+      toast.error('Please select a membership type')
+      return
+    }
+
     setIsSubmitting(true)
 
     console.log('### Inviting user with data:', formData)
@@ -61,6 +97,7 @@ export function InviteUserDialog({ functions }: InviteUserDialogProps) {
       surname: formData.surname,
       functions: formData.selectedFunctions,
       role: roles,
+      membershipTypeId: formData.membershipTypeId,
     })
 
     if (result.success) {
@@ -132,8 +169,54 @@ export function InviteUserDialog({ functions }: InviteUserDialogProps) {
                 required
               />
             </div>
+
+            {/* Membership Type Selection - REQUIRED */}
             <div className="space-y-2">
-              <Label>Functions</Label>
+              <Label htmlFor="membership">Membership Type *</Label>
+              {loadingTypes ? (
+                <div className="flex items-center gap-2 p-2 text-sm text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Loading membership types...
+                </div>
+              ) : membershipTypes.length === 0 ? (
+                <Alert>
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    No membership types available. Board members must create at least one membership type before inviting members.
+                    <Link href="/settings?tab=membership-types" onClick={() => setOpen(false)}>
+                      <Button variant="link" className="h-auto p-0 ml-1">
+                        Create Membership Type <ExternalLink className="h-3 w-3 ml-1" />
+                      </Button>
+                    </Link>
+                  </AlertDescription>
+                </Alert>
+              ) : (
+                <Select
+                  value={formData.membershipTypeId}
+                  onValueChange={(value) => setFormData({ ...formData, membershipTypeId: value })}
+                  required
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select membership type..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {membershipTypes.map((type) => (
+                      <SelectItem key={type.id} value={type.id}>
+                        {type.name} ({type.duration_value} {type.duration_unit})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+              {membershipTypes.length > 0 && (
+                <p className="text-xs text-muted-foreground">
+                  A membership will be automatically assigned upon invitation
+                </p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label>Functions (Optional)</Label>
               <div className="grid grid-cols-2 gap-2 border rounded-md p-3">
                 {functions.map((func) => (
                   <div key={func.id} className="flex items-center space-x-2">
@@ -174,7 +257,10 @@ export function InviteUserDialog({ functions }: InviteUserDialogProps) {
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={isSubmitting}>
+            <Button
+              type="submit"
+              disabled={isSubmitting || loadingTypes || membershipTypes.length === 0 || !formData.membershipTypeId}
+            >
               {isSubmitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               Send Invitation
             </Button>
