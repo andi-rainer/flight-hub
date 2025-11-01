@@ -11,6 +11,7 @@ import { AircraftDocumentsTab } from '../components/aircraft-documents-tab'
 import { AircraftFlightLogsTab } from '../components/aircraft-flight-logs-tab'
 import { AircraftBillingTab } from '../components/aircraft-billing-tab'
 import { AircraftMaintenanceTab } from '../components/aircraft-maintenance-tab'
+import { AircraftComponentsTab } from '../components/aircraft-components-tab'
 import { getAircraftWithMaintenance, getMaintenanceHistory } from '../maintenance-actions'
 import type { Plane, Document as AircraftDocument, User, OperationType, CostCenter } from '@/lib/database.types'
 
@@ -270,6 +271,7 @@ export default async function AircraftDetailPage({
               </Badge>
             )}
           </TabsTrigger>
+          {isBoardMember && <TabsTrigger value="components">Components</TabsTrigger>}
           <TabsTrigger value="flightlogs">Flight Logs</TabsTrigger>
           {isBoardMember && <TabsTrigger value="billing">Billing</TabsTrigger>}
         </TabsList>
@@ -299,6 +301,23 @@ export default async function AircraftDetailPage({
             </div>
           )}
         </TabsContent>
+
+        {isBoardMember && (
+          <TabsContent value="components" className="space-y-4">
+            {aircraftWithMaintenance?.data ? (
+              <AircraftComponentsTab
+                aircraftId={aircraft.id}
+                aircraftTailNumber={aircraft.tail_number}
+                aircraftCurrentHours={aircraftWithMaintenance.data.total_flight_hours}
+                isBoardMember={isBoardMember}
+              />
+            ) : (
+              <div className="text-center py-12">
+                <p className="text-muted-foreground">Unable to load aircraft data</p>
+              </div>
+            )}
+          </TabsContent>
+        )}
 
         <TabsContent value="flightlogs" className="space-y-4">
           <AircraftFlightLogsTab aircraftId={aircraft.id} page={page} />

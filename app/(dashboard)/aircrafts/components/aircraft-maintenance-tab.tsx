@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -10,6 +10,8 @@ import { Wrench, AlertTriangle, CheckCircle, Clock, Plus, TrendingUp } from 'luc
 import { AddMaintenanceRecordDialog } from './add-maintenance-record-dialog'
 import { UpdateMaintenanceScheduleDialog } from './update-maintenance-schedule-dialog'
 import { MaintenanceRecordRow } from './maintenance-record-row'
+import { ComponentStatusCard, type ComponentWithStatus } from './component-status-card'
+import { getActiveAircraftComponents } from '@/lib/actions/aircraft-components'
 
 export type AircraftWithMaintenance = {
   id: string
@@ -107,9 +109,53 @@ export function AircraftMaintenanceTab({
 }: AircraftMaintenanceTabProps) {
   const [addDialogOpen, setAddDialogOpen] = useState(false)
   const [scheduleDialogOpen, setScheduleDialogOpen] = useState(false)
+  const [components, setComponents] = useState<ComponentWithStatus[]>([])
+
+  // Load components
+  useEffect(() => {
+    async function loadComponents() {
+      const result = await getActiveAircraftComponents(aircraft.id)
+      if (result.success && result.data) {
+        setComponents(result.data as ComponentWithStatus[])
+      }
+    }
+    loadComponents()
+  }, [aircraft.id])
+
+  // Filter critical and overdue components
+  const criticalComponents = components.filter(
+    c => c.tbo_status === 'critical' || c.tbo_status === 'overdue'
+  )
+  const warningComponents = components.filter(c => c.tbo_status === 'warning')
 
   return (
     <div className="space-y-6">
+      {/* Component TBO Alerts */}
+      {criticalComponents.length > 0 && (
+        <Alert variant="destructive">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertTitle>Critical Component TBO</AlertTitle>
+          <AlertDescription>
+            <strong>{criticalComponents.length}</strong> component(s) {criticalComponents.length === 1 ? 'is' : 'are'} at or near TBO limit.
+            {criticalComponents.map(c => (
+              <div key={c.id} className="mt-2 text-sm">
+                • {c.component_type} {c.position && `(${c.position})`}: {c.hours_remaining?.toFixed(1)}h remaining
+              </div>
+            ))}
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {warningComponents.length > 0 && !criticalComponents.length && (
+        <Alert className="border-yellow-600 bg-yellow-50">
+          <AlertTriangle className="h-4 w-4 text-yellow-800" />
+          <AlertTitle className="text-yellow-800">Component TBO Warning</AlertTitle>
+          <AlertDescription className="text-yellow-700">
+            <strong>{warningComponents.length}</strong> component(s) approaching TBO limit.
+          </AlertDescription>
+        </Alert>
+      )}
+
       {/* Maintenance Status Alert */}
       {aircraft.maintenance_status === 'overdue' && (
         <Alert variant="destructive">
@@ -244,6 +290,30 @@ export function AircraftMaintenanceTab({
           )}
         </CardContent>
       </Card>
+
+      {/* Component TBO Status */}
+      {components.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Wrench className="h-5 w-5" />
+              Life-Limited Components
+            </CardTitle>
+            <CardDescription>TBO status for engines, propellers, and other components</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {components.map((component) => (
+                <ComponentStatusCard
+                  key={component.id}
+                  component={component}
+                  detailed={false}
+                />
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Maintenance History */}
       <Card>

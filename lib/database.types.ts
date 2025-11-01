@@ -107,6 +107,149 @@ export type Database = {
           },
         ]
       }
+      aircraft_components: {
+        Row: {
+          id: string
+          plane_id: string
+          component_type: Database["public"]["Enums"]["component_type"]
+          position: string | null
+          serial_number: string | null
+          manufacturer: string | null
+          model: string | null
+          part_number: string | null
+          tbo_hours: number
+          hours_at_installation: number
+          component_hours_offset: number
+          installed_at: string
+          installed_by: string | null
+          status: Database["public"]["Enums"]["component_status"]
+          removed_at: string | null
+          removed_by: string | null
+          removal_reason: string | null
+          installation_mx_record_id: string | null
+          removal_mx_record_id: string | null
+          notes: string | null
+          created_at: string
+          updated_at: string
+          created_by: string
+        }
+        Insert: {
+          id?: string
+          plane_id: string
+          component_type: Database["public"]["Enums"]["component_type"]
+          position?: string | null
+          serial_number?: string | null
+          manufacturer?: string | null
+          model?: string | null
+          part_number?: string | null
+          tbo_hours: number
+          hours_at_installation?: number
+          component_hours_offset?: number
+          installed_at?: string
+          installed_by?: string | null
+          status?: Database["public"]["Enums"]["component_status"]
+          removed_at?: string | null
+          removed_by?: string | null
+          removal_reason?: string | null
+          installation_mx_record_id?: string | null
+          removal_mx_record_id?: string | null
+          notes?: string | null
+          created_at?: string
+          updated_at?: string
+          created_by: string
+        }
+        Update: {
+          id?: string
+          plane_id?: string
+          component_type?: Database["public"]["Enums"]["component_type"]
+          position?: string | null
+          serial_number?: string | null
+          manufacturer?: string | null
+          model?: string | null
+          part_number?: string | null
+          tbo_hours?: number
+          hours_at_installation?: number
+          component_hours_offset?: number
+          installed_at?: string
+          installed_by?: string | null
+          status?: Database["public"]["Enums"]["component_status"]
+          removed_at?: string | null
+          removed_by?: string | null
+          removal_reason?: string | null
+          installation_mx_record_id?: string | null
+          removal_mx_record_id?: string | null
+          notes?: string | null
+          created_at?: string
+          updated_at?: string
+          created_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "aircraft_components_plane_id_fkey"
+            columns: ["plane_id"]
+            isOneToOne: false
+            referencedRelation: "planes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "aircraft_components_installed_by_fkey"
+            columns: ["installed_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "aircraft_components_removed_by_fkey"
+            columns: ["removed_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "aircraft_components_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      component_tbo_presets: {
+        Row: {
+          id: string
+          component_type: Database["public"]["Enums"]["component_type"]
+          manufacturer: string
+          model: string
+          tbo_hours: number
+          description: string | null
+          is_common: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          component_type: Database["public"]["Enums"]["component_type"]
+          manufacturer: string
+          model: string
+          tbo_hours: number
+          description?: string | null
+          is_common?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          component_type?: Database["public"]["Enums"]["component_type"]
+          manufacturer?: string
+          model?: string
+          tbo_hours?: number
+          description?: string | null
+          is_common?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       cost_center_transactions: {
         Row: {
           amount: number
@@ -904,6 +1047,75 @@ export type Database = {
           },
         ]
       }
+      aircraft_components_with_status: {
+        Row: {
+          id: string | null
+          plane_id: string | null
+          component_type: Database["public"]["Enums"]["component_type"] | null
+          position: string | null
+          serial_number: string | null
+          manufacturer: string | null
+          model: string | null
+          part_number: string | null
+          tbo_hours: number | null
+          hours_at_installation: number | null
+          component_hours_offset: number | null
+          installed_at: string | null
+          installed_by: string | null
+          status: Database["public"]["Enums"]["component_status"] | null
+          removed_at: string | null
+          removed_by: string | null
+          removal_reason: string | null
+          installation_mx_record_id: string | null
+          removal_mx_record_id: string | null
+          notes: string | null
+          created_at: string | null
+          updated_at: string | null
+          created_by: string | null
+          tail_number: string | null
+          aircraft_current_hours: number | null
+          component_current_hours: number | null
+          hours_remaining: number | null
+          percentage_used: number | null
+          tbo_status: string | null
+          created_by_name: string | null
+          created_by_surname: string | null
+          installed_by_name: string | null
+          installed_by_surname: string | null
+          removed_by_name: string | null
+          removed_by_surname: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "aircraft_components_plane_id_fkey"
+            columns: ["plane_id"]
+            isOneToOne: false
+            referencedRelation: "planes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "aircraft_components_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "aircraft_components_installed_by_fkey"
+            columns: ["installed_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "aircraft_components_removed_by_fkey"
+            columns: ["removed_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       aircraft_totals: {
         Row: {
           active: boolean | null
@@ -1305,6 +1517,17 @@ export type Database = {
       is_board_member: { Args: { user_uuid: string }; Returns: boolean }
     }
     Enums: {
+      component_status: "active" | "removed" | "overhauled" | "scrapped"
+      component_type:
+        | "engine"
+        | "propeller"
+        | "landing_gear"
+        | "constant_speed_unit"
+        | "magneto"
+        | "vacuum_pump"
+        | "alternator"
+        | "starter"
+        | "other"
       reservation_status: "active" | "standby" | "cancelled"
     }
     CompositeTypes: {
