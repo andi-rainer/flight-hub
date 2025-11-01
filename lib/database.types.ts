@@ -116,6 +116,7 @@ export type Database = {
           description: string
           flightlog_id: string
           id: string
+          inserted_at: string
           reversed_at: string | null
           reversed_by: string | null
           reversal_transaction_id: string | null
@@ -129,6 +130,7 @@ export type Database = {
           description: string
           flightlog_id: string
           id?: string
+          inserted_at?: string
           reversed_at?: string | null
           reversed_by?: string | null
           reversal_transaction_id?: string | null
@@ -142,6 +144,7 @@ export type Database = {
           description?: string
           flightlog_id?: string
           id?: string
+          inserted_at?: string
           reversed_at?: string | null
           reversed_by?: string | null
           reversal_transaction_id?: string | null

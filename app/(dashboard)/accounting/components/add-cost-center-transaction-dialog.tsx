@@ -68,7 +68,8 @@ export function AddCostCenterTransactionDialog({
         costCenterId: costCenter.id,
         amount: Math.abs(amountNum),
         description: description.trim(),
-        created_at: new Date(transactionDate).toISOString(),
+        transactionDate: new Date(transactionDate).toISOString(),
+        created_at: new Date().toISOString(),// current date and time,
       }
 
       if (transactionType === 'credit') {

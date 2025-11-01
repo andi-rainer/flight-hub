@@ -153,11 +153,11 @@ export async function editUserTransaction(
 
   // Validate the 1-hour rule for date editing
   if (data.created_at) {
-    const createdAt = new Date(transaction.created_at)
+    const insertedAt = new Date(transaction.inserted_at)
     const now = new Date()
-    const hoursSinceCreation = (now.getTime() - createdAt.getTime()) / (1000 * 60 * 60)
+    const hoursSinceInsertion = (now.getTime() - insertedAt.getTime()) / (1000 * 60 * 60)
 
-    if (hoursSinceCreation > 1) {
+    if (hoursSinceInsertion > 1) {
       return {
         success: false,
         error: 'Date can only be edited within 1 hour of transaction creation'
@@ -370,11 +370,11 @@ export async function editCostCenterTransaction(
 
   // Validate the 1-hour rule for date editing
   if (data.created_at) {
-    const createdAt = new Date(transaction.created_at)
+    const insertedAt = new Date(transaction.inserted_at)
     const now = new Date()
-    const hoursSinceCreation = (now.getTime() - createdAt.getTime()) / (1000 * 60 * 60)
+    const hoursSinceInsertion = (now.getTime() - insertedAt.getTime()) / (1000 * 60 * 60)
 
-    if (hoursSinceCreation > 1) {
+    if (hoursSinceInsertion > 1) {
       return {
         success: false,
         error: 'Date can only be edited within 1 hour of transaction creation'

@@ -17,6 +17,7 @@ interface EditTransactionDialogProps {
     id: string
     description: string
     created_at: string
+    inserted_at: string
     amount: number
   }
   type: 'user' | 'cost_center'
@@ -37,11 +38,11 @@ export function EditTransactionDialog({
   const [date, setDate] = useState(format(new Date(transaction.created_at), "yyyy-MM-dd'T'HH:mm"))
   const [error, setError] = useState<string | null>(null)
 
-  // Check if date editing is allowed (within 1 hour)
-  const createdAt = new Date(transaction.created_at)
+  // Check if date editing is allowed (within 1 hour of insertion)
+  const insertedAt = new Date(transaction.inserted_at)
   const now = new Date()
-  const hoursSinceCreation = (now.getTime() - createdAt.getTime()) / (1000 * 60 * 60)
-  const canEditDate = hoursSinceCreation < 1
+  const hoursSinceInsertion = (now.getTime() - insertedAt.getTime()) / (1000 * 60 * 60)
+  const canEditDate = hoursSinceInsertion < 1
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -121,7 +122,7 @@ export function EditTransactionDialog({
                 <Clock className="h-4 w-4 mt-0.5 text-muted-foreground" />
                 <p className="text-xs text-muted-foreground">
                   Transaction date can only be edited within 1 hour of creation.
-                  Created {format(createdAt, 'dd.MM.yyyy HH:mm')}.
+                  Created {format(insertedAt, 'dd.MM.yyyy HH:mm')}.
                 </p>
               </div>
             )}

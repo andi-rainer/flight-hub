@@ -30,6 +30,7 @@ type CostCenterTransaction = {
   amount: number
   description: string
   created_at: string
+  inserted_at: string
   reversed_at: string | null
   reversed_by: string | null
   reversal_transaction_id: string | null
