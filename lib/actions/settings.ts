@@ -167,6 +167,13 @@ export async function updateUserProfile(data: {
   name?: string
   surname?: string
   license_number?: string | null
+  street?: string | null
+  house_number?: string | null
+  city?: string | null
+  zip?: string | null
+  country?: string | null
+  birthday?: string | null
+  telephone?: string | null
 }) {
   const supabase = await createClient()
 
@@ -193,6 +200,50 @@ export async function updateUserProfile(data: {
   }
 
   revalidatePath('/settings')
+  revalidatePath('/settings/profile')
+  return { success: true, data: updatedProfile }
+}
+
+export async function updateUserMembershipDates(userId: string, data: {
+  joined_at?: string | null
+  left_at?: string | null
+}) {
+  const supabase = await createClient()
+
+  // Verify user is board member
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) {
+    return { success: false, error: 'Not authenticated' }
+  }
+
+  const { data: profile } = await supabase
+    .from('users')
+    .select('role')
+    .eq('id', user.id)
+    .single()
+
+  if (!profile?.role?.includes('board')) {
+    return { success: false, error: 'Not authorized - board members only' }
+  }
+
+  // Update membership dates
+  const { data: updatedProfile, error } = await supabase
+    .from('users')
+    .update({
+      ...data,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', userId)
+    .select()
+    .single()
+
+  if (error) {
+    console.error('Error updating membership dates:', error)
+    return { success: false, error: error.message }
+  }
+
+  revalidatePath('/settings/profile')
+  revalidatePath('/members')
   return { success: true, data: updatedProfile }
 }
 

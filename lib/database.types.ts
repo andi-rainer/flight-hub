@@ -1355,37 +1355,64 @@ export type Database = {
       }
       users: {
         Row: {
+          birthday: string | null
+          city: string | null
+          country: string | null
           created_at: string
           email: string
           functions: string[] | null
+          house_number: string | null
           id: string
+          joined_at: string | null
+          left_at: string | null
           license_number: string | null
           name: string
           role: string[]
+          street: string | null
           surname: string
+          telephone: string | null
           updated_at: string
+          zip: string | null
         }
         Insert: {
+          birthday?: string | null
+          city?: string | null
+          country?: string | null
           created_at?: string
           email: string
           functions?: string[] | null
+          house_number?: string | null
           id: string
+          joined_at?: string | null
+          left_at?: string | null
           license_number?: string | null
           name: string
           role?: string[]
+          street?: string | null
           surname: string
+          telephone?: string | null
           updated_at?: string
+          zip?: string | null
         }
         Update: {
+          birthday?: string | null
+          city?: string | null
+          country?: string | null
           created_at?: string
           email?: string
           functions?: string[] | null
+          house_number?: string | null
           id?: string
+          joined_at?: string | null
+          left_at?: string | null
           license_number?: string | null
           name?: string
           role?: string[]
+          street?: string | null
           surname?: string
+          telephone?: string | null
           updated_at?: string
+          zip?: string | null
         }
         Relationships: []
       }
@@ -2180,5 +2207,3 @@ export const Constants = {
     },
   },
 } as const
-A new version of Supabase CLI is available: v2.54.11 (currently installed v2.20.5)
-We recommend updating regularly for new features and bug fixes: https://supabase.com/docs/guides/cli/getting-started#updating-the-supabase-cli

@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { ProfileSection } from './profile-section'
 import { PilotDocumentsSection } from './pilot-documents-section'
 import { DocumentTypesSection } from './document-types-section'
 import { AirportFeesSection } from './airport-fees-section'
@@ -70,22 +69,17 @@ export function SettingsTabs({ user, isBoardMember }: SettingsTabsProps) {
   }, [user.id])
 
   return (
-    <Tabs defaultValue="profile" className="space-y-6">
+    <Tabs defaultValue="documents" className="space-y-6">
       <TabsList>
-        <TabsTrigger value="profile">Profile</TabsTrigger>
         <TabsTrigger value="documents" className="relative">
           My Documents
           {userAlertsCount > 0 && (
             <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-destructive"></span>
           )}
         </TabsTrigger>
-        {isBoardMember && <TabsTrigger value="document-types">Document Settings</TabsTrigger>}
+        {isBoardMember && <TabsTrigger value="document-types">Document Types</TabsTrigger>}
         {isBoardMember && <TabsTrigger value="airport-fees">Airport Fees</TabsTrigger>}
       </TabsList>
-
-      <TabsContent value="profile" className="space-y-4">
-        <ProfileSection user={user} />
-      </TabsContent>
 
       <TabsContent value="documents" className="space-y-4">
         <PilotDocumentsSection userId={user.id} isBoardMember={isBoardMember} />
