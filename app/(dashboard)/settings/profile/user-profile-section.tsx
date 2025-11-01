@@ -46,6 +46,8 @@ export function UserProfileSection({ user, isBoardMember }: UserProfileSectionPr
     country: user.country || '',
     birthday: user.birthday || '',
     telephone: user.telephone || '',
+    emergency_contact_name: user.emergency_contact_name || '',
+    emergency_contact_phone: user.emergency_contact_phone || '',
   })
 
   const [emailData, setEmailData] = useState({
@@ -72,6 +74,8 @@ export function UserProfileSection({ user, isBoardMember }: UserProfileSectionPr
       country: profileData.country || null,
       birthday: profileData.birthday || null,
       telephone: profileData.telephone || null,
+      emergency_contact_name: profileData.emergency_contact_name || null,
+      emergency_contact_phone: profileData.emergency_contact_phone || null,
     })
 
     if (result.success) {
@@ -266,7 +270,7 @@ export function UserProfileSection({ user, isBoardMember }: UserProfileSectionPr
               <div className="grid gap-4">
                 <div className="grid gap-4 sm:grid-cols-3">
                   <div className="space-y-2 sm:col-span-2">
-                    <Label htmlFor="street">Street (Optional)</Label>
+                    <Label htmlFor="street">Street</Label>
                     <Input
                       id="street"
                       placeholder="e.g., Bahnhofstrasse"
@@ -274,10 +278,11 @@ export function UserProfileSection({ user, isBoardMember }: UserProfileSectionPr
                       onChange={(e) =>
                         setProfileData({ ...profileData, street: e.target.value })
                       }
+                      required
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="house_number">Number (Optional)</Label>
+                    <Label htmlFor="house_number">Number</Label>
                     <Input
                       id="house_number"
                       placeholder="e.g., 123"
@@ -285,12 +290,13 @@ export function UserProfileSection({ user, isBoardMember }: UserProfileSectionPr
                       onChange={(e) =>
                         setProfileData({ ...profileData, house_number: e.target.value })
                       }
+                      required
                     />
                   </div>
                 </div>
                 <div className="grid gap-4 sm:grid-cols-3">
                   <div className="space-y-2">
-                    <Label htmlFor="zip">ZIP Code (Optional)</Label>
+                    <Label htmlFor="zip">ZIP Code</Label>
                     <Input
                       id="zip"
                       placeholder="e.g., 8000"
@@ -298,10 +304,11 @@ export function UserProfileSection({ user, isBoardMember }: UserProfileSectionPr
                       onChange={(e) =>
                         setProfileData({ ...profileData, zip: e.target.value })
                       }
+                      required
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="city">City (Optional)</Label>
+                    <Label htmlFor="city">City</Label>
                     <Input
                       id="city"
                       placeholder="e.g., Zürich"
@@ -309,10 +316,11 @@ export function UserProfileSection({ user, isBoardMember }: UserProfileSectionPr
                       onChange={(e) =>
                         setProfileData({ ...profileData, city: e.target.value })
                       }
+                      required
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="country">Country (Optional)</Label>
+                    <Label htmlFor="country">Country</Label>
                     <Input
                       id="country"
                       placeholder="e.g., Switzerland"
@@ -320,8 +328,42 @@ export function UserProfileSection({ user, isBoardMember }: UserProfileSectionPr
                       onChange={(e) =>
                         setProfileData({ ...profileData, country: e.target.value })
                       }
+                      required
                     />
                   </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Emergency Contact */}
+            <div className="pt-4 border-t">
+              <h3 className="text-sm font-medium mb-4 flex items-center gap-2">
+                <Phone className="h-4 w-4" />
+                Emergency Contact
+              </h3>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="emergency_contact_name">Contact Name (Optional)</Label>
+                  <Input
+                    id="emergency_contact_name"
+                    placeholder="e.g., John Doe"
+                    value={profileData.emergency_contact_name}
+                    onChange={(e) =>
+                      setProfileData({ ...profileData, emergency_contact_name: e.target.value })
+                    }
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="emergency_contact_phone">Contact Phone (Optional)</Label>
+                  <Input
+                    id="emergency_contact_phone"
+                    type="tel"
+                    placeholder="e.g., +41 79 123 45 67"
+                    value={profileData.emergency_contact_phone}
+                    onChange={(e) =>
+                      setProfileData({ ...profileData, emergency_contact_phone: e.target.value })
+                    }
+                  />
                 </div>
               </div>
             </div>

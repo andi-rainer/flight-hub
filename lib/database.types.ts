@@ -1360,6 +1360,8 @@ export type Database = {
           country: string | null
           created_at: string
           email: string
+          emergency_contact_name: string | null
+          emergency_contact_phone: string | null
           functions: string[] | null
           house_number: string | null
           id: string
@@ -1380,6 +1382,8 @@ export type Database = {
           country?: string | null
           created_at?: string
           email: string
+          emergency_contact_name?: string | null
+          emergency_contact_phone?: string | null
           functions?: string[] | null
           house_number?: string | null
           id: string
@@ -1400,6 +1404,8 @@ export type Database = {
           country?: string | null
           created_at?: string
           email?: string
+          emergency_contact_name?: string | null
+          emergency_contact_phone?: string | null
           functions?: string[] | null
           house_number?: string | null
           id?: string

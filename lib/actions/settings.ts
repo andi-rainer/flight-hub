@@ -174,6 +174,8 @@ export async function updateUserProfile(data: {
   country?: string | null
   birthday?: string | null
   telephone?: string | null
+  emergency_contact_name?: string | null
+  emergency_contact_phone?: string | null
 }) {
   const supabase = await createClient()
 
@@ -181,6 +183,18 @@ export async function updateUserProfile(data: {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) {
     return { success: false, error: 'Not authenticated' }
+  }
+
+  // Validate required address fields
+  if (data.street !== undefined || data.house_number !== undefined ||
+      data.city !== undefined || data.zip !== undefined || data.country !== undefined) {
+    if (!data.street?.trim() || !data.house_number?.trim() ||
+        !data.city?.trim() || !data.zip?.trim() || !data.country?.trim()) {
+      return {
+        success: false,
+        error: 'All address fields are required: Street, House Number, City, ZIP, and Country'
+      }
+    }
   }
 
   // Update user profile
@@ -244,6 +258,81 @@ export async function updateUserMembershipDates(userId: string, data: {
 
   revalidatePath('/settings/profile')
   revalidatePath('/members')
+  return { success: true, data: updatedProfile }
+}
+
+export async function updateMemberProfile(userId: string, data: {
+  name?: string
+  surname?: string
+  email?: string
+  license_number?: string | null
+  street?: string | null
+  house_number?: string | null
+  city?: string | null
+  zip?: string | null
+  country?: string | null
+  birthday?: string | null
+  telephone?: string | null
+  emergency_contact_name?: string | null
+  emergency_contact_phone?: string | null
+  joined_at?: string | null
+  left_at?: string | null
+  functions?: string[]
+  role?: string[]
+}) {
+  const supabase = await createClient()
+
+  // Verify user is board member
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) {
+    return { success: false, error: 'Not authenticated' }
+  }
+
+  const { data: profile } = await supabase
+    .from('users')
+    .select('role')
+    .eq('id', user.id)
+    .single()
+
+  if (!profile?.role?.includes('board')) {
+    return { success: false, error: 'Not authorized - board members only' }
+  }
+
+  // Validate required address fields if any address field is being updated
+  if (data.street !== undefined || data.house_number !== undefined ||
+      data.city !== undefined || data.zip !== undefined || data.country !== undefined) {
+    if (!data.street?.trim() || !data.house_number?.trim() ||
+        !data.city?.trim() || !data.zip?.trim() || !data.country?.trim()) {
+      return {
+        success: false,
+        error: 'All address fields are required: Street, House Number, City, ZIP, and Country'
+      }
+    }
+  }
+
+  // Validate email is not empty if being updated
+  if (data.email !== undefined && !data.email?.trim()) {
+    return { success: false, error: 'Email cannot be empty' }
+  }
+
+  // Update member profile in users table
+  const { data: updatedProfile, error } = await supabase
+    .from('users')
+    .update({
+      ...data,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', userId)
+    .select()
+    .single()
+
+  if (error) {
+    console.error('Error updating member profile:', error)
+    return { success: false, error: error.message }
+  }
+
+  revalidatePath('/members')
+  revalidatePath('/settings/profile')
   return { success: true, data: updatedProfile }
 }
 
