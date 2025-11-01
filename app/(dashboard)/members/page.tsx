@@ -294,6 +294,22 @@ export default async function MembersPage() {
   const activeMembers = members.filter(m => m.is_active)
   const inactiveMembers = members.filter(m => !m.is_active)
 
+  // Filter active members by category
+  const regularMembers = activeMembers.filter(m =>
+    m.active_membership?.membership_types?.member_category === 'regular'
+  )
+  const shortTermMembers = activeMembers.filter(m =>
+    m.active_membership?.membership_types?.member_category === 'short-term'
+  )
+
+  // Filter inactive members by category
+  const inactiveRegularMembers = inactiveMembers.filter(m =>
+    m.active_membership?.membership_types?.member_category === 'regular'
+  )
+  const inactiveShortTermMembers = inactiveMembers.filter(m =>
+    m.active_membership?.membership_types?.member_category === 'short-term'
+  )
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -330,122 +346,380 @@ export default async function MembersPage() {
             </AlertDescription>
           </Alert>
 
-          {/* Active Members Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Active Club Members</CardTitle>
-          <CardDescription>
-            {activeMembers.length} active {activeMembers.length === 1 ? 'member' : 'members'}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Roles</TableHead>
-                  <TableHead>Functions</TableHead>
-                  <TableHead>Membership</TableHead>
-                  <TableHead>Payment</TableHead>
-                  <TableHead>Documents</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {activeMembers.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={8} className="text-center text-muted-foreground">
-                      No active members found
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  activeMembers.map((member) => (
-                    <TableRow key={member.id}>
-                      <TableCell className="font-medium">
-                        {member.name} {member.surname}
-                      </TableCell>
-                      <TableCell>{member.email}</TableCell>
-                      <TableCell>
-                        <div className="flex flex-wrap gap-1">
-                          {member.role?.includes('board') && (
-                            <Badge>Board</Badge>
-                          )}
-                          <Badge variant="outline">Member</Badge>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-sm max-w-xs truncate">
-                        {getFunctionNames(member.functions || [], functions)}
-                      </TableCell>
-                      <TableCell>
-                        {member.active_membership ? (
-                          <div className="flex flex-col gap-1">
-                            <Badge variant="default">
-                              {member.active_membership.membership_types?.name || 'Active'}
-                            </Badge>
-                            <span className="text-xs text-muted-foreground">
-                              {member.active_membership.member_number}
-                            </span>
-                            <span className="text-xs text-muted-foreground">
-                              {member.active_membership.auto_renew ? 'Renewal' : 'Until'}: {new Date(member.active_membership.end_date).toLocaleDateString()}
-                            </span>
-                          </div>
+          {/* Member Category Tabs */}
+          <Tabs defaultValue="regular" className="space-y-4">
+            <TabsList>
+              <TabsTrigger value="all">
+                All Members
+                <Badge variant="secondary" className="ml-2">{activeMembers.length}</Badge>
+              </TabsTrigger>
+              <TabsTrigger value="regular">
+                Regular Members
+                <Badge variant="secondary" className="ml-2">{regularMembers.length}</Badge>
+              </TabsTrigger>
+              <TabsTrigger value="short-term">
+                Short-term Members
+                <Badge variant="secondary" className="ml-2">{shortTermMembers.length}</Badge>
+              </TabsTrigger>
+            </TabsList>
+
+            {/* All Members */}
+            <TabsContent value="all">
+              <Card>
+                <CardHeader>
+                  <CardTitle>All Active Members</CardTitle>
+                  <CardDescription>
+                    {activeMembers.length} active {activeMembers.length === 1 ? 'member' : 'members'}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="rounded-md border">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Name</TableHead>
+                          <TableHead>Email</TableHead>
+                          <TableHead>Roles</TableHead>
+                          <TableHead>Functions</TableHead>
+                          <TableHead>Membership</TableHead>
+                          <TableHead>Payment</TableHead>
+                          <TableHead>Documents</TableHead>
+                          <TableHead className="text-right">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {activeMembers.length === 0 ? (
+                          <TableRow>
+                            <TableCell colSpan={8} className="text-center text-muted-foreground">
+                              No active members found
+                            </TableCell>
+                          </TableRow>
                         ) : (
-                          <span className="text-sm text-muted-foreground">No membership</span>
+                          activeMembers.map((member) => (
+                            <TableRow key={member.id}>
+                              <TableCell className="font-medium">
+                                {member.name} {member.surname}
+                              </TableCell>
+                              <TableCell>{member.email}</TableCell>
+                              <TableCell>
+                                <div className="flex flex-wrap gap-1">
+                                  {member.role?.includes('board') && (
+                                    <Badge>Board</Badge>
+                                  )}
+                                  <Badge variant="outline">Member</Badge>
+                                </div>
+                              </TableCell>
+                              <TableCell className="text-sm max-w-xs truncate">
+                                {getFunctionNames(member.functions || [], functions)}
+                              </TableCell>
+                              <TableCell>
+                                {member.active_membership ? (
+                                  <div className="flex flex-col gap-1">
+                                    <Badge variant="default">
+                                      {member.active_membership.membership_types?.name || 'Active'}
+                                    </Badge>
+                                    <span className="text-xs text-muted-foreground">
+                                      {member.active_membership.member_number}
+                                    </span>
+                                    <span className="text-xs text-muted-foreground">
+                                      {member.active_membership.auto_renew ? 'Renewal' : 'Until'}: {new Date(member.active_membership.end_date).toLocaleDateString()}
+                                    </span>
+                                  </div>
+                                ) : (
+                                  <span className="text-sm text-muted-foreground">No membership</span>
+                                )}
+                              </TableCell>
+                              <TableCell>
+                                {member.active_membership ? (
+                                  <Badge
+                                    variant={
+                                      member.active_membership.payment_status === 'paid'
+                                        ? 'default'
+                                        : member.active_membership.payment_status === 'pending'
+                                        ? 'secondary'
+                                        : 'destructive'
+                                    }
+                                    className={
+                                      member.active_membership.payment_status === 'paid'
+                                        ? 'bg-green-600'
+                                        : member.active_membership.payment_status === 'pending'
+                                        ? 'bg-yellow-600'
+                                        : ''
+                                    }
+                                  >
+                                    {member.active_membership.payment_status}
+                                  </Badge>
+                                ) : (
+                                  <span className="text-sm text-muted-foreground">-</span>
+                                )}
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex items-center gap-2">
+                                  {getDocumentStatusBadge(member.document_status, member)}
+                                  <span className="text-sm text-muted-foreground">
+                                    {member.mandatory_required > 0 ? (
+                                      `(${member.mandatory_uploaded}/${member.mandatory_required})`
+                                    ) : (
+                                      `(${member.documents.length})`
+                                    )}
+                                  </span>
+                                </div>
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <div className="flex items-center justify-end gap-1">
+                                  <MemberDocumentsDialog member={member} documents={member.documents} />
+                                  <ManageMembershipDialog user={member} activeMembership={member.active_membership} />
+                                  <EditMemberDialog member={member} functions={functions} />
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))
                         )}
-                      </TableCell>
-                      <TableCell>
-                        {member.active_membership ? (
-                          <Badge
-                            variant={
-                              member.active_membership.payment_status === 'paid'
-                                ? 'default'
-                                : member.active_membership.payment_status === 'pending'
-                                ? 'secondary'
-                                : 'destructive'
-                            }
-                            className={
-                              member.active_membership.payment_status === 'paid'
-                                ? 'bg-green-600'
-                                : member.active_membership.payment_status === 'pending'
-                                ? 'bg-yellow-600'
-                                : ''
-                            }
-                          >
-                            {member.active_membership.payment_status}
-                          </Badge>
+                      </TableBody>
+                    </Table>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* Regular Members */}
+            <TabsContent value="regular">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Regular Members</CardTitle>
+                  <CardDescription>
+                    {regularMembers.length} regular {regularMembers.length === 1 ? 'member' : 'members'}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="rounded-md border">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Name</TableHead>
+                          <TableHead>Email</TableHead>
+                          <TableHead>Roles</TableHead>
+                          <TableHead>Functions</TableHead>
+                          <TableHead>Membership</TableHead>
+                          <TableHead>Payment</TableHead>
+                          <TableHead>Documents</TableHead>
+                          <TableHead className="text-right">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {regularMembers.length === 0 ? (
+                          <TableRow>
+                            <TableCell colSpan={8} className="text-center text-muted-foreground">
+                              No regular members found
+                            </TableCell>
+                          </TableRow>
                         ) : (
-                          <span className="text-sm text-muted-foreground">-</span>
+                          regularMembers.map((member) => (
+                            <TableRow key={member.id}>
+                              <TableCell className="font-medium">
+                                {member.name} {member.surname}
+                              </TableCell>
+                              <TableCell>{member.email}</TableCell>
+                              <TableCell>
+                                <div className="flex flex-wrap gap-1">
+                                  {member.role?.includes('board') && (
+                                    <Badge>Board</Badge>
+                                  )}
+                                  <Badge variant="outline">Member</Badge>
+                                </div>
+                              </TableCell>
+                              <TableCell className="text-sm max-w-xs truncate">
+                                {getFunctionNames(member.functions || [], functions)}
+                              </TableCell>
+                              <TableCell>
+                                {member.active_membership ? (
+                                  <div className="flex flex-col gap-1">
+                                    <Badge variant="default">
+                                      {member.active_membership.membership_types?.name || 'Active'}
+                                    </Badge>
+                                    <span className="text-xs text-muted-foreground">
+                                      {member.active_membership.member_number}
+                                    </span>
+                                    <span className="text-xs text-muted-foreground">
+                                      {member.active_membership.auto_renew ? 'Renewal' : 'Until'}: {new Date(member.active_membership.end_date).toLocaleDateString()}
+                                    </span>
+                                  </div>
+                                ) : (
+                                  <span className="text-sm text-muted-foreground">No membership</span>
+                                )}
+                              </TableCell>
+                              <TableCell>
+                                {member.active_membership ? (
+                                  <Badge
+                                    variant={
+                                      member.active_membership.payment_status === 'paid'
+                                        ? 'default'
+                                        : member.active_membership.payment_status === 'pending'
+                                        ? 'secondary'
+                                        : 'destructive'
+                                    }
+                                    className={
+                                      member.active_membership.payment_status === 'paid'
+                                        ? 'bg-green-600'
+                                        : member.active_membership.payment_status === 'pending'
+                                        ? 'bg-yellow-600'
+                                        : ''
+                                    }
+                                  >
+                                    {member.active_membership.payment_status}
+                                  </Badge>
+                                ) : (
+                                  <span className="text-sm text-muted-foreground">-</span>
+                                )}
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex items-center gap-2">
+                                  {getDocumentStatusBadge(member.document_status, member)}
+                                  <span className="text-sm text-muted-foreground">
+                                    {member.mandatory_required > 0 ? (
+                                      `(${member.mandatory_uploaded}/${member.mandatory_required})`
+                                    ) : (
+                                      `(${member.documents.length})`
+                                    )}
+                                  </span>
+                                </div>
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <div className="flex items-center justify-end gap-1">
+                                  <MemberDocumentsDialog member={member} documents={member.documents} />
+                                  <ManageMembershipDialog user={member} activeMembership={member.active_membership} />
+                                  <EditMemberDialog member={member} functions={functions} />
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))
                         )}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          {getDocumentStatusBadge(member.document_status, member)}
-                          <span className="text-sm text-muted-foreground">
-                            {member.mandatory_required > 0 ? (
-                              `(${member.mandatory_uploaded}/${member.mandatory_required})`
-                            ) : (
-                              `(${member.documents.length})`
-                            )}
-                          </span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-1">
-                          <MemberDocumentsDialog member={member} documents={member.documents} />
-                          <ManageMembershipDialog user={member} activeMembership={member.active_membership} />
-                          <EditMemberDialog member={member} functions={functions} />
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
-      </Card>
+                      </TableBody>
+                    </Table>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* Short-term Members */}
+            <TabsContent value="short-term">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Short-term Members</CardTitle>
+                  <CardDescription>
+                    {shortTermMembers.length} short-term {shortTermMembers.length === 1 ? 'member' : 'members'}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="rounded-md border">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Name</TableHead>
+                          <TableHead>Email</TableHead>
+                          <TableHead>Roles</TableHead>
+                          <TableHead>Functions</TableHead>
+                          <TableHead>Membership</TableHead>
+                          <TableHead>Payment</TableHead>
+                          <TableHead>Documents</TableHead>
+                          <TableHead className="text-right">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {shortTermMembers.length === 0 ? (
+                          <TableRow>
+                            <TableCell colSpan={8} className="text-center text-muted-foreground">
+                              No short-term members found
+                            </TableCell>
+                          </TableRow>
+                        ) : (
+                          shortTermMembers.map((member) => (
+                            <TableRow key={member.id}>
+                              <TableCell className="font-medium">
+                                {member.name} {member.surname}
+                              </TableCell>
+                              <TableCell>{member.email}</TableCell>
+                              <TableCell>
+                                <div className="flex flex-wrap gap-1">
+                                  {member.role?.includes('board') && (
+                                    <Badge>Board</Badge>
+                                  )}
+                                  <Badge variant="outline">Member</Badge>
+                                </div>
+                              </TableCell>
+                              <TableCell className="text-sm max-w-xs truncate">
+                                {getFunctionNames(member.functions || [], functions)}
+                              </TableCell>
+                              <TableCell>
+                                {member.active_membership ? (
+                                  <div className="flex flex-col gap-1">
+                                    <Badge variant="default">
+                                      {member.active_membership.membership_types?.name || 'Active'}
+                                    </Badge>
+                                    <span className="text-xs text-muted-foreground">
+                                      {member.active_membership.member_number}
+                                    </span>
+                                    <span className="text-xs text-muted-foreground">
+                                      {member.active_membership.auto_renew ? 'Renewal' : 'Until'}: {new Date(member.active_membership.end_date).toLocaleDateString()}
+                                    </span>
+                                  </div>
+                                ) : (
+                                  <span className="text-sm text-muted-foreground">No membership</span>
+                                )}
+                              </TableCell>
+                              <TableCell>
+                                {member.active_membership ? (
+                                  <Badge
+                                    variant={
+                                      member.active_membership.payment_status === 'paid'
+                                        ? 'default'
+                                        : member.active_membership.payment_status === 'pending'
+                                        ? 'secondary'
+                                        : 'destructive'
+                                    }
+                                    className={
+                                      member.active_membership.payment_status === 'paid'
+                                        ? 'bg-green-600'
+                                        : member.active_membership.payment_status === 'pending'
+                                        ? 'bg-yellow-600'
+                                        : ''
+                                    }
+                                  >
+                                    {member.active_membership.payment_status}
+                                  </Badge>
+                                ) : (
+                                  <span className="text-sm text-muted-foreground">-</span>
+                                )}
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex items-center gap-2">
+                                  {getDocumentStatusBadge(member.document_status, member)}
+                                  <span className="text-sm text-muted-foreground">
+                                    {member.mandatory_required > 0 ? (
+                                      `(${member.mandatory_uploaded}/${member.mandatory_required})`
+                                    ) : (
+                                      `(${member.documents.length})`
+                                    )}
+                                  </span>
+                                </div>
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <div className="flex items-center justify-end gap-1">
+                                  <MemberDocumentsDialog member={member} documents={member.documents} />
+                                  <ManageMembershipDialog user={member} activeMembership={member.active_membership} />
+                                  <EditMemberDialog member={member} functions={functions} />
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))
+                        )}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
         </TabsContent>
 
         <TabsContent value="inactive" className="space-y-4">
@@ -459,74 +733,236 @@ export default async function MembersPage() {
             </AlertDescription>
           </Alert>
 
-          {/* Inactive Members Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Inactive Club Members</CardTitle>
-          <CardDescription>
-            {inactiveMembers.length} inactive {inactiveMembers.length === 1 ? 'member' : 'members'}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Membership Status</TableHead>
-                  <TableHead>Last Active</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {inactiveMembers.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={5} className="text-center text-muted-foreground">
-                      No inactive members
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  inactiveMembers.map((member) => (
-                    <TableRow key={member.id}>
-                      <TableCell className="font-medium">
-                        {member.name} {member.surname}
-                      </TableCell>
-                      <TableCell>{member.email}</TableCell>
-                      <TableCell>
-                        {member.active_membership ? (
-                          <div className="flex flex-col gap-1">
-                            <Badge variant="destructive">Expired</Badge>
-                            <span className="text-xs text-muted-foreground">
-                              {member.active_membership.member_number}
-                            </span>
-                            <span className="text-xs text-muted-foreground">
-                              Ended: {new Date(member.active_membership.end_date).toLocaleDateString()}
-                            </span>
-                          </div>
+          {/* Member Category Tabs */}
+          <Tabs defaultValue="regular" className="space-y-4">
+            <TabsList>
+              <TabsTrigger value="all">
+                All Members
+                <Badge variant="secondary" className="ml-2">{inactiveMembers.length}</Badge>
+              </TabsTrigger>
+              <TabsTrigger value="regular">
+                Regular Members
+                <Badge variant="secondary" className="ml-2">{inactiveRegularMembers.length}</Badge>
+              </TabsTrigger>
+              <TabsTrigger value="short-term">
+                Short-term Members
+                <Badge variant="secondary" className="ml-2">{inactiveShortTermMembers.length}</Badge>
+              </TabsTrigger>
+            </TabsList>
+
+            {/* All Inactive Members */}
+            <TabsContent value="all">
+              <Card>
+                <CardHeader>
+                  <CardTitle>All Inactive Members</CardTitle>
+                  <CardDescription>
+                    {inactiveMembers.length} inactive {inactiveMembers.length === 1 ? 'member' : 'members'}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="rounded-md border">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Name</TableHead>
+                          <TableHead>Email</TableHead>
+                          <TableHead>Membership Status</TableHead>
+                          <TableHead>Last Active</TableHead>
+                          <TableHead className="text-right">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {inactiveMembers.length === 0 ? (
+                          <TableRow>
+                            <TableCell colSpan={5} className="text-center text-muted-foreground">
+                              No inactive members
+                            </TableCell>
+                          </TableRow>
                         ) : (
-                          <Badge variant="outline">No membership</Badge>
+                          inactiveMembers.map((member) => (
+                            <TableRow key={member.id}>
+                              <TableCell className="font-medium">
+                                {member.name} {member.surname}
+                              </TableCell>
+                              <TableCell>{member.email}</TableCell>
+                              <TableCell>
+                                {member.active_membership ? (
+                                  <div className="flex flex-col gap-1">
+                                    <Badge variant="destructive">Expired</Badge>
+                                    <span className="text-xs text-muted-foreground">
+                                      {member.active_membership.member_number}
+                                    </span>
+                                    <span className="text-xs text-muted-foreground">
+                                      Ended: {new Date(member.active_membership.end_date).toLocaleDateString()}
+                                    </span>
+                                  </div>
+                                ) : (
+                                  <Badge variant="outline">No membership</Badge>
+                                )}
+                              </TableCell>
+                              <TableCell className="text-sm text-muted-foreground">
+                                {member.active_membership
+                                  ? new Date(member.active_membership.end_date).toLocaleDateString()
+                                  : 'Never'}
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <div className="flex items-center justify-end gap-1">
+                                  <ManageMembershipDialog user={member} activeMembership={member.active_membership} />
+                                  <EditMemberDialog member={member} functions={functions} />
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))
                         )}
-                      </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
-                        {member.active_membership
-                          ? new Date(member.active_membership.end_date).toLocaleDateString()
-                          : 'Never'}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-1">
-                          <ManageMembershipDialog user={member} activeMembership={member.active_membership} />
-                          <EditMemberDialog member={member} functions={functions} />
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
-      </Card>
+                      </TableBody>
+                    </Table>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* Inactive Regular Members */}
+            <TabsContent value="regular">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Inactive Regular Members</CardTitle>
+                  <CardDescription>
+                    {inactiveRegularMembers.length} inactive regular {inactiveRegularMembers.length === 1 ? 'member' : 'members'}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="rounded-md border">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Name</TableHead>
+                          <TableHead>Email</TableHead>
+                          <TableHead>Membership Status</TableHead>
+                          <TableHead>Last Active</TableHead>
+                          <TableHead className="text-right">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {inactiveRegularMembers.length === 0 ? (
+                          <TableRow>
+                            <TableCell colSpan={5} className="text-center text-muted-foreground">
+                              No inactive regular members
+                            </TableCell>
+                          </TableRow>
+                        ) : (
+                          inactiveRegularMembers.map((member) => (
+                            <TableRow key={member.id}>
+                              <TableCell className="font-medium">
+                                {member.name} {member.surname}
+                              </TableCell>
+                              <TableCell>{member.email}</TableCell>
+                              <TableCell>
+                                {member.active_membership ? (
+                                  <div className="flex flex-col gap-1">
+                                    <Badge variant="destructive">Expired</Badge>
+                                    <span className="text-xs text-muted-foreground">
+                                      {member.active_membership.member_number}
+                                    </span>
+                                    <span className="text-xs text-muted-foreground">
+                                      Ended: {new Date(member.active_membership.end_date).toLocaleDateString()}
+                                    </span>
+                                  </div>
+                                ) : (
+                                  <Badge variant="outline">No membership</Badge>
+                                )}
+                              </TableCell>
+                              <TableCell className="text-sm text-muted-foreground">
+                                {member.active_membership
+                                  ? new Date(member.active_membership.end_date).toLocaleDateString()
+                                  : 'Never'}
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <div className="flex items-center justify-end gap-1">
+                                  <ManageMembershipDialog user={member} activeMembership={member.active_membership} />
+                                  <EditMemberDialog member={member} functions={functions} />
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))
+                        )}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* Inactive Short-term Members */}
+            <TabsContent value="short-term">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Inactive Short-term Members</CardTitle>
+                  <CardDescription>
+                    {inactiveShortTermMembers.length} inactive short-term {inactiveShortTermMembers.length === 1 ? 'member' : 'members'}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="rounded-md border">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Name</TableHead>
+                          <TableHead>Email</TableHead>
+                          <TableHead>Membership Status</TableHead>
+                          <TableHead>Last Active</TableHead>
+                          <TableHead className="text-right">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {inactiveShortTermMembers.length === 0 ? (
+                          <TableRow>
+                            <TableCell colSpan={5} className="text-center text-muted-foreground">
+                              No inactive short-term members
+                            </TableCell>
+                          </TableRow>
+                        ) : (
+                          inactiveShortTermMembers.map((member) => (
+                            <TableRow key={member.id}>
+                              <TableCell className="font-medium">
+                                {member.name} {member.surname}
+                              </TableCell>
+                              <TableCell>{member.email}</TableCell>
+                              <TableCell>
+                                {member.active_membership ? (
+                                  <div className="flex flex-col gap-1">
+                                    <Badge variant="destructive">Expired</Badge>
+                                    <span className="text-xs text-muted-foreground">
+                                      {member.active_membership.member_number}
+                                    </span>
+                                    <span className="text-xs text-muted-foreground">
+                                      Ended: {new Date(member.active_membership.end_date).toLocaleDateString()}
+                                    </span>
+                                  </div>
+                                ) : (
+                                  <Badge variant="outline">No membership</Badge>
+                                )}
+                              </TableCell>
+                              <TableCell className="text-sm text-muted-foreground">
+                                {member.active_membership
+                                  ? new Date(member.active_membership.end_date).toLocaleDateString()
+                                  : 'Never'}
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <div className="flex items-center justify-end gap-1">
+                                  <ManageMembershipDialog user={member} activeMembership={member.active_membership} />
+                                  <EditMemberDialog member={member} functions={functions} />
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))
+                        )}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
         </TabsContent>
 
         <TabsContent value="functions" className="space-y-4">

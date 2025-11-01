@@ -58,7 +58,7 @@ export function MembershipTypesSection() {
     price: '0',
     currency: 'EUR',
     auto_renew: false,
-    member_category: 'regular' as 'trial' | 'short-term' | 'regular' | 'premium',
+    member_category: 'regular' as 'regular' | 'short-term',
     member_number_prefix: 'M',
     active: true,
   })
@@ -89,7 +89,7 @@ export function MembershipTypesSection() {
         price: type.price?.toString() || '0',
         currency: type.currency || 'EUR',
         auto_renew: type.auto_renew || false,
-        member_category: (type.member_category as 'trial' | 'short-term' | 'regular' | 'premium') || 'regular',
+        member_category: (type.member_category as 'regular' | 'short-term') || 'regular',
         member_number_prefix: type.member_number_prefix,
         active: type.active ?? true,
       })
@@ -172,10 +172,8 @@ export function MembershipTypesSection() {
     if (!category) return null
 
     const variants: Record<string, 'default' | 'secondary' | 'outline'> = {
-      trial: 'outline',
       'short-term': 'secondary',
       regular: 'default',
-      premium: 'default',
     }
 
     return (
@@ -370,7 +368,7 @@ export function MembershipTypesSection() {
                 <Label htmlFor="member_category">Member Category *</Label>
                 <Select
                   value={formData.member_category}
-                  onValueChange={(value: 'trial' | 'short-term' | 'regular' | 'premium') =>
+                  onValueChange={(value: 'regular' | 'short-term') =>
                     setFormData({ ...formData, member_category: value })
                   }
                 >
@@ -378,10 +376,8 @@ export function MembershipTypesSection() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="trial">Trial</SelectItem>
-                    <SelectItem value="short-term">Short-term</SelectItem>
                     <SelectItem value="regular">Regular</SelectItem>
-                    <SelectItem value="premium">Premium</SelectItem>
+                    <SelectItem value="short-term">Short-term</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
