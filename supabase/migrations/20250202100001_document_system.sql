@@ -91,21 +91,6 @@ CREATE POLICY "Board can manage document types"
     WITH CHECK (public.is_board_member(auth.uid()));
 
 -- =====================================================
--- SEED DATA: COMMON DOCUMENT TYPES
--- =====================================================
-
-INSERT INTO public.document_types (name, description, category, mandatory, expires, expiry_type, default_validity_months, required_for_functions) VALUES
-    ('Medical Certificate', 'Medical certificate required for flying', 'user', true, true, 'date', 12, ARRAY['pilot', 'flight_instructor']),
-    ('Pilot License', 'Pilot license (PPL, CPL, ATPL)', 'user', true, true, 'date', 60, ARRAY['pilot', 'flight_instructor']),
-    ('Flight Instructor Rating', 'Flight instructor authorization', 'user', true, true, 'date', 24, ARRAY['flight_instructor']),
-    ('Aircraft Certificate of Airworthiness', 'Aircraft airworthiness certificate', 'aircraft', true, true, 'date', 12, ARRAY[]::TEXT[]),
-    ('Aircraft Registration', 'Aircraft registration documents', 'aircraft', true, true, 'date', null, ARRAY[]::TEXT[]),
-    ('Insurance Certificate', 'Aircraft insurance certificate', 'aircraft', true, true, 'date', 12, ARRAY[]::TEXT[]),
-    ('Flight Manual', 'Aircraft flight manual', 'aircraft', true, false, null, null, ARRAY[]::TEXT[]),
-    ('Weight and Balance', 'Weight and balance documentation', 'aircraft', true, false, null, null, ARRAY[]::TEXT[])
-ON CONFLICT (name) DO NOTHING;
-
--- =====================================================
 -- COMMENTS
 -- =====================================================
 
