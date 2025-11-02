@@ -1,29 +1,76 @@
--- FlightHub Initial Schema Migration
--- This migration creates the complete database schema for the aviation club management application
-
+-- =====================================================
+-- FLIGHTHUB INITIAL SCHEMA
+-- =====================================================
+-- This is a consolidated migration representing the complete initial schema
+-- for the aviation club management application.
+--
+-- Consolidated from original migrations:
+-- - 20250116000000_initial_schema.sql
+-- - 20250117000000_fix_flightlog_constraints.sql
+-- - 20250119000000_create_notifications_table.sql
+-- - 20250120000000_fix_notifications_schema.sql
+-- - 20250123000001_add_aircraft_initial_values.sql
+-- - 20250123000003_add_landings_to_flightlog.sql
+-- - 20250123000015_add_icao_departure_destination.sql
+-- - 20250125000000_add_flightlog_warnings.sql
+-- - 20250131000001_add_inserted_at_to_accounts.sql
+-- - 20250131000006_add_user_profile_fields.sql
+-- - 20250131000007_add_emergency_contact_fields.sql
+-- - 20250202000000_add_user_language_preference.sql
+--
 -- =====================================================
 -- EXTENSIONS
 -- =====================================================
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+-- UUID generation uses built-in gen_random_uuid() function (PostgreSQL 13+)
 
 -- =====================================================
 -- ENUMS
 -- =====================================================
 CREATE TYPE reservation_status AS ENUM ('active', 'standby', 'cancelled');
+CREATE TYPE component_type AS ENUM ('engine', 'propeller', 'avionics', 'landing_gear', 'other');
+CREATE TYPE component_status AS ENUM ('installed', 'removed', 'maintenance', 'scrapped');
 
 -- =====================================================
--- TABLES
+-- CORE TABLES
 -- =====================================================
 
 -- Users table (extends auth.users)
+-- Includes ALL profile fields from various migrations
 CREATE TABLE public.users (
     id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
     email TEXT NOT NULL UNIQUE,
     name TEXT NOT NULL,
     surname TEXT NOT NULL,
     role TEXT[] NOT NULL DEFAULT ARRAY['member']::TEXT[],
+
+    -- Aviation info
     license_number TEXT,
-    functions TEXT[] DEFAULT ARRAY[]::TEXT[],
+    functions TEXT[] DEFAULT ARRAY[]::TEXT[], -- Deprecated: use user_functions junction table
+
+    -- Contact info
+    telephone TEXT,
+    emergency_contact_name TEXT,
+    emergency_contact_phone TEXT,
+
+    -- Address
+    street TEXT,
+    house_number TEXT,
+    city TEXT,
+    zip TEXT,
+    country TEXT,
+
+    -- Personal
+    birthday DATE,
+
+    -- Membership
+    member_category TEXT,
+    joined_at DATE,
+    left_at DATE,
+
+    -- Preferences
+    preferred_language TEXT DEFAULT 'de' CHECK (preferred_language IN ('de', 'en')),
+
+    -- Timestamps
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
@@ -35,35 +82,54 @@ CREATE TABLE public.users (
 -- Indexes for users
 CREATE INDEX idx_users_email ON public.users(email);
 CREATE INDEX idx_users_role ON public.users USING GIN(role);
+CREATE INDEX idx_users_left_at ON public.users(left_at) WHERE left_at IS NOT NULL;
 
--- Functions master table (defines available club functions/roles)
+-- Functions master table
 CREATE TABLE public.functions_master (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name TEXT NOT NULL UNIQUE,
-    yearly_rate NUMERIC(10, 2) NOT NULL DEFAULT 0,
     description TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
-    -- Constraints
-    CONSTRAINT functions_master_name_check CHECK (LENGTH(name) > 0),
-    CONSTRAINT functions_master_yearly_rate_check CHECK (yearly_rate >= 0)
+    CONSTRAINT functions_master_name_check CHECK (LENGTH(name) > 0)
 );
 
--- Planes table
+-- Planes table (with all additions)
 CREATE TABLE public.planes (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     tail_number TEXT NOT NULL UNIQUE,
     type TEXT NOT NULL,
+
+    -- Weight and fuel
     empty_weight NUMERIC(8, 2),
     max_fuel NUMERIC(8, 2),
     fuel_consumption NUMERIC(6, 2),
+    max_mass NUMERIC(8, 2),
+    cg_limits JSONB,
+
+    -- Capacity
+    passenger_seats INTEGER DEFAULT 1,
+
+    -- Equipment
     color TEXT,
     nav_equipment TEXT[] DEFAULT ARRAY[]::TEXT[],
     xdpr_equipment TEXT,
     emer_equipment TEXT,
-    max_mass NUMERIC(8, 2),
-    cg_limits JSONB,
+
+    -- Billing
+    billing_unit TEXT DEFAULT 'hour' CHECK (billing_unit IN ('hour', 'minute')),
+    default_rate NUMERIC(10, 2) DEFAULT 0,
+
+    -- Maintenance tracking
+    initial_flight_hours NUMERIC(10, 2) DEFAULT 0,
+    initial_landings INTEGER DEFAULT 0,
+    next_maintenance_hours NUMERIC(10, 2),
+    maintenance_interval_hours NUMERIC(10, 2) DEFAULT 50,
+
+    -- Status
     active BOOLEAN NOT NULL DEFAULT TRUE,
+
+    -- Timestamps
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
@@ -73,7 +139,8 @@ CREATE TABLE public.planes (
     CONSTRAINT planes_empty_weight_check CHECK (empty_weight IS NULL OR empty_weight > 0),
     CONSTRAINT planes_max_fuel_check CHECK (max_fuel IS NULL OR max_fuel > 0),
     CONSTRAINT planes_fuel_consumption_check CHECK (fuel_consumption IS NULL OR fuel_consumption > 0),
-    CONSTRAINT planes_max_mass_check CHECK (max_mass IS NULL OR max_mass > 0)
+    CONSTRAINT planes_max_mass_check CHECK (max_mass IS NULL OR max_mass > 0),
+    CONSTRAINT planes_passenger_seats_check CHECK (passenger_seats >= 1)
 );
 
 -- Indexes for planes
@@ -82,7 +149,7 @@ CREATE INDEX idx_planes_active ON public.planes(active);
 
 -- Reservations table
 CREATE TABLE public.reservations (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     plane_id UUID NOT NULL REFERENCES public.planes(id) ON DELETE CASCADE,
     user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
     start_time TIMESTAMPTZ NOT NULL,
@@ -106,46 +173,84 @@ CREATE INDEX idx_reservations_end_time ON public.reservations(end_time);
 CREATE INDEX idx_reservations_status ON public.reservations(status);
 CREATE INDEX idx_reservations_time_range ON public.reservations(start_time, end_time);
 
--- Flightlog table
+-- Flightlog table (with ALL additions)
 CREATE TABLE public.flightlog (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     plane_id UUID NOT NULL REFERENCES public.planes(id) ON DELETE RESTRICT,
     pilot_id UUID NOT NULL REFERENCES public.users(id) ON DELETE RESTRICT,
     copilot_id UUID REFERENCES public.users(id) ON DELETE SET NULL,
-    block_on TIMESTAMPTZ NOT NULL,
+
+    -- Times (Note: block_off is START, block_on is END)
     block_off TIMESTAMPTZ NOT NULL,
+    block_on TIMESTAMPTZ NOT NULL,
     takeoff_time TIMESTAMPTZ NOT NULL,
     landing_time TIMESTAMPTZ NOT NULL,
+
+    -- Counts
+    landings INTEGER DEFAULT 1 NOT NULL,
+    passengers INTEGER,
+
+    -- Airports
+    icao_departure VARCHAR(4),
+    icao_destination VARCHAR(4),
+
+    -- Resources
     fuel NUMERIC(8, 2),
     oil NUMERIC(6, 2),
+
+    -- Operation
+    operation_type_id UUID, -- Foreign key added in billing system migration
+
+    -- Documents
     m_and_b_pdf_url TEXT,
+
+    -- Status flags
     locked BOOLEAN NOT NULL DEFAULT FALSE,
     charged BOOLEAN NOT NULL DEFAULT FALSE,
+    needs_board_review BOOLEAN NOT NULL DEFAULT FALSE,
+
+    -- Billing audit
+    charged_by UUID REFERENCES public.users(id) ON DELETE SET NULL,
+    charged_at TIMESTAMPTZ,
+
+    -- Timestamps
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
-    -- Constraints
-    CONSTRAINT flightlog_block_time_check CHECK (block_off > block_on),
+    -- Time constraints (corrected: block_off < block_on)
+    CONSTRAINT flightlog_block_time_check CHECK (block_on > block_off),
     CONSTRAINT flightlog_flight_time_check CHECK (landing_time > takeoff_time),
-    CONSTRAINT flightlog_takeoff_after_block_on CHECK (takeoff_time >= block_on),
-    CONSTRAINT flightlog_landing_before_block_off CHECK (landing_time <= block_off),
+    CONSTRAINT flightlog_takeoff_after_block_off CHECK (takeoff_time >= block_off),
+    CONSTRAINT flightlog_landing_before_block_on CHECK (landing_time <= block_on),
+
+    -- Resource constraints
     CONSTRAINT flightlog_fuel_check CHECK (fuel IS NULL OR fuel >= 0),
     CONSTRAINT flightlog_oil_check CHECK (oil IS NULL OR oil >= 0),
+
+    -- People constraints
     CONSTRAINT flightlog_pilot_copilot_check CHECK (pilot_id != copilot_id),
-    CONSTRAINT flightlog_charged_requires_locked CHECK (NOT charged OR locked)
+
+    -- Business logic constraints
+    CONSTRAINT flightlog_charged_requires_locked CHECK (NOT charged OR locked),
+
+    -- ICAO code constraints
+    CONSTRAINT icao_departure_length CHECK (icao_departure IS NULL OR LENGTH(icao_departure) = 4),
+    CONSTRAINT icao_destination_length CHECK (icao_destination IS NULL OR LENGTH(icao_destination) = 4)
 );
 
 -- Indexes for flightlog
 CREATE INDEX idx_flightlog_plane_id ON public.flightlog(plane_id);
 CREATE INDEX idx_flightlog_pilot_id ON public.flightlog(pilot_id);
 CREATE INDEX idx_flightlog_copilot_id ON public.flightlog(copilot_id);
-CREATE INDEX idx_flightlog_block_on ON public.flightlog(block_on);
+CREATE INDEX idx_flightlog_block_off ON public.flightlog(block_off);
 CREATE INDEX idx_flightlog_locked ON public.flightlog(locked);
-CREATE INDEX idx_flightlog_charged ON public.flightlog(charged);
+CREATE INDEX idx_flightlog_charged ON public.flightlog(charged) WHERE charged = false;
+CREATE INDEX idx_flightlog_needs_board_review ON public.flightlog(needs_board_review) WHERE needs_board_review = true;
+CREATE INDEX idx_flightlog_charged_by ON public.flightlog(charged_by);
 
 -- Documents table
 CREATE TABLE public.documents (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     plane_id UUID REFERENCES public.planes(id) ON DELETE CASCADE,
     user_id UUID REFERENCES public.users(id) ON DELETE CASCADE,
     category TEXT,
@@ -156,6 +261,8 @@ CREATE TABLE public.documents (
     uploaded_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     expiry_date DATE,
     approved BOOLEAN NOT NULL DEFAULT FALSE,
+    approved_by UUID REFERENCES public.users(id) ON DELETE SET NULL,
+    approved_at TIMESTAMPTZ,
     blocks_aircraft BOOLEAN NOT NULL DEFAULT FALSE,
 
     -- Constraints
@@ -180,15 +287,28 @@ CREATE INDEX idx_documents_expiry_date ON public.documents(expiry_date) WHERE ex
 CREATE INDEX idx_documents_approved ON public.documents(approved);
 CREATE INDEX idx_documents_blocks_aircraft ON public.documents(blocks_aircraft) WHERE blocks_aircraft = TRUE;
 CREATE INDEX idx_documents_tags ON public.documents USING GIN(tags);
+CREATE INDEX idx_documents_approved_by ON public.documents(approved_by);
 
--- Accounts table (financial transactions)
+-- Accounts table (with reversal tracking and flightlog_id)
 CREATE TABLE public.accounts (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE RESTRICT,
     amount NUMERIC(10, 2) NOT NULL,
     description TEXT NOT NULL,
+
+    -- Linked flight (optional)
+    flightlog_id UUID REFERENCES public.flightlog(id) ON DELETE SET NULL,
+
+    -- Audit trail
     created_by UUID NOT NULL REFERENCES public.users(id) ON DELETE RESTRICT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    inserted_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+    -- Reversal tracking
+    reversed_at TIMESTAMPTZ,
+    reversed_by UUID REFERENCES public.users(id) ON DELETE SET NULL,
+    reversal_transaction_id UUID REFERENCES public.accounts(id) ON DELETE SET NULL,
+    reverses_transaction_id UUID REFERENCES public.accounts(id) ON DELETE SET NULL,
 
     -- Constraints
     CONSTRAINT accounts_description_check CHECK (LENGTH(description) > 0)
@@ -198,18 +318,36 @@ CREATE TABLE public.accounts (
 CREATE INDEX idx_accounts_user_id ON public.accounts(user_id);
 CREATE INDEX idx_accounts_created_by ON public.accounts(created_by);
 CREATE INDEX idx_accounts_created_at ON public.accounts(created_at);
+CREATE INDEX idx_accounts_inserted_at ON public.accounts(inserted_at);
+CREATE INDEX idx_accounts_flightlog_id ON public.accounts(flightlog_id);
+CREATE INDEX idx_accounts_reversed_at ON public.accounts(reversed_at) WHERE reversed_at IS NOT NULL;
 
--- Notifications table
+-- Notifications table (with ALL notification types)
 CREATE TABLE public.notifications (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
     type TEXT NOT NULL,
     message TEXT NOT NULL,
+    link TEXT,
     read BOOLEAN NOT NULL DEFAULT FALSE,
+    read_at TIMESTAMPTZ,
+
+    -- Links to related entities
+    document_id UUID REFERENCES public.documents(id) ON DELETE CASCADE,
+    flightlog_id UUID REFERENCES public.flightlog(id) ON DELETE CASCADE,
+
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
     -- Constraints
-    CONSTRAINT notifications_type_check CHECK (LENGTH(type) > 0),
+    CONSTRAINT notifications_type_check CHECK (
+        type IN (
+            'document_uploaded', 'document_approved', 'document_expiring',
+            'reservation_created', 'reservation_cancelled', 'reservation_active',
+            'flight_charged', 'account_credited', 'account_debited',
+            'flight_location_disconnect', 'flight_overlap', 'flight_warning',
+            'general'
+        )
+    ),
     CONSTRAINT notifications_message_check CHECK (LENGTH(message) > 0)
 );
 
@@ -218,9 +356,12 @@ CREATE INDEX idx_notifications_user_id ON public.notifications(user_id);
 CREATE INDEX idx_notifications_read ON public.notifications(read);
 CREATE INDEX idx_notifications_created_at ON public.notifications(created_at DESC);
 CREATE INDEX idx_notifications_user_unread ON public.notifications(user_id, read) WHERE read = FALSE;
+CREATE INDEX idx_notifications_document_id ON public.notifications(document_id);
+CREATE INDEX idx_notifications_flightlog_id ON public.notifications(flightlog_id);
+CREATE INDEX idx_notifications_type ON public.notifications(type);
 
 -- =====================================================
--- FUNCTIONS AND VIEWS
+-- HELPER FUNCTIONS
 -- =====================================================
 
 -- Function to check if user is board member
@@ -236,12 +377,13 @@ $$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
 
 -- Function to calculate block time in hours
 CREATE OR REPLACE FUNCTION public.calculate_block_time(
-    p_block_on TIMESTAMPTZ,
-    p_block_off TIMESTAMPTZ
+    p_block_off TIMESTAMPTZ,
+    p_block_on TIMESTAMPTZ
 )
 RETURNS NUMERIC AS $$
 BEGIN
-    RETURN EXTRACT(EPOCH FROM (p_block_off - p_block_on)) / 3600.0;
+    -- Block time is from block_off (start) to block_on (end)
+    RETURN EXTRACT(EPOCH FROM (p_block_on - p_block_off)) / 3600.0;
 END;
 $$ LANGUAGE plpgsql IMMUTABLE;
 
@@ -256,11 +398,30 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql IMMUTABLE;
 
--- View for flightlog with calculated times
+-- Function to check if aircraft can be reserved
+CREATE OR REPLACE FUNCTION public.can_reserve_aircraft(p_plane_id UUID)
+RETURNS BOOLEAN AS $$
+BEGIN
+    RETURN NOT EXISTS (
+        SELECT 1 FROM public.documents
+        WHERE plane_id = p_plane_id
+        AND blocks_aircraft = TRUE
+        AND expiry_date IS NOT NULL
+        AND expiry_date < CURRENT_DATE
+        AND approved = TRUE
+    );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
+
+-- =====================================================
+-- BASIC VIEWS
+-- =====================================================
+
+-- View for flightlog with calculated times (basic version - extended in later migrations)
 CREATE OR REPLACE VIEW public.flightlog_with_times AS
 SELECT
     f.*,
-    public.calculate_block_time(f.block_on, f.block_off) AS block_time_hours,
+    public.calculate_block_time(f.block_off, f.block_on) AS block_time_hours,
     public.calculate_flight_time(f.takeoff_time, f.landing_time) AS flight_time_hours,
     p.tail_number,
     p.type AS plane_type,
@@ -273,7 +434,7 @@ JOIN public.planes p ON f.plane_id = p.id
 JOIN public.users pilot ON f.pilot_id = pilot.id
 LEFT JOIN public.users copilot ON f.copilot_id = copilot.id;
 
--- View for active reservations with user and plane details
+-- View for active reservations
 CREATE OR REPLACE VIEW public.active_reservations AS
 SELECT
     r.*,
@@ -299,23 +460,8 @@ SELECT
     COALESCE(SUM(a.amount), 0) AS balance,
     COUNT(a.id) AS transaction_count
 FROM public.users u
-LEFT JOIN public.accounts a ON u.id = a.user_id
+LEFT JOIN public.accounts a ON u.id = a.user_id AND a.reversed_at IS NULL
 GROUP BY u.id, u.email, u.name, u.surname;
-
--- Function to check if aircraft can be reserved (no blocking expired documents)
-CREATE OR REPLACE FUNCTION public.can_reserve_aircraft(p_plane_id UUID)
-RETURNS BOOLEAN AS $$
-BEGIN
-    RETURN NOT EXISTS (
-        SELECT 1 FROM public.documents
-        WHERE plane_id = p_plane_id
-        AND blocks_aircraft = TRUE
-        AND expiry_date IS NOT NULL
-        AND expiry_date < CURRENT_DATE
-        AND approved = TRUE
-    );
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
 
 -- =====================================================
 -- TRIGGERS
@@ -347,8 +493,8 @@ CREATE OR REPLACE FUNCTION public.prevent_locked_flightlog_modification()
 RETURNS TRIGGER AS $$
 BEGIN
     IF OLD.locked = TRUE AND (
-        NEW.block_on != OLD.block_on OR
         NEW.block_off != OLD.block_off OR
+        NEW.block_on != OLD.block_on OR
         NEW.takeoff_time != OLD.takeoff_time OR
         NEW.landing_time != OLD.landing_time OR
         NEW.fuel != OLD.fuel OR
@@ -522,6 +668,12 @@ CREATE POLICY "Users can create own flightlog entries"
     TO authenticated
     WITH CHECK (auth.uid() = pilot_id);
 
+-- Flightlog: Insert - board members can create entries for any pilot
+CREATE POLICY "Board can create flightlog entries"
+    ON public.flightlog FOR INSERT
+    TO authenticated
+    WITH CHECK (public.is_board_member(auth.uid()));
+
 -- Flightlog: Update - users can update their own unlocked entries
 CREATE POLICY "Users can update own unlocked flightlog"
     ON public.flightlog FOR UPDATE
@@ -529,7 +681,7 @@ CREATE POLICY "Users can update own unlocked flightlog"
     USING (auth.uid() = pilot_id AND locked = false)
     WITH CHECK (auth.uid() = pilot_id);
 
--- Flightlog: Update - board can update locked/charged flags
+-- Flightlog: Update - board can update locked/charged flags and modify any entry
 CREATE POLICY "Board can lock and charge flightlog entries"
     ON public.flightlog FOR UPDATE
     TO authenticated
@@ -662,10 +814,18 @@ COMMENT ON TABLE public.reservations IS 'Flight reservations/bookings for aircra
 COMMENT ON TABLE public.flightlog IS 'Flight log entries tracking actual flights';
 COMMENT ON TABLE public.documents IS 'Document management for users, aircraft, and general club documents';
 COMMENT ON TABLE public.accounts IS 'Financial account transactions for members';
-COMMENT ON TABLE public.functions_master IS 'Master list of club functions/roles with associated fees';
+COMMENT ON TABLE public.functions_master IS 'Master list of club functions/roles';
 COMMENT ON TABLE public.notifications IS 'User notifications system';
 
 COMMENT ON COLUMN public.documents.blocks_aircraft IS 'If true and document is expired, prevents aircraft reservation';
 COMMENT ON COLUMN public.flightlog.locked IS 'Locked entries cannot be modified by pilots';
 COMMENT ON COLUMN public.flightlog.charged IS 'Indicates if flight has been charged to user account';
+COMMENT ON COLUMN public.flightlog.needs_board_review IS 'Flags flight for board review (e.g., warnings, excessive ground time)';
+COMMENT ON COLUMN public.flightlog.landings IS 'Number of landings for this flight (e.g., 1 for normal flight, multiple for touch-and-go training)';
+COMMENT ON COLUMN public.flightlog.icao_departure IS '4-letter ICAO airport identifier for departure';
+COMMENT ON COLUMN public.flightlog.icao_destination IS '4-letter ICAO airport identifier for destination';
 COMMENT ON COLUMN public.reservations.priority IS 'Priority reservations (e.g., for instructors, maintenance)';
+COMMENT ON COLUMN public.accounts.inserted_at IS 'Timestamp when the transaction record was inserted into the database (immutable)';
+COMMENT ON COLUMN public.accounts.created_at IS 'Transaction date that can be set by the user (editable within 1 hour of insertion)';
+COMMENT ON COLUMN public.users.functions IS 'DEPRECATED: Use user_functions junction table instead. Array of function names for backward compatibility.';
+COMMENT ON COLUMN public.users.preferred_language IS 'User''s preferred language (de=German, en=English)';

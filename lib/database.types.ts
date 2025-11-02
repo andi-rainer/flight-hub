@@ -98,6 +98,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "accounts_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users_with_functions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "accounts_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users_with_functions_search"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "accounts_flightlog_id_fkey"
             columns: ["flightlog_id"]
             isOneToOne: false
@@ -147,6 +161,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "accounts_reversed_by_fkey"
+            columns: ["reversed_by"]
+            isOneToOne: false
+            referencedRelation: "users_with_functions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "accounts_reversed_by_fkey"
+            columns: ["reversed_by"]
+            isOneToOne: false
+            referencedRelation: "users_with_functions_search"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "accounts_reverses_transaction_id_fkey"
             columns: ["reverses_transaction_id"]
             isOneToOne: false
@@ -167,45 +195,59 @@ export type Database = {
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "accounts_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users_with_functions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "accounts_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users_with_functions_search"
+            referencedColumns: ["id"]
+          },
         ]
       }
       aircraft_airport_fees: {
         Row: {
           airport_id: string
-          approach_fee: number
+          approach_fee: number | null
           created_at: string | null
           id: string
-          landing_fee: number
-          noise_fee: number
+          landing_fee: number | null
+          noise_fee: number | null
           notes: string | null
-          parking_fee: number
-          passenger_fee: number
+          parking_fee: number | null
+          passenger_fee: number | null
           plane_id: string
           updated_at: string | null
         }
         Insert: {
           airport_id: string
-          approach_fee?: number
+          approach_fee?: number | null
           created_at?: string | null
           id?: string
-          landing_fee?: number
-          noise_fee?: number
+          landing_fee?: number | null
+          noise_fee?: number | null
           notes?: string | null
-          parking_fee?: number
-          passenger_fee?: number
+          parking_fee?: number | null
+          passenger_fee?: number | null
           plane_id: string
           updated_at?: string | null
         }
         Update: {
           airport_id?: string
-          approach_fee?: number
+          approach_fee?: number | null
           created_at?: string | null
           id?: string
-          landing_fee?: number
-          noise_fee?: number
+          landing_fee?: number | null
+          noise_fee?: number | null
           notes?: string | null
-          parking_fee?: number
-          passenger_fee?: number
+          parking_fee?: number | null
+          passenger_fee?: number | null
           plane_id?: string
           updated_at?: string | null
         }
@@ -242,14 +284,14 @@ export type Database = {
       }
       aircraft_components: {
         Row: {
-          component_hours_offset: number
+          component_hours_offset: number | null
           component_type: Database["public"]["Enums"]["component_type"]
-          created_at: string
+          created_at: string | null
           created_by: string
-          hours_at_installation: number
+          hours_at_installation: number | null
           id: string
           installation_mx_record_id: string | null
-          installed_at: string
+          installed_at: string | null
           installed_by: string | null
           manufacturer: string | null
           model: string | null
@@ -262,19 +304,19 @@ export type Database = {
           removed_at: string | null
           removed_by: string | null
           serial_number: string | null
-          status: Database["public"]["Enums"]["component_status"]
+          status: Database["public"]["Enums"]["component_status"] | null
           tbo_hours: number
-          updated_at: string
+          updated_at: string | null
         }
         Insert: {
-          component_hours_offset?: number
+          component_hours_offset?: number | null
           component_type: Database["public"]["Enums"]["component_type"]
-          created_at?: string
+          created_at?: string | null
           created_by: string
-          hours_at_installation?: number
+          hours_at_installation?: number | null
           id?: string
           installation_mx_record_id?: string | null
-          installed_at?: string
+          installed_at?: string | null
           installed_by?: string | null
           manufacturer?: string | null
           model?: string | null
@@ -287,19 +329,19 @@ export type Database = {
           removed_at?: string | null
           removed_by?: string | null
           serial_number?: string | null
-          status?: Database["public"]["Enums"]["component_status"]
+          status?: Database["public"]["Enums"]["component_status"] | null
           tbo_hours: number
-          updated_at?: string
+          updated_at?: string | null
         }
         Update: {
-          component_hours_offset?: number
+          component_hours_offset?: number | null
           component_type?: Database["public"]["Enums"]["component_type"]
-          created_at?: string
+          created_at?: string | null
           created_by?: string
-          hours_at_installation?: number
+          hours_at_installation?: number | null
           id?: string
           installation_mx_record_id?: string | null
-          installed_at?: string
+          installed_at?: string | null
           installed_by?: string | null
           manufacturer?: string | null
           model?: string | null
@@ -312,9 +354,9 @@ export type Database = {
           removed_at?: string | null
           removed_by?: string | null
           serial_number?: string | null
-          status?: Database["public"]["Enums"]["component_status"]
+          status?: Database["public"]["Enums"]["component_status"] | null
           tbo_hours?: number
-          updated_at?: string
+          updated_at?: string | null
         }
         Relationships: [
           {
@@ -329,6 +371,20 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "aircraft_components_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users_with_functions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "aircraft_components_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users_with_functions_search"
             referencedColumns: ["id"]
           },
           {
@@ -350,6 +406,20 @@ export type Database = {
             columns: ["installed_by"]
             isOneToOne: false
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "aircraft_components_installed_by_fkey"
+            columns: ["installed_by"]
+            isOneToOne: false
+            referencedRelation: "users_with_functions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "aircraft_components_installed_by_fkey"
+            columns: ["installed_by"]
+            isOneToOne: false
+            referencedRelation: "users_with_functions_search"
             referencedColumns: ["id"]
           },
           {
@@ -394,6 +464,20 @@ export type Database = {
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "aircraft_components_removed_by_fkey"
+            columns: ["removed_by"]
+            isOneToOne: false
+            referencedRelation: "users_with_functions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "aircraft_components_removed_by_fkey"
+            columns: ["removed_by"]
+            isOneToOne: false
+            referencedRelation: "users_with_functions_search"
+            referencedColumns: ["id"]
+          },
         ]
       }
       airports: {
@@ -426,36 +510,39 @@ export type Database = {
       component_tbo_presets: {
         Row: {
           component_type: Database["public"]["Enums"]["component_type"]
-          created_at: string
+          created_at: string | null
+          default_tbo_hours: number
           description: string | null
           id: string
-          is_common: boolean
-          manufacturer: string
-          model: string
-          tbo_hours: number
-          updated_at: string
+          manufacturer: string | null
+          model: string | null
+          notes: string | null
+          part_number: string | null
+          updated_at: string | null
         }
         Insert: {
           component_type: Database["public"]["Enums"]["component_type"]
-          created_at?: string
+          created_at?: string | null
+          default_tbo_hours: number
           description?: string | null
           id?: string
-          is_common?: boolean
-          manufacturer: string
-          model: string
-          tbo_hours: number
-          updated_at?: string
+          manufacturer?: string | null
+          model?: string | null
+          notes?: string | null
+          part_number?: string | null
+          updated_at?: string | null
         }
         Update: {
           component_type?: Database["public"]["Enums"]["component_type"]
-          created_at?: string
+          created_at?: string | null
+          default_tbo_hours?: number
           description?: string | null
           id?: string
-          is_common?: boolean
-          manufacturer?: string
-          model?: string
-          tbo_hours?: number
-          updated_at?: string
+          manufacturer?: string | null
+          model?: string | null
+          notes?: string | null
+          part_number?: string | null
+          updated_at?: string | null
         }
         Relationships: []
       }
@@ -525,30 +612,44 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "cost_center_transactions_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users_with_functions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cost_center_transactions_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users_with_functions_search"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "cost_center_transactions_flightlog_id_fkey"
             columns: ["flightlog_id"]
-            isOneToOne: true
+            isOneToOne: false
             referencedRelation: "flightlog"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "cost_center_transactions_flightlog_id_fkey"
             columns: ["flightlog_id"]
-            isOneToOne: true
+            isOneToOne: false
             referencedRelation: "flightlog_with_operation_details"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "cost_center_transactions_flightlog_id_fkey"
             columns: ["flightlog_id"]
-            isOneToOne: true
+            isOneToOne: false
             referencedRelation: "flightlog_with_times"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "cost_center_transactions_flightlog_id_fkey"
             columns: ["flightlog_id"]
-            isOneToOne: true
+            isOneToOne: false
             referencedRelation: "uncharged_flights"
             referencedColumns: ["id"]
           },
@@ -571,6 +672,20 @@ export type Database = {
             columns: ["reversed_by"]
             isOneToOne: false
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cost_center_transactions_reversed_by_fkey"
+            columns: ["reversed_by"]
+            isOneToOne: false
+            referencedRelation: "users_with_functions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cost_center_transactions_reversed_by_fkey"
+            columns: ["reversed_by"]
+            isOneToOne: false
+            referencedRelation: "users_with_functions_search"
             referencedColumns: ["id"]
           },
           {
@@ -612,42 +727,42 @@ export type Database = {
       document_types: {
         Row: {
           category: string | null
-          created_at: string | null
+          created_at: string
           default_validity_months: number | null
           description: string | null
-          expires: boolean | null
+          expires: boolean
           expiry_type: string | null
           id: string
-          mandatory: boolean | null
+          mandatory: boolean
           name: string
           required_for_functions: string[] | null
-          updated_at: string | null
+          updated_at: string
         }
         Insert: {
           category?: string | null
-          created_at?: string | null
+          created_at?: string
           default_validity_months?: number | null
           description?: string | null
-          expires?: boolean | null
+          expires?: boolean
           expiry_type?: string | null
           id?: string
-          mandatory?: boolean | null
+          mandatory?: boolean
           name: string
           required_for_functions?: string[] | null
-          updated_at?: string | null
+          updated_at?: string
         }
         Update: {
           category?: string | null
-          created_at?: string | null
+          created_at?: string
           default_validity_months?: number | null
           description?: string | null
-          expires?: boolean | null
+          expires?: boolean
           expiry_type?: string | null
           id?: string
-          mandatory?: boolean | null
+          mandatory?: boolean
           name?: string
           required_for_functions?: string[] | null
-          updated_at?: string | null
+          updated_at?: string
         }
         Relationships: []
       }
@@ -719,6 +834,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "documents_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "users_with_functions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documents_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "users_with_functions_search"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "documents_document_type_id_fkey"
             columns: ["document_type_id"]
             isOneToOne: false
@@ -761,6 +890,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "documents_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "users_with_functions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documents_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "users_with_functions_search"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "documents_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
@@ -772,6 +915,20 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documents_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users_with_functions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documents_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users_with_functions_search"
             referencedColumns: ["id"]
           },
         ]
@@ -868,6 +1025,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "flightlog_charged_by_fkey"
+            columns: ["charged_by"]
+            isOneToOne: false
+            referencedRelation: "users_with_functions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "flightlog_charged_by_fkey"
+            columns: ["charged_by"]
+            isOneToOne: false
+            referencedRelation: "users_with_functions_search"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "flightlog_copilot_id_fkey"
             columns: ["copilot_id"]
             isOneToOne: false
@@ -879,6 +1050,20 @@ export type Database = {
             columns: ["copilot_id"]
             isOneToOne: false
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "flightlog_copilot_id_fkey"
+            columns: ["copilot_id"]
+            isOneToOne: false
+            referencedRelation: "users_with_functions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "flightlog_copilot_id_fkey"
+            columns: ["copilot_id"]
+            isOneToOne: false
+            referencedRelation: "users_with_functions_search"
             referencedColumns: ["id"]
           },
           {
@@ -900,6 +1085,20 @@ export type Database = {
             columns: ["pilot_id"]
             isOneToOne: false
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "flightlog_pilot_id_fkey"
+            columns: ["pilot_id"]
+            isOneToOne: false
+            referencedRelation: "users_with_functions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "flightlog_pilot_id_fkey"
+            columns: ["pilot_id"]
+            isOneToOne: false
+            referencedRelation: "users_with_functions_search"
             referencedColumns: ["id"]
           },
           {
@@ -925,77 +1124,142 @@ export type Database = {
           },
         ]
       }
-      functions_master: {
+      function_categories: {
         Row: {
+          code: string
           created_at: string
-          description: string | null
+          description_de: string | null
+          description_en: string | null
           id: string
-          name: string
+          name_de: string
+          name_en: string
+          sort_order: number
         }
         Insert: {
+          code: string
           created_at?: string
-          description?: string | null
+          description_de?: string | null
+          description_en?: string | null
           id?: string
-          name: string
+          name_de: string
+          name_en: string
+          sort_order?: number
         }
         Update: {
+          code?: string
           created_at?: string
-          description?: string | null
+          description_de?: string | null
+          description_en?: string | null
           id?: string
-          name?: string
+          name_de?: string
+          name_en?: string
+          sort_order?: number
         }
         Relationships: []
+      }
+      functions_master: {
+        Row: {
+          active: boolean
+          category_id: string | null
+          code: string | null
+          created_at: string
+          description: string | null
+          description_de: string | null
+          id: string
+          is_system: boolean
+          name: string
+          name_de: string | null
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          category_id?: string | null
+          code?: string | null
+          created_at?: string
+          description?: string | null
+          description_de?: string | null
+          id?: string
+          is_system?: boolean
+          name: string
+          name_de?: string | null
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          category_id?: string | null
+          code?: string | null
+          created_at?: string
+          description?: string | null
+          description_de?: string | null
+          id?: string
+          is_system?: boolean
+          name?: string
+          name_de?: string | null
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "functions_master_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "function_categories"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       maintenance_records: {
         Row: {
           cost: number | null
-          created_at: string
-          description: string | null
+          created_at: string | null
+          description: string
           hobbs_hours: number | null
           id: string
           maintenance_type: string
           next_due_hours: number | null
           notes: string | null
           performed_at: string
-          performed_at_hours: number
-          performed_by: string
+          performed_at_hours: number | null
+          performed_by: string | null
           plane_id: string
           tach_hours: number | null
-          updated_at: string
+          updated_at: string | null
           vendor: string | null
         }
         Insert: {
           cost?: number | null
-          created_at?: string
-          description?: string | null
+          created_at?: string | null
+          description: string
           hobbs_hours?: number | null
           id?: string
           maintenance_type: string
           next_due_hours?: number | null
           notes?: string | null
           performed_at: string
-          performed_at_hours: number
-          performed_by: string
+          performed_at_hours?: number | null
+          performed_by?: string | null
           plane_id: string
           tach_hours?: number | null
-          updated_at?: string
+          updated_at?: string | null
           vendor?: string | null
         }
         Update: {
           cost?: number | null
-          created_at?: string
-          description?: string | null
+          created_at?: string | null
+          description?: string
           hobbs_hours?: number | null
           id?: string
           maintenance_type?: string
           next_due_hours?: number | null
           notes?: string | null
           performed_at?: string
-          performed_at_hours?: number
-          performed_by?: string
+          performed_at_hours?: number | null
+          performed_by?: string | null
           plane_id?: string
           tach_hours?: number | null
-          updated_at?: string
+          updated_at?: string | null
           vendor?: string | null
         }
         Relationships: [
@@ -1011,6 +1275,20 @@ export type Database = {
             columns: ["performed_by"]
             isOneToOne: false
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "maintenance_records_performed_by_fkey"
+            columns: ["performed_by"]
+            isOneToOne: false
+            referencedRelation: "users_with_functions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "maintenance_records_performed_by_fkey"
+            columns: ["performed_by"]
+            isOneToOne: false
+            referencedRelation: "users_with_functions_search"
             referencedColumns: ["id"]
           },
           {
@@ -1093,7 +1371,7 @@ export type Database = {
           link: string | null
           message: string
           read: boolean
-          title: string
+          read_at: string | null
           type: string
           user_id: string
         }
@@ -1105,7 +1383,7 @@ export type Database = {
           link?: string | null
           message: string
           read?: boolean
-          title?: string
+          read_at?: string | null
           type: string
           user_id: string
         }
@@ -1117,7 +1395,7 @@ export type Database = {
           link?: string | null
           message?: string
           read?: boolean
-          title?: string
+          read_at?: string | null
           type?: string
           user_id?: string
         }
@@ -1176,6 +1454,20 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users_with_functions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users_with_functions_search"
             referencedColumns: ["id"]
           },
         ]
@@ -1248,6 +1540,72 @@ export type Database = {
           },
         ]
       }
+      payment_status_history: {
+        Row: {
+          changed_at: string
+          changed_by: string
+          id: string
+          membership_id: string
+          new_status: string
+          notes: string | null
+          old_status: string
+        }
+        Insert: {
+          changed_at?: string
+          changed_by: string
+          id?: string
+          membership_id: string
+          new_status: string
+          notes?: string | null
+          old_status: string
+        }
+        Update: {
+          changed_at?: string
+          changed_by?: string
+          id?: string
+          membership_id?: string
+          new_status?: string
+          notes?: string | null
+          old_status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_status_history_changed_by_fkey"
+            columns: ["changed_by"]
+            isOneToOne: false
+            referencedRelation: "user_balances"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "payment_status_history_changed_by_fkey"
+            columns: ["changed_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_status_history_changed_by_fkey"
+            columns: ["changed_by"]
+            isOneToOne: false
+            referencedRelation: "users_with_functions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_status_history_changed_by_fkey"
+            columns: ["changed_by"]
+            isOneToOne: false
+            referencedRelation: "users_with_functions_search"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_status_history_membership_id_fkey"
+            columns: ["membership_id"]
+            isOneToOne: false
+            referencedRelation: "user_memberships"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       planes: {
         Row: {
           active: boolean
@@ -1259,10 +1617,9 @@ export type Database = {
           emer_equipment: string | null
           empty_weight: number | null
           fuel_consumption: number | null
-          hourly_rate: number | null
           id: string
-          initial_flight_hours: number
-          initial_landings: number
+          initial_flight_hours: number | null
+          initial_landings: number | null
           maintenance_interval_hours: number | null
           max_fuel: number | null
           max_mass: number | null
@@ -1284,10 +1641,9 @@ export type Database = {
           emer_equipment?: string | null
           empty_weight?: number | null
           fuel_consumption?: number | null
-          hourly_rate?: number | null
           id?: string
-          initial_flight_hours?: number
-          initial_landings?: number
+          initial_flight_hours?: number | null
+          initial_landings?: number | null
           maintenance_interval_hours?: number | null
           max_fuel?: number | null
           max_mass?: number | null
@@ -1309,10 +1665,9 @@ export type Database = {
           emer_equipment?: string | null
           empty_weight?: number | null
           fuel_consumption?: number | null
-          hourly_rate?: number | null
           id?: string
-          initial_flight_hours?: number
-          initial_landings?: number
+          initial_flight_hours?: number | null
+          initial_landings?: number | null
           maintenance_interval_hours?: number | null
           max_fuel?: number | null
           max_mass?: number | null
@@ -1399,6 +1754,76 @@ export type Database = {
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "reservations_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users_with_functions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reservations_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users_with_functions_search"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      system_settings: {
+        Row: {
+          description: string | null
+          id: string
+          key: string
+          updated_at: string
+          updated_by: string | null
+          value: Json
+        }
+        Insert: {
+          description?: string | null
+          id?: string
+          key: string
+          updated_at?: string
+          updated_by?: string | null
+          value: Json
+        }
+        Update: {
+          description?: string | null
+          id?: string
+          key?: string
+          updated_at?: string
+          updated_by?: string | null
+          value?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "system_settings_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "user_balances"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "system_settings_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "system_settings_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "users_with_functions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "system_settings_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "users_with_functions_search"
+            referencedColumns: ["id"]
+          },
         ]
       }
       terms_and_conditions: {
@@ -1442,6 +1867,124 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "terms_and_conditions_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users_with_functions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "terms_and_conditions_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users_with_functions_search"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_functions: {
+        Row: {
+          assigned_at: string
+          assigned_by: string | null
+          function_id: string
+          id: string
+          notes: string | null
+          user_id: string
+          valid_from: string | null
+          valid_until: string | null
+        }
+        Insert: {
+          assigned_at?: string
+          assigned_by?: string | null
+          function_id: string
+          id?: string
+          notes?: string | null
+          user_id: string
+          valid_from?: string | null
+          valid_until?: string | null
+        }
+        Update: {
+          assigned_at?: string
+          assigned_by?: string | null
+          function_id?: string
+          id?: string
+          notes?: string | null
+          user_id?: string
+          valid_from?: string | null
+          valid_until?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_functions_assigned_by_fkey"
+            columns: ["assigned_by"]
+            isOneToOne: false
+            referencedRelation: "user_balances"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "user_functions_assigned_by_fkey"
+            columns: ["assigned_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_functions_assigned_by_fkey"
+            columns: ["assigned_by"]
+            isOneToOne: false
+            referencedRelation: "users_with_functions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_functions_assigned_by_fkey"
+            columns: ["assigned_by"]
+            isOneToOne: false
+            referencedRelation: "users_with_functions_search"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_functions_function_id_fkey"
+            columns: ["function_id"]
+            isOneToOne: false
+            referencedRelation: "functions_master"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_functions_function_id_fkey"
+            columns: ["function_id"]
+            isOneToOne: false
+            referencedRelation: "functions_with_stats"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_functions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_balances"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "user_functions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_functions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users_with_functions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_functions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users_with_functions_search"
             referencedColumns: ["id"]
           },
         ]
@@ -1508,6 +2051,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "user_memberships_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users_with_functions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_memberships_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users_with_functions_search"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "user_memberships_membership_type_id_fkey"
             columns: ["membership_type_id"]
             isOneToOne: false
@@ -1526,6 +2083,101 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_memberships_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users_with_functions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_memberships_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users_with_functions_search"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_recent_selections: {
+        Row: {
+          context: string
+          id: string
+          selected_at: string | null
+          selected_user_id: string
+          user_id: string
+        }
+        Insert: {
+          context: string
+          id?: string
+          selected_at?: string | null
+          selected_user_id: string
+          user_id: string
+        }
+        Update: {
+          context?: string
+          id?: string
+          selected_at?: string | null
+          selected_user_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_recent_selections_selected_user_id_fkey"
+            columns: ["selected_user_id"]
+            isOneToOne: false
+            referencedRelation: "user_balances"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "user_recent_selections_selected_user_id_fkey"
+            columns: ["selected_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_recent_selections_selected_user_id_fkey"
+            columns: ["selected_user_id"]
+            isOneToOne: false
+            referencedRelation: "users_with_functions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_recent_selections_selected_user_id_fkey"
+            columns: ["selected_user_id"]
+            isOneToOne: false
+            referencedRelation: "users_with_functions_search"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_recent_selections_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_balances"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "user_recent_selections_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_recent_selections_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users_with_functions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_recent_selections_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users_with_functions_search"
             referencedColumns: ["id"]
           },
         ]
@@ -1574,6 +2226,20 @@ export type Database = {
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "user_terms_acceptance_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users_with_functions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_terms_acceptance_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users_with_functions_search"
+            referencedColumns: ["id"]
+          },
         ]
       }
       users: {
@@ -1593,6 +2259,7 @@ export type Database = {
           license_number: string | null
           member_category: string | null
           name: string
+          preferred_language: string | null
           role: string[]
           street: string | null
           surname: string
@@ -1616,6 +2283,7 @@ export type Database = {
           license_number?: string | null
           member_category?: string | null
           name: string
+          preferred_language?: string | null
           role?: string[]
           street?: string | null
           surname: string
@@ -1639,6 +2307,7 @@ export type Database = {
           license_number?: string | null
           member_category?: string | null
           name?: string
+          preferred_language?: string | null
           role?: string[]
           street?: string | null
           surname?: string
@@ -1706,44 +2375,52 @@ export type Database = {
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "reservations_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users_with_functions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reservations_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users_with_functions_search"
+            referencedColumns: ["id"]
+          },
         ]
       }
       aircraft_components_with_status: {
         Row: {
-          aircraft_current_hours: number | null
+          aircraft_total_hours: number | null
           component_current_hours: number | null
           component_hours_offset: number | null
           component_type: Database["public"]["Enums"]["component_type"] | null
           created_at: string | null
           created_by: string | null
-          created_by_name: string | null
-          created_by_surname: string | null
           hours_at_installation: number | null
           hours_remaining: number | null
           id: string | null
           installation_mx_record_id: string | null
           installed_at: string | null
           installed_by: string | null
-          installed_by_name: string | null
-          installed_by_surname: string | null
           manufacturer: string | null
           model: string | null
           notes: string | null
           part_number: string | null
-          percentage_used: number | null
+          percent_remaining: number | null
           plane_id: string | null
           position: string | null
           removal_mx_record_id: string | null
           removal_reason: string | null
           removed_at: string | null
           removed_by: string | null
-          removed_by_name: string | null
-          removed_by_surname: string | null
           serial_number: string | null
           status: Database["public"]["Enums"]["component_status"] | null
+          status_color: string | null
           tail_number: string | null
           tbo_hours: number | null
-          tbo_status: string | null
           updated_at: string | null
         }
         Relationships: [
@@ -1759,6 +2436,20 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "aircraft_components_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users_with_functions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "aircraft_components_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users_with_functions_search"
             referencedColumns: ["id"]
           },
           {
@@ -1780,6 +2471,20 @@ export type Database = {
             columns: ["installed_by"]
             isOneToOne: false
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "aircraft_components_installed_by_fkey"
+            columns: ["installed_by"]
+            isOneToOne: false
+            referencedRelation: "users_with_functions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "aircraft_components_installed_by_fkey"
+            columns: ["installed_by"]
+            isOneToOne: false
+            referencedRelation: "users_with_functions_search"
             referencedColumns: ["id"]
           },
           {
@@ -1824,6 +2529,20 @@ export type Database = {
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "aircraft_components_removed_by_fkey"
+            columns: ["removed_by"]
+            isOneToOne: false
+            referencedRelation: "users_with_functions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "aircraft_components_removed_by_fkey"
+            columns: ["removed_by"]
+            isOneToOne: false
+            referencedRelation: "users_with_functions_search"
+            referencedColumns: ["id"]
+          },
         ]
       }
       aircraft_totals: {
@@ -1832,8 +2551,7 @@ export type Database = {
           id: string | null
           initial_flight_hours: number | null
           initial_landings: number | null
-          logged_flight_hours: number | null
-          logged_landings: number | null
+          last_flight_date: string | null
           tail_number: string | null
           total_flight_hours: number | null
           total_landings: number | null
@@ -1844,21 +2562,37 @@ export type Database = {
       aircraft_with_maintenance: {
         Row: {
           active: boolean | null
+          billing_unit: string | null
+          calculated_next_maintenance_hours: number | null
+          cg_limits: Json | null
           color: string | null
+          created_at: string | null
+          default_rate: number | null
+          emer_equipment: string | null
+          empty_weight: number | null
+          fuel_consumption: number | null
           hours_until_maintenance: number | null
           id: string | null
           initial_flight_hours: number | null
           initial_landings: number | null
-          last_maintenance: Json | null
-          logged_flight_hours: number | null
-          logged_landings: number | null
+          last_flight_date: string | null
+          last_maintenance_date: string | null
+          last_maintenance_description: string | null
+          last_maintenance_type: string | null
           maintenance_interval_hours: number | null
           maintenance_status: string | null
+          maintenance_status_color: string | null
+          max_fuel: number | null
+          max_mass: number | null
+          nav_equipment: string[] | null
           next_maintenance_hours: number | null
+          passenger_seats: number | null
           tail_number: string | null
           total_flight_hours: number | null
           total_landings: number | null
           type: string | null
+          updated_at: string | null
+          xdpr_equipment: string | null
         }
         Relationships: []
       }
@@ -1871,102 +2605,15 @@ export type Database = {
           block_time_minutes: number | null
           calculated_billing_amount: number | null
           charged: boolean | null
+          charged_at: string | null
+          charged_by: string | null
           copilot_id: string | null
           copilot_name: string | null
           copilot_surname: string | null
           created_at: string | null
+          default_cost_center_id: string | null
           flight_time_hours: number | null
           flight_time_minutes: number | null
-          fuel: number | null
-          id: string | null
-          landing_time: string | null
-          locked: boolean | null
-          m_and_b_pdf_url: string | null
-          needs_board_review: boolean | null
-          oil: number | null
-          operation_rate: number | null
-          operation_type_id: string | null
-          operation_type_name: string | null
-          pilot_id: string | null
-          pilot_name: string | null
-          pilot_surname: string | null
-          plane_id: string | null
-          plane_type: string | null
-          tail_number: string | null
-          takeoff_time: string | null
-          updated_at: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "flightlog_copilot_id_fkey"
-            columns: ["copilot_id"]
-            isOneToOne: false
-            referencedRelation: "user_balances"
-            referencedColumns: ["user_id"]
-          },
-          {
-            foreignKeyName: "flightlog_copilot_id_fkey"
-            columns: ["copilot_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "flightlog_operation_type_id_fkey"
-            columns: ["operation_type_id"]
-            isOneToOne: false
-            referencedRelation: "operation_types"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "flightlog_pilot_id_fkey"
-            columns: ["pilot_id"]
-            isOneToOne: false
-            referencedRelation: "user_balances"
-            referencedColumns: ["user_id"]
-          },
-          {
-            foreignKeyName: "flightlog_pilot_id_fkey"
-            columns: ["pilot_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "flightlog_plane_id_fkey"
-            columns: ["plane_id"]
-            isOneToOne: false
-            referencedRelation: "aircraft_totals"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "flightlog_plane_id_fkey"
-            columns: ["plane_id"]
-            isOneToOne: false
-            referencedRelation: "aircraft_with_maintenance"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "flightlog_plane_id_fkey"
-            columns: ["plane_id"]
-            isOneToOne: false
-            referencedRelation: "planes"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      flightlog_with_times: {
-        Row: {
-          billing_unit: string | null
-          block_off: string | null
-          block_on: string | null
-          block_time_hours: number | null
-          charged: boolean | null
-          copilot_id: string | null
-          copilot_name: string | null
-          copilot_surname: string | null
-          created_at: string | null
-          flight_time_hours: number | null
           fuel: number | null
           icao_departure: string | null
           icao_destination: string | null
@@ -1981,6 +2628,7 @@ export type Database = {
           operation_type_color: string | null
           operation_type_id: string | null
           operation_type_name: string | null
+          passengers: number | null
           pilot_id: string | null
           pilot_name: string | null
           pilot_surname: string | null
@@ -1991,6 +2639,34 @@ export type Database = {
           updated_at: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "flightlog_charged_by_fkey"
+            columns: ["charged_by"]
+            isOneToOne: false
+            referencedRelation: "user_balances"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "flightlog_charged_by_fkey"
+            columns: ["charged_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "flightlog_charged_by_fkey"
+            columns: ["charged_by"]
+            isOneToOne: false
+            referencedRelation: "users_with_functions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "flightlog_charged_by_fkey"
+            columns: ["charged_by"]
+            isOneToOne: false
+            referencedRelation: "users_with_functions_search"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "flightlog_copilot_id_fkey"
             columns: ["copilot_id"]
@@ -2003,6 +2679,20 @@ export type Database = {
             columns: ["copilot_id"]
             isOneToOne: false
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "flightlog_copilot_id_fkey"
+            columns: ["copilot_id"]
+            isOneToOne: false
+            referencedRelation: "users_with_functions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "flightlog_copilot_id_fkey"
+            columns: ["copilot_id"]
+            isOneToOne: false
+            referencedRelation: "users_with_functions_search"
             referencedColumns: ["id"]
           },
           {
@@ -2024,6 +2714,178 @@ export type Database = {
             columns: ["pilot_id"]
             isOneToOne: false
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "flightlog_pilot_id_fkey"
+            columns: ["pilot_id"]
+            isOneToOne: false
+            referencedRelation: "users_with_functions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "flightlog_pilot_id_fkey"
+            columns: ["pilot_id"]
+            isOneToOne: false
+            referencedRelation: "users_with_functions_search"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "flightlog_plane_id_fkey"
+            columns: ["plane_id"]
+            isOneToOne: false
+            referencedRelation: "aircraft_totals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "flightlog_plane_id_fkey"
+            columns: ["plane_id"]
+            isOneToOne: false
+            referencedRelation: "aircraft_with_maintenance"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "flightlog_plane_id_fkey"
+            columns: ["plane_id"]
+            isOneToOne: false
+            referencedRelation: "planes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "operation_types_default_cost_center_id_fkey"
+            columns: ["default_cost_center_id"]
+            isOneToOne: false
+            referencedRelation: "cost_centers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      flightlog_with_times: {
+        Row: {
+          block_off: string | null
+          block_on: string | null
+          block_time_hours: number | null
+          charged: boolean | null
+          charged_at: string | null
+          charged_by: string | null
+          copilot_id: string | null
+          copilot_name: string | null
+          copilot_surname: string | null
+          created_at: string | null
+          flight_time_hours: number | null
+          fuel: number | null
+          icao_departure: string | null
+          icao_destination: string | null
+          id: string | null
+          landing_time: string | null
+          landings: number | null
+          locked: boolean | null
+          m_and_b_pdf_url: string | null
+          needs_board_review: boolean | null
+          oil: number | null
+          operation_type_color: string | null
+          operation_type_id: string | null
+          operation_type_name: string | null
+          passengers: number | null
+          pilot_id: string | null
+          pilot_name: string | null
+          pilot_surname: string | null
+          plane_id: string | null
+          plane_type: string | null
+          tail_number: string | null
+          takeoff_time: string | null
+          updated_at: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "flightlog_charged_by_fkey"
+            columns: ["charged_by"]
+            isOneToOne: false
+            referencedRelation: "user_balances"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "flightlog_charged_by_fkey"
+            columns: ["charged_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "flightlog_charged_by_fkey"
+            columns: ["charged_by"]
+            isOneToOne: false
+            referencedRelation: "users_with_functions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "flightlog_charged_by_fkey"
+            columns: ["charged_by"]
+            isOneToOne: false
+            referencedRelation: "users_with_functions_search"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "flightlog_copilot_id_fkey"
+            columns: ["copilot_id"]
+            isOneToOne: false
+            referencedRelation: "user_balances"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "flightlog_copilot_id_fkey"
+            columns: ["copilot_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "flightlog_copilot_id_fkey"
+            columns: ["copilot_id"]
+            isOneToOne: false
+            referencedRelation: "users_with_functions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "flightlog_copilot_id_fkey"
+            columns: ["copilot_id"]
+            isOneToOne: false
+            referencedRelation: "users_with_functions_search"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "flightlog_operation_type_id_fkey"
+            columns: ["operation_type_id"]
+            isOneToOne: false
+            referencedRelation: "operation_types"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "flightlog_pilot_id_fkey"
+            columns: ["pilot_id"]
+            isOneToOne: false
+            referencedRelation: "user_balances"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "flightlog_pilot_id_fkey"
+            columns: ["pilot_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "flightlog_pilot_id_fkey"
+            columns: ["pilot_id"]
+            isOneToOne: false
+            referencedRelation: "users_with_functions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "flightlog_pilot_id_fkey"
+            columns: ["pilot_id"]
+            isOneToOne: false
+            referencedRelation: "users_with_functions_search"
             referencedColumns: ["id"]
           },
           {
@@ -2049,9 +2911,38 @@ export type Database = {
           },
         ]
       }
+      functions_with_stats: {
+        Row: {
+          active: boolean | null
+          active_user_count: number | null
+          category_code: string | null
+          category_id: string | null
+          category_name_de: string | null
+          category_name_en: string | null
+          code: string | null
+          created_at: string | null
+          description: string | null
+          description_de: string | null
+          id: string | null
+          is_system: boolean | null
+          name: string | null
+          name_de: string | null
+          sort_order: number | null
+          updated_at: string | null
+          user_count: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "functions_master_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "function_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       uncharged_flights: {
         Row: {
-          airport_fees: number | null
           billing_unit: string | null
           block_off: string | null
           block_on: string | null
@@ -2064,6 +2955,20 @@ export type Database = {
           created_at: string | null
           default_cost_center_id: string | null
           default_cost_center_name: string | null
+          departure_airport_name: string | null
+          departure_approach_fee: number | null
+          departure_landing_fee: number | null
+          departure_noise_fee: number | null
+          departure_parking_fee: number | null
+          departure_passenger_fee: number | null
+          departure_total_fees: number | null
+          destination_airport_name: string | null
+          destination_approach_fee: number | null
+          destination_landing_fee: number | null
+          destination_noise_fee: number | null
+          destination_parking_fee: number | null
+          destination_passenger_fee: number | null
+          destination_total_fees: number | null
           flight_amount: number | null
           flight_time_hours: number | null
           fuel: number | null
@@ -2074,8 +2979,10 @@ export type Database = {
           landings: number | null
           locked: boolean | null
           m_and_b_pdf_url: string | null
+          needs_board_review: boolean | null
           oil: number | null
           operation_rate: number | null
+          operation_type_color: string | null
           operation_type_id: string | null
           operation_type_name: string | null
           passenger_seats: number | null
@@ -2106,6 +3013,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "flightlog_copilot_id_fkey"
+            columns: ["copilot_id"]
+            isOneToOne: false
+            referencedRelation: "users_with_functions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "flightlog_copilot_id_fkey"
+            columns: ["copilot_id"]
+            isOneToOne: false
+            referencedRelation: "users_with_functions_search"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "flightlog_operation_type_id_fkey"
             columns: ["operation_type_id"]
             isOneToOne: false
@@ -2124,6 +3045,20 @@ export type Database = {
             columns: ["pilot_id"]
             isOneToOne: false
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "flightlog_pilot_id_fkey"
+            columns: ["pilot_id"]
+            isOneToOne: false
+            referencedRelation: "users_with_functions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "flightlog_pilot_id_fkey"
+            columns: ["pilot_id"]
+            isOneToOne: false
+            referencedRelation: "users_with_functions_search"
             referencedColumns: ["id"]
           },
           {
@@ -2172,26 +3107,24 @@ export type Database = {
           approved: boolean | null
           approved_at: string | null
           approved_by: string | null
-          approver_name: string | null
-          approver_surname: string | null
           blocks_aircraft: boolean | null
           category: string | null
+          document_type_description: string | null
           document_type_expires: boolean | null
-          document_type_expiry_type: string | null
           document_type_id: string | null
           document_type_mandatory: boolean | null
           document_type_name: string | null
-          document_type_required_for_functions: string[] | null
           expiry_date: string | null
+          expiry_status: string | null
+          expiry_type: string | null
           file_url: string | null
           id: string | null
           name: string | null
           plane_id: string | null
+          required_for_functions: string[] | null
           tags: string[] | null
           uploaded_at: string | null
           uploaded_by: string | null
-          uploader_name: string | null
-          uploader_surname: string | null
           user_id: string | null
         }
         Relationships: [
@@ -2207,6 +3140,20 @@ export type Database = {
             columns: ["approved_by"]
             isOneToOne: false
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documents_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "users_with_functions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documents_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "users_with_functions_search"
             referencedColumns: ["id"]
           },
           {
@@ -2252,6 +3199,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "documents_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "users_with_functions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documents_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "users_with_functions_search"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "documents_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
@@ -2265,7 +3226,54 @@ export type Database = {
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "documents_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users_with_functions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documents_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users_with_functions_search"
+            referencedColumns: ["id"]
+          },
         ]
+      }
+      users_with_functions: {
+        Row: {
+          created_at: string | null
+          email: string | null
+          function_codes: string[] | null
+          functions: Json | null
+          id: string | null
+          license_number: string | null
+          name: string | null
+          role: string[] | null
+          surname: string | null
+          updated_at: string | null
+        }
+        Relationships: []
+      }
+      users_with_functions_search: {
+        Row: {
+          category_codes: string[] | null
+          email: string | null
+          function_codes: string[] | null
+          function_names: string[] | null
+          functions_display: string | null
+          id: string | null
+          membership_category: string | null
+          membership_end_date: string | null
+          membership_start_date: string | null
+          membership_status: string | null
+          name: string | null
+          role: string[] | null
+          surname: string | null
+        }
+        Relationships: []
       }
     }
     Functions: {
@@ -2278,19 +3286,53 @@ export type Database = {
         Returns: number
       }
       can_reserve_aircraft: { Args: { p_plane_id: string }; Returns: boolean }
+      get_recent_selections: {
+        Args: { p_context: string; p_limit?: number; p_user_id: string }
+        Returns: {
+          email: string
+          function_codes: string[]
+          functions_display: string
+          name: string
+          surname: string
+          user_id: string
+        }[]
+      }
+      get_users_by_function: {
+        Args: { p_function_codes: string[] }
+        Returns: {
+          email: string
+          function_codes: string[]
+          name: string
+          surname: string
+          user_id: string
+        }[]
+      }
       is_board_member: { Args: { user_uuid: string }; Returns: boolean }
+      refresh_users_with_functions_search: { Args: never; Returns: undefined }
+      track_user_selection: {
+        Args: {
+          p_context: string
+          p_selected_user_id: string
+          p_user_id: string
+        }
+        Returns: undefined
+      }
+      user_has_any_function: {
+        Args: { p_function_codes: string[]; p_user_id: string }
+        Returns: boolean
+      }
+      user_has_function: {
+        Args: { p_function_code: string; p_user_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
-      component_status: "active" | "removed" | "overhauled" | "scrapped"
+      component_status: "installed" | "removed" | "maintenance" | "scrapped"
       component_type:
         | "engine"
         | "propeller"
+        | "avionics"
         | "landing_gear"
-        | "constant_speed_unit"
-        | "magneto"
-        | "vacuum_pump"
-        | "alternator"
-        | "starter"
         | "other"
       reservation_status: "active" | "standby" | "cancelled"
     }
@@ -2423,16 +3465,12 @@ export const Constants = {
   },
   public: {
     Enums: {
-      component_status: ["active", "removed", "overhauled", "scrapped"],
+      component_status: ["installed", "removed", "maintenance", "scrapped"],
       component_type: [
         "engine",
         "propeller",
+        "avionics",
         "landing_gear",
-        "constant_speed_unit",
-        "magneto",
-        "vacuum_pump",
-        "alternator",
-        "starter",
         "other",
       ],
       reservation_status: ["active", "standby", "cancelled"],
