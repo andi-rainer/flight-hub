@@ -46,7 +46,7 @@ async function getMembers(): Promise<UserWithDocuments[]> {
   const supabase = await createClient()
 
   // Get all users with their documents, document types, and active memberships
-  const [usersResult, documentTypesResult] = await Promise.all([
+  const [usersResult, documentTypesResult, userFunctionsResult] = await Promise.all([
     supabase
       .from('users')
       .select(`
@@ -56,7 +56,10 @@ async function getMembers(): Promise<UserWithDocuments[]> {
       .order('name', { ascending: true }),
     supabase
       .from('document_types')
-      .select('id, name, mandatory, required_for_functions')
+      .select('id, name, mandatory, required_for_functions'),
+    supabase
+      .from('user_functions')
+      .select('user_id, function_id, functions_master(id, code, name)')
   ])
 
   if (usersResult.error) {
@@ -67,6 +70,30 @@ async function getMembers(): Promise<UserWithDocuments[]> {
   if (!usersResult.data) return []
 
   const documentTypes = documentTypesResult.data || []
+
+  // Create a map of user functions
+  const userFunctionsMap = new Map<string, string[]>()
+  const userFunctionCodesMap = new Map<string, string[]>()
+  const userFunctionNamesMap = new Map<string, string[]>()
+  if (userFunctionsResult.data) {
+    for (const uf of userFunctionsResult.data) {
+      if (!userFunctionsMap.has(uf.user_id)) {
+        userFunctionsMap.set(uf.user_id, [])
+        userFunctionCodesMap.set(uf.user_id, [])
+        userFunctionNamesMap.set(uf.user_id, [])
+      }
+      userFunctionsMap.get(uf.user_id)!.push(uf.function_id)
+      if (uf.functions_master) {
+        const func = uf.functions_master as any
+        if (func.code) {
+          userFunctionCodesMap.get(uf.user_id)!.push(func.code)
+        }
+        if (func.name) {
+          userFunctionNamesMap.get(uf.user_id)!.push(func.name)
+        }
+      }
+    }
+  }
 
   // Fetch active memberships for all users
   const { data: memberships } = await supabase
@@ -90,14 +117,29 @@ async function getMembers(): Promise<UserWithDocuments[]> {
 
   return usersResult.data.map(user => {
     const userDocs = user.documents as Document[]
-    const userFunctions = user.functions || []
+    const userFunctionIds = userFunctionsMap.get(user.id) || []
+    const userFunctionCodes = userFunctionCodesMap.get(user.id) || []
+    const userFunctionNames = userFunctionNamesMap.get(user.id) || []
     const activeMembership = membershipsMap.get(user.id)
 
+    // Override the old functions field with new function IDs
+    const userWithFunctions = {
+      ...user,
+      functions: userFunctionIds,
+      function_codes: userFunctionCodes,
+    }
+
     // Get mandatory document types for this user's functions
+    // Check both codes and names for backward compatibility
     const mandatoryForUser = documentTypes.filter(docType => {
       if (!docType.mandatory) return false
       if (!docType.required_for_functions || docType.required_for_functions.length === 0) return false
-      return docType.required_for_functions.some((reqFunc: string) => userFunctions.includes(reqFunc))
+      return docType.required_for_functions.some((reqFunc: string) => {
+        // Check if user has this function by code, name, or ID
+        return userFunctionCodes.includes(reqFunc) ||
+               userFunctionNames.includes(reqFunc) ||
+               userFunctionIds.includes(reqFunc)
+      })
     })
 
     const mandatoryCount = mandatoryForUser.length
@@ -163,7 +205,7 @@ async function getMembers(): Promise<UserWithDocuments[]> {
     const isActive = activeMembership ? activeMembership.end_date >= today : false
 
     return {
-      ...user,
+      ...userWithFunctions,
       documents: userDocs,
       document_status: documentStatus,
       mandatory_uploaded: uploadedMandatoryCount,
@@ -174,12 +216,14 @@ async function getMembers(): Promise<UserWithDocuments[]> {
   })
 }
 
-async function getFunctions(): Promise<FunctionMaster[]> {
+async function getFunctions() {
   const supabase = await createClient()
 
+  // Get functions with user counts using the view created in migration
   const { data: functions, error } = await supabase
-    .from('functions_master')
+    .from('functions_with_stats')
     .select('*')
+    .order('sort_order', { ascending: true })
     .order('name', { ascending: true })
 
   if (error) {
@@ -188,6 +232,22 @@ async function getFunctions(): Promise<FunctionMaster[]> {
   }
 
   return functions || []
+}
+
+async function getFunctionCategories() {
+  const supabase = await createClient()
+
+  const { data: categories, error } = await supabase
+    .from('function_categories')
+    .select('id, name_en, name_de, code')
+    .order('sort_order', { ascending: true })
+
+  if (error) {
+    console.error('Error fetching function categories:', error)
+    return []
+  }
+
+  return categories || []
 }
 
 
@@ -294,9 +354,10 @@ export default async function MembersPage() {
     )
   }
 
-  const [members, functions] = await Promise.all([
+  const [members, functions, categories] = await Promise.all([
     getMembers(),
     getFunctions(),
+    getFunctionCategories(),
   ])
 
   // Separate active and inactive members
@@ -980,7 +1041,7 @@ export default async function MembersPage() {
               {t('boardMemberAccessDescription')}
             </AlertDescription>
           </Alert>
-          <FunctionsSection functions={functions} />
+          <FunctionsSection functions={functions} categories={categories} />
         </TabsContent>
       </Tabs>
     </div>

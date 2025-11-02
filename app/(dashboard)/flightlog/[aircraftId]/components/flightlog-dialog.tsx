@@ -26,6 +26,8 @@ import { createFlightlog, updateFlightlog, deleteFlightlog, uploadMassAndBalance
 import type { FlightlogWithTimes, OperationType } from '@/lib/database.types'
 import { Loader2, Plane as PlaneIcon, User, Clock, Fuel, Lock, ExternalLink, Upload, FileText, Wrench, AlertTriangle, CheckCircle } from 'lucide-react'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+import { PersonSelector } from '@/components/person-selector'
+import { PERSON_SELECTOR_CONTEXTS } from '@/lib/constants/system-functions'
 
 interface FlightlogDialogProps {
   open: boolean
@@ -468,55 +470,27 @@ export function FlightlogDialog({
 
           {/* Pilot Selection (Board members only) */}
           {isBoardMember ? (
-            <div className="space-y-2">
-              <Label htmlFor="pilot">
-                <User className="inline h-4 w-4 mr-1" />
-                Pilot *
-              </Label>
-              <Select
-                value={pilotId}
-                onValueChange={setPilotId}
-                disabled={isPending || (isEditMode && !canEdit)}
-              >
-                <SelectTrigger id="pilot">
-                  <SelectValue placeholder="Select pilot" />
-                </SelectTrigger>
-                <SelectContent>
-                  {users.map((user) => (
-                    <SelectItem key={user.id} value={user.id}>
-                      {user.name} {user.surname}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            <PersonSelector
+              context={PERSON_SELECTOR_CONTEXTS.PILOT_IN_COMMAND}
+              value={pilotId}
+              onChange={(userId) => setPilotId(userId || currentUserId)}
+              label="Pilot"
+              placeholder="Select pilot..."
+              required
+              disabled={isPending || (isEditMode && !canEdit)}
+            />
           ) : null}
 
           {/* Additional Crewmember Selection */}
           <div className="space-y-2">
-            <Label htmlFor="crew">
-              <User className="inline h-4 w-4 mr-1" />
-              Additional Crewmember (Optional)
-            </Label>
-            <Select
-              value={additionalCrewId || 'none'}
-              onValueChange={(value) => setAdditionalCrewId(value === 'none' ? '' : value)}
+            <PersonSelector
+              context={PERSON_SELECTOR_CONTEXTS.COPILOT}
+              value={additionalCrewId}
+              onChange={(userId) => setAdditionalCrewId(userId || '')}
+              label="Additional Crewmember (Optional)"
+              placeholder="None"
               disabled={isPending || (isEditMode && !canEdit)}
-            >
-              <SelectTrigger id="crew">
-                <SelectValue placeholder="None" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">None</SelectItem>
-                {users
-                  .filter(u => u.id !== pilotId)
-                  .map((user) => (
-                    <SelectItem key={user.id} value={user.id}>
-                      {user.name} {user.surname}
-                    </SelectItem>
-                  ))}
-              </SelectContent>
-            </Select>
+            />
             <p className="text-xs text-muted-foreground">
               E.g., Flight Instructor, Cost Sharing Partner
             </p>

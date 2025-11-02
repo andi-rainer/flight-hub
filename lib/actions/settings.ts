@@ -315,11 +315,15 @@ export async function updateMemberProfile(userId: string, data: {
     return { success: false, error: 'Email cannot be empty' }
   }
 
-  // Update member profile in users table
+  // Extract functions from data before updating user profile
+  const functionsToAssign = data.functions
+  const { functions, ...profileData } = data
+
+  // Update member profile in users table (without functions field)
   const { data: updatedProfile, error } = await supabase
     .from('users')
     .update({
-      ...data,
+      ...profileData,
       updated_at: new Date().toISOString(),
     })
     .eq('id', userId)
@@ -329,6 +333,39 @@ export async function updateMemberProfile(userId: string, data: {
   if (error) {
     console.error('Error updating member profile:', error)
     return { success: false, error: error.message }
+  }
+
+  // Handle function assignments via user_functions junction table
+  if (functionsToAssign !== undefined) {
+    // Delete existing function assignments
+    const { error: deleteError } = await supabase
+      .from('user_functions')
+      .delete()
+      .eq('user_id', userId)
+
+    if (deleteError) {
+      console.error('Error removing old function assignments:', deleteError)
+      // Continue anyway
+    }
+
+    // Insert new function assignments
+    if (functionsToAssign.length > 0) {
+      const functionAssignments = functionsToAssign.map(functionId => ({
+        user_id: userId,
+        function_id: functionId,
+        assigned_at: new Date().toISOString(),
+        assigned_by: user.id,
+      }))
+
+      const { error: insertError } = await supabase
+        .from('user_functions')
+        .insert(functionAssignments)
+
+      if (insertError) {
+        console.error('Error assigning functions:', insertError)
+        // Continue anyway - profile is updated, functions can be fixed later
+      }
+    }
   }
 
   revalidatePath('/members')

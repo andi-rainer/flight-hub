@@ -90,21 +90,22 @@ export async function inviteUser(data: {
     return { success: false, error: 'A user with this email already exists' }
   }
 
-  // Invite user via Supabase Auth using admin client
-  // Note: This requires SMTP configuration in Supabase
+  // Create user via Supabase Auth using admin client
+  // For testing/development, create user without email confirmation
   const adminClient = createAdminClient()
-  const { data: authData, error: authError } = await adminClient.auth.admin.inviteUserByEmail(
-    data.email,
-    {
-      data: {
-        name: data.name,
-        surname: data.surname,
-      }
+
+  // Try to create user directly (better for testing environments without SMTP)
+  const { data: authData, error: authError } = await adminClient.auth.admin.createUser({
+    email: data.email,
+    email_confirm: true, // Auto-confirm email for easier testing
+    user_metadata: {
+      name: data.name,
+      surname: data.surname,
     }
-  )
+  })
 
   if (authError) {
-    console.error('Error inviting user:', authError)
+    console.error('Error creating user:', authError)
     return { success: false, error: authError.message }
   }
 
@@ -116,7 +117,6 @@ export async function inviteUser(data: {
       email: data.email,
       name: data.name,
       surname: data.surname,
-      functions: data.functions,
       role: data.role || ['member'],
     }, {
       onConflict: 'id'
@@ -127,6 +127,25 @@ export async function inviteUser(data: {
     // If profile creation fails, try to delete the auth user to maintain consistency
     await adminClient.auth.admin.deleteUser(authData.user.id)
     return { success: false, error: profileError.message }
+  }
+
+  // Assign functions to user via user_functions junction table
+  if (data.functions && data.functions.length > 0) {
+    const functionAssignments = data.functions.map(functionId => ({
+      user_id: authData.user.id,
+      function_id: functionId,
+      assigned_at: new Date().toISOString(),
+      assigned_by: user, // Board member who created this user
+    }))
+
+    const { error: functionsError } = await supabase
+      .from('user_functions')
+      .insert(functionAssignments)
+
+    if (functionsError) {
+      console.error('Error assigning functions:', functionsError)
+      // Continue anyway - user is created, functions can be assigned later
+    }
   }
 
   // Assign membership to the new user (required)
@@ -144,6 +163,9 @@ export async function inviteUser(data: {
     await adminClient.auth.admin.deleteUser(authData.user.id)
     return { success: false, error: `User created but membership assignment failed: ${membershipResult.error}` }
   }
+
+  // Refresh materialized view so PersonSelector shows new user with functions
+  await supabase.rpc('refresh_users_with_functions_search').catch(console.error)
 
   revalidatePath('/members')
   return {
