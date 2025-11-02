@@ -1,14 +1,16 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useTranslations } from 'next-intl'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { getActiveAircraftForFlightlog } from './actions'
 import { Loader2, Plane as PlaneIcon, ArrowRight } from 'lucide-react'
 import { toast } from 'sonner'
-import Link from 'next/link'
+import { Link } from '@/navigation'
 
 export function FlightlogList() {
+  const t = useTranslations('flightLog')
   const [aircraft, setAircraft] = useState<Array<{ id: string; tail_number: string; type: string }>>([])
   const [isLoading, setIsLoading] = useState(true)
 
@@ -22,7 +24,7 @@ export function FlightlogList() {
     const result = await getActiveAircraftForFlightlog()
 
     if (result.error) {
-      toast.error('Failed to load aircraft')
+      toast.error(t('failedToLoadAircraft'))
       console.error(result.error)
     } else {
       setAircraft(result.data || [])
@@ -54,7 +56,7 @@ export function FlightlogList() {
               </CardHeader>
               <CardContent>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">View flight log</span>
+                  <span className="text-sm text-muted-foreground">{t('viewFlightLog')}</span>
                   <ArrowRight className="h-4 w-4 text-muted-foreground" />
                 </div>
               </CardContent>
@@ -65,7 +67,7 @@ export function FlightlogList() {
 
       {aircraft.length === 0 && (
         <div className="text-center text-muted-foreground py-12">
-          No active aircraft found
+          {t('noActiveAircraft')}
         </div>
       )}
     </div>

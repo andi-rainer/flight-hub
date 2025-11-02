@@ -25,7 +25,8 @@ import type { FlightlogWithTimes, OperationType } from '@/lib/database.types'
 import { Plus, Filter, Loader2, Lock, ExternalLink, Plane as PlaneIcon, ArrowLeft, Clock, Target, AlertTriangle } from 'lucide-react'
 import { toast } from 'sonner'
 import { format } from 'date-fns'
-import Link from 'next/link'
+import { Link } from '@/navigation'
+import { useTranslations } from 'next-intl'
 
 interface FlightlogContentProps {
   aircraftId: string
@@ -34,6 +35,8 @@ interface FlightlogContentProps {
 }
 
 export function FlightlogContent({ aircraftId, userId, isBoardMember }: FlightlogContentProps) {
+  const t = useTranslations('flightLog')
+
   const [flightlogs, setFlightlogs] = useState<FlightlogWithTimes[]>([])
   const [filteredFlightlogs, setFilteredFlightlogs] = useState<FlightlogWithTimes[]>([])
   const [aircraft, setAircraft] = useState<{ id: string; tail_number: string; type: string } | null>(null)
@@ -76,7 +79,7 @@ export function FlightlogContent({ aircraftId, userId, isBoardMember }: Flightlo
     ])
 
     if (flightlogsResult.error) {
-      toast.error('Failed to load flightlogs')
+      toast.error(t('failedToLoadFlightlogs'))
       console.error(flightlogsResult.error)
     } else {
       const filtered = (flightlogsResult.data || []).filter(f => f.plane_id === aircraftId)
@@ -85,7 +88,7 @@ export function FlightlogContent({ aircraftId, userId, isBoardMember }: Flightlo
     }
 
     if (aircraftResult.error) {
-      toast.error('Failed to load aircraft')
+      toast.error(t('failedToLoadAircraft'))
       console.error(aircraftResult.error)
     } else {
       const currentAircraft = (aircraftResult.data || []).find(a => a.id === aircraftId)
@@ -93,14 +96,14 @@ export function FlightlogContent({ aircraftId, userId, isBoardMember }: Flightlo
     }
 
     if (usersResult.error) {
-      toast.error('Failed to load users')
+      toast.error(t('failedToLoadUsers'))
       console.error(usersResult.error)
     } else {
       setUsers(usersResult.data || [])
     }
 
     if (operationTypesResult.error) {
-      toast.error('Failed to load operation types')
+      toast.error(t('failedToLoadOperationTypes'))
       console.error(operationTypesResult.error)
     } else {
       setOperationTypes(operationTypesResult.data || [])
@@ -127,13 +130,13 @@ export function FlightlogContent({ aircraftId, userId, isBoardMember }: Flightlo
 
   const handleSelectEntry = (entry: FlightlogWithTimes) => {
     if (entry.charged) {
-      return toast.error('This entry is charged and cannot be edited. Please charge back to the user before editing.')
+      return toast.error(t('entryChargedCannotEdit'))
     }
     if (entry.locked && !isBoardMember) {
-      return toast.error('This entry is locked and cannot be edited.')
+      return toast.error(t('entryLockedCannotEdit'))
     }
     else if ((entry.pilot_id !== userId) && (entry.copilot_id !== userId) && !isBoardMember) {
-      return toast.error('Only the pilot(s) or board members can edit this entry.')
+      return toast.error(t('onlyPilotsCanEdit'))
     }
     setSelectedEntry(entry)
     setDialogOpen(true)
@@ -177,7 +180,7 @@ export function FlightlogContent({ aircraftId, userId, isBoardMember }: Flightlo
         <div className="flex items-center gap-2 flex-1">
           <PlaneIcon className="h-5 w-5 text-primary" />
           <div className="flex-1">
-            <h2 className="font-semibold text-lg">{aircraft?.tail_number || 'Loading...'}</h2>
+            <h2 className="font-semibold text-lg">{aircraft?.tail_number || t('loading')}</h2>
             <p className="text-xs text-muted-foreground">{aircraft?.type || ''}</p>
           </div>
           {aircraftTotals && (
@@ -188,14 +191,14 @@ export function FlightlogContent({ aircraftId, userId, isBoardMember }: Flightlo
                   <span className="font-mono font-medium">
                     {Math.floor(aircraftTotals.total_flight_hours)}:{((aircraftTotals.total_flight_hours % 1) * 60).toFixed(0).padStart(2, '0')}
                   </span>
-                  <span className="text-xs text-muted-foreground">Total Hours</span>
+                  <span className="text-xs text-muted-foreground">{t('totalHours')}</span>
                 </div>
               </div>
               <div className="flex items-center gap-1.5 text-sm">
                 <Target className="h-4 w-4 text-muted-foreground" />
                 <div className="flex flex-col">
                   <span className="font-mono font-medium">{aircraftTotals.total_landings}</span>
-                  <span className="text-xs text-muted-foreground">Total Landings</span>
+                  <span className="text-xs text-muted-foreground">{t('totalLandings')}</span>
                 </div>
               </div>
             </div>
@@ -206,7 +209,7 @@ export function FlightlogContent({ aircraftId, userId, isBoardMember }: Flightlo
       {/* Operation Types Legend */}
       {uniqueOperationTypes.length > 0 && (
         <div className="flex items-center gap-2 rounded-lg border bg-card p-2 text-xs">
-          <span className="text-muted-foreground font-medium">Operation Types:</span>
+          <span className="text-muted-foreground font-medium">{t('operationTypes')}</span>
           <div className="flex gap-3">
             {uniqueOperationTypes.map((opType, idx) => (
               <div key={idx} className="flex items-center gap-1.5">
@@ -229,10 +232,10 @@ export function FlightlogContent({ aircraftId, userId, isBoardMember }: Flightlo
             <Filter className="h-4 w-4 text-muted-foreground" />
             <Select value={selectedPilot} onValueChange={setSelectedPilot}>
               <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="All Pilots" />
+                <SelectValue placeholder={t('allPilots')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Pilots</SelectItem>
+                <SelectItem value="all">{t('allPilots')}</SelectItem>
                 {users.map((user) => (
                   <SelectItem key={user.id} value={user.id}>
                     {user.name} {user.surname}
@@ -245,7 +248,7 @@ export function FlightlogContent({ aircraftId, userId, isBoardMember }: Flightlo
           {/* Info badges */}
           <div className="flex flex-wrap gap-2 items-center ml-auto lg:ml-0">
             <div className="text-xs text-muted-foreground">
-              {filteredFlightlogs.length} {filteredFlightlogs.length === 1 ? 'entry' : 'entries'}
+              {filteredFlightlogs.length} {filteredFlightlogs.length === 1 ? t('entry') : t('entries')}
             </div>
           </div>
         </div>
@@ -259,7 +262,7 @@ export function FlightlogContent({ aircraftId, userId, isBoardMember }: Flightlo
           }}
         >
           <Plus className="mr-2 h-4 w-4" />
-          New Entry
+          {t('newEntry')}
         </Button>
       </div>
 
@@ -268,27 +271,27 @@ export function FlightlogContent({ aircraftId, userId, isBoardMember }: Flightlo
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-[100px]">Date</TableHead>
-              <TableHead className="hidden md:table-cell">Route</TableHead>
-              <TableHead>Times / Landings</TableHead>
-              <TableHead>Crew</TableHead>
+              <TableHead className="w-[100px]">{}</TableHead>
+              <TableHead className="hidden md:table-cell">{t('route')}</TableHead>
+              <TableHead>{t('timesLandings')}</TableHead>
+              <TableHead>{t('crew')}</TableHead>
               <TableHead className="text-right">
                 <div className="flex flex-col items-end">
-                  <span>Block Time</span>
-                  <span className="text-xs font-normal text-muted-foreground">Flight Time</span>
+                  <span>{t('blockTime')}</span>
+                  <span className="text-xs font-normal text-muted-foreground">{t('flightTime')}</span>
                 </div>
               </TableHead>
-              <TableHead className="text-right hidden sm:table-cell">Fuel/Oil</TableHead>
-              <TableHead className="text-right">Totals</TableHead>
+              <TableHead className="text-right hidden sm:table-cell">{t('fuelOil')}</TableHead>
+              <TableHead className="text-right">{t('totals')}</TableHead>
               <TableHead className="text-center hidden sm:table-cell">M&B</TableHead>
-              <TableHead>Status</TableHead>
+              <TableHead>{t('status')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filteredFlightlogs.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={9} className="text-center text-muted-foreground py-8">
-                  No flightlog entries found
+                  {t('noEntriesFound')}
                 </TableCell>
               </TableRow>
             ) : (
@@ -363,7 +366,7 @@ export function FlightlogContent({ aircraftId, userId, isBoardMember }: Flightlo
                             {format(new Date(entry.landing_time), 'HH:mm')} / {format(new Date(entry.block_on), 'HH:mm')}
                           </span>
                         </div>
-                        <div className="text-xs px-1.5 py-0.5 rounded bg-muted font-medium" title="Landings">
+                        <div className="text-xs px-1.5 py-0.5 rounded bg-muted font-medium" title={t('landings')}>
                           {entry.landings || 1}×
                         </div>
                       </div>
@@ -373,20 +376,20 @@ export function FlightlogContent({ aircraftId, userId, isBoardMember }: Flightlo
                     </TableCell>
                     <TableCell className="text-right font-mono text-xs">
                       <div className="flex flex-col items-end">
-                        <span title="Block Time">{blockTimeFormatted}</span>
-                        <span title="Flight Time">{flightTimeFormatted}</span>
+                        <span title={t('blockTime')}>{blockTimeFormatted}</span>
+                        <span title={t('flightTime')}>{flightTimeFormatted}</span>
                       </div>
                     </TableCell>
                     <TableCell className="text-right font-mono text-xs hidden sm:table-cell">
                       <div className="flex flex-col items-end">
-                        <span title="Fuel">{entry.fuel ? `${entry.fuel.toFixed(1)}L` : '—'}</span>
-                        <span title="Oil">{entry.oil ? `${entry.oil.toFixed(1)}L` : '—'}</span>
+                        <span title={t('fuel')}>{entry.fuel ? `${entry.fuel.toFixed(1)}L` : '—'}</span>
+                        <span title={t('oil')}>{entry.oil ? `${entry.oil.toFixed(1)}L` : '—'}</span>
                       </div>
                     </TableCell>
                     <TableCell className="text-right font-mono text-xs">
                       <div className="flex flex-col items-end">
-                        <span title="Total Flight Hours" className="font-medium">{totalFlightTimeFormatted}</span>
-                        <span title="Total Landings" className="text-muted-foreground">{totalLandings} ldg</span>
+                        <span title={t('totalFlightHours')} className="font-medium">{totalFlightTimeFormatted}</span>
+                        <span title={t('totalLandings')} className="text-muted-foreground">{totalLandings} {t('ldg')}</span>
                       </div>
                     </TableCell>
                     <TableCell className="text-center hidden sm:table-cell">
@@ -410,24 +413,24 @@ export function FlightlogContent({ aircraftId, userId, isBoardMember }: Flightlo
                         {entry.needs_board_review && (
                           <Badge variant="destructive" className="text-xs">
                             <AlertTriangle className="mr-1 h-2 w-2" />
-                            <span className="hidden sm:inline">Review</span>
+                            <span className="hidden sm:inline">{t('review')}</span>
                             <span className="sm:hidden">!</span>
                           </Badge>
                         )}
                         {entry.locked && (
                           <Badge variant="secondary" className="text-xs">
                             <Lock className="mr-1 h-2 w-2" />
-                            <span className="hidden sm:inline">Locked</span>
+                            <span className="hidden sm:inline">{t('locked')}</span>
                           </Badge>
                         )}
                         {entry.charged && (
                           <Badge variant="default" className="text-xs">
-                            <span className="hidden sm:inline">Charged</span>
+                            <span className="hidden sm:inline">{t('charged')}</span>
                             <span className="sm:hidden">C</span>
                           </Badge>
                         )}
                         {!entry.locked && !entry.charged && !entry.needs_board_review && (
-                          <Badge variant="outline" className="text-xs hidden sm:inline-flex">Editable</Badge>
+                          <Badge variant="outline" className="text-xs hidden sm:inline-flex">{t('editable')}</Badge>
                         )}
                       </div>
                     </TableCell>

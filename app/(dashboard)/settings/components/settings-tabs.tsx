@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useTranslations } from 'next-intl'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { PilotDocumentsSection } from './pilot-documents-section'
 import { DocumentTypesSection } from './document-types-section'
@@ -16,6 +17,7 @@ interface SettingsTabsProps {
 }
 
 export function SettingsTabs({ user, isBoardMember }: SettingsTabsProps) {
+  const t = useTranslations('settings')
   const [userAlertsCount, setUserAlertsCount] = useState(0)
 
   // Fetch user document alerts
@@ -74,15 +76,15 @@ export function SettingsTabs({ user, isBoardMember }: SettingsTabsProps) {
     <Tabs defaultValue="documents" className="space-y-6">
       <TabsList>
         <TabsTrigger value="documents" className="relative">
-          My Documents
+          {t('myDocuments')}
           {userAlertsCount > 0 && (
             <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-destructive"></span>
           )}
         </TabsTrigger>
-        {isBoardMember && <TabsTrigger value="document-types">Document Types</TabsTrigger>}
-        {isBoardMember && <TabsTrigger value="membership-types">Membership Types</TabsTrigger>}
-        {isBoardMember && <TabsTrigger value="tandem-registration">Tandem Registration</TabsTrigger>}
-        {isBoardMember && <TabsTrigger value="airport-fees">Airport Fees</TabsTrigger>}
+        {isBoardMember && <TabsTrigger value="document-types">{t('documentTypes')}</TabsTrigger>}
+        {isBoardMember && <TabsTrigger value="membership-types">{t('membershipTypes')}</TabsTrigger>}
+        {isBoardMember && <TabsTrigger value="tandem-registration">{t('tandemRegistration')}</TabsTrigger>}
+        {isBoardMember && <TabsTrigger value="airport-fees">{t('airportFees')}</TabsTrigger>}
       </TabsList>
 
       <TabsContent value="documents" className="space-y-4">

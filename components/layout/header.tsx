@@ -1,6 +1,7 @@
 'use client'
 
 import { usePathname } from 'next/navigation'
+import { useTranslations } from 'next-intl'
 import { MobileSidebar } from './sidebar'
 import { UserMenu } from './user-menu'
 import { ModeToggle } from './mode-toggle'
@@ -10,41 +11,22 @@ interface HeaderProps {
   user: User
 }
 
-// Page titles and descriptions based on route
-const pageTitles: Record<string, { title: string; description: string }> = {
-  '/dashboard': {
-    title: 'Dashboard',
-    description: 'Overview of your flight activities',
-  },
-  '/reservations': {
-    title: 'Reservations',
-    description: 'View and manage aircraft reservations',
-  },
-  '/aircrafts': {
-    title: 'Aircraft',
-    description: 'View aircraft fleet information',
-  },
-  '/flightlog': {
-    title: 'Flight Log',
-    description: 'Track and manage flight logs',
-  },
-  '/members': {
-    title: 'Members',
-    description: 'View and manage club members',
-  },
-  '/documents': {
-    title: 'Documents',
-    description: 'Upload and manage your flight documents',
-  },
-  '/settings': {
-    title: 'Settings',
-    description: 'Manage your account and preferences',
-  },
-}
-
 export function Header({ user }: HeaderProps) {
   const pathname = usePathname()
-  const pageInfo = pageTitles[pathname]
+  const t = useTranslations('nav')
+
+  // Map routes to translation keys
+  const pageTranslationKeys: Record<string, { title: string; description: string }> = {
+    '/dashboard': { title: 'dashboard', description: 'dashboardDescription' },
+    '/reservations': { title: 'reservations', description: 'reservationsDescription' },
+    '/aircrafts': { title: 'aircrafts', description: 'aircraftsDescription' },
+    '/flightlog': { title: 'flightLog', description: 'flightLogDescription' },
+    '/members': { title: 'members', description: 'membersDescription' },
+    '/documents': { title: 'documents', description: 'documentsDescription' },
+    '/settings': { title: 'settings', description: 'settingsDescription' },
+  }
+
+  const translationKeys = pageTranslationKeys[pathname]
 
   return (
     <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -52,14 +34,14 @@ export function Header({ user }: HeaderProps) {
         <MobileSidebar user={user} />
 
         {/* Page Title - Hidden on mobile when sidebar is shown */}
-        {pageInfo && (
+        {translationKeys && (
           <div className="hidden md:block flex-1">
-            <h1 className="text-xl font-semibold tracking-tight">{pageInfo.title}</h1>
-            <p className="text-xs text-muted-foreground">{pageInfo.description}</p>
+            <h1 className="text-xl font-semibold tracking-tight">{t(translationKeys.title)}</h1>
+            <p className="text-xs text-muted-foreground">{t(translationKeys.description)}</p>
           </div>
         )}
 
-        {pageInfo ? null : <div className="flex-1" />}
+        {translationKeys ? null : <div className="flex-1" />}
 
         <div className="flex items-center gap-2">
           <ModeToggle />

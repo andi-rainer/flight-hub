@@ -17,9 +17,10 @@ import {
   XCircle,
   CheckCircle2,
 } from 'lucide-react'
-import Link from 'next/link'
+import { Link } from '@/navigation'
 import { format, addDays, differenceInMinutes } from 'date-fns'
 import { NotificationsCard } from './components/notifications-card'
+import { getTranslations } from 'next-intl/server'
 
 interface DashboardData {
   upcomingReservations: Array<{
@@ -190,15 +191,17 @@ function getStatusColor(status: 'active' | 'standby' | 'cancelled') {
 
 async function DashboardContent() {
   const user = await getUser()
+  
+  const t = await getTranslations('dashboard')
 
   if (!user) {
     return (
       <div className="space-y-6">
         <Alert variant="destructive">
           <XCircle className="h-4 w-4" />
-          <AlertTitle>Authentication Required</AlertTitle>
+          <AlertTitle>{t('authenticationRequired')}</AlertTitle>
           <AlertDescription>
-            Please log in to view your dashboard.
+            {t('pleaseLogin')}
           </AlertDescription>
         </Alert>
       </div>
@@ -222,11 +225,8 @@ async function DashboardContent() {
       {/* Header */}
       <div>
         <h1 className="text-3xl font-bold tracking-tight">
-          Welcome back, {profile?.name || 'User'}!
+          {t('welcome', { name: profile?.name || 'User' })}
         </h1>
-        <p className="text-muted-foreground">
-          Here&apos;s an overview of your flight club activity
-        </p>
       </div>
 
       {/* Quick Stats */}
@@ -234,7 +234,7 @@ async function DashboardContent() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
-              Active Reservations
+              {t('activeReservations')}
             </CardTitle>
             <Calendar className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
@@ -243,7 +243,7 @@ async function DashboardContent() {
               {dashboardData.upcomingReservations.filter(r => r.status === 'active').length}
             </div>
             <p className="text-xs text-muted-foreground">
-              Next 7 days
+              {t('next7Days')}
             </p>
           </CardContent>
         </Card>
@@ -251,7 +251,7 @@ async function DashboardContent() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
-              Account Balance
+              {t('accountBalance')}
             </CardTitle>
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
@@ -260,7 +260,7 @@ async function DashboardContent() {
               ${dashboardData.accountBalance.toFixed(2)}
             </div>
             <p className="text-xs text-muted-foreground">
-              Current balance
+              {t('currentBalance')}
             </p>
           </CardContent>
         </Card>
@@ -268,7 +268,7 @@ async function DashboardContent() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
-              Monthly Flight Cost
+              {t('monthlyFlightCost')}
             </CardTitle>
             <Clock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
@@ -285,7 +285,7 @@ async function DashboardContent() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
-              Notifications
+              {t('notifications')}
             </CardTitle>
             <Bell className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
@@ -294,7 +294,7 @@ async function DashboardContent() {
               {dashboardData.unreadNotifications.length}
             </div>
             <p className="text-xs text-muted-foreground">
-              Unread messages
+              {t('unreadMessages')}
             </p>
           </CardContent>
         </Card>
@@ -303,9 +303,9 @@ async function DashboardContent() {
       {/* Quick Actions */}
       <Card>
         <CardHeader>
-          <CardTitle>Quick Actions</CardTitle>
+          <CardTitle>{t('quickActions')}</CardTitle>
           <CardDescription>
-            Common tasks and shortcuts
+            {t('commonTasksAndShortcuts')}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -313,19 +313,19 @@ async function DashboardContent() {
             <Button asChild>
               <Link href="/reservations">
                 <Calendar className="mr-2 h-4 w-4" />
-                New Reservation
+                {t('newReservation')}
               </Link>
             </Button>
             <Button asChild variant="outline">
               <Link href="/flightlog">
                 <Plane className="mr-2 h-4 w-4" />
-                Log Flight
+                {t('logFlight')}
               </Link>
             </Button>
             <Button asChild variant="outline">
               <Link href="/documents">
                 <FileText className="mr-2 h-4 w-4" />
-                General Documents
+                {t('generalDocuments')}
               </Link>
             </Button>
           </div>
@@ -336,15 +336,15 @@ async function DashboardContent() {
         {/* Upcoming Reservations */}
         <Card className="md:col-span-2">
           <CardHeader>
-            <CardTitle>Upcoming Reservations</CardTitle>
+            <CardTitle>{t('upcomingReservations')}</CardTitle>
             <CardDescription>
-              Your reservations for the next 7 days
+              {t('reservationsNext7Days')}
             </CardDescription>
           </CardHeader>
           <CardContent>
             {dashboardData.upcomingReservations.length === 0 ? (
               <p className="text-sm text-muted-foreground">
-                No upcoming reservations
+                {t('noUpcomingReservations')}
               </p>
             ) : (
               <div className="space-y-4">
@@ -360,7 +360,7 @@ async function DashboardContent() {
                           {reservation.plane.tail_number} - {reservation.plane.type}
                         </div>
                         <div className="text-sm text-muted-foreground">
-                          Pilot: {reservation.user.name} {reservation.user.surname}
+                          {t('pilot')}: {reservation.user.name} {reservation.user.surname}
                         </div>
                         <div className="text-sm text-muted-foreground">
                           {format(new Date(reservation.start_time), 'MMM d, yyyy')} • {' '}
@@ -385,24 +385,24 @@ async function DashboardContent() {
         {/* Account Balance & Transactions */}
         <Card>
           <CardHeader>
-            <CardTitle>Account Transactions</CardTitle>
+            <CardTitle>{t('accountTransactions')}</CardTitle>
             <CardDescription>
-              Recent account activity
+              {t('recentAccountActivity')}
             </CardDescription>
           </CardHeader>
           <CardContent>
             {dashboardData.recentTransactions.length === 0 ? (
               <p className="text-sm text-muted-foreground">
-                No recent transactions
+                {t('noRecentTransactions')}
               </p>
             ) : (
               <div className="space-y-2">
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Description</TableHead>
-                      <TableHead className="text-right">Amount</TableHead>
+                      <TableHead>{t('date')}</TableHead>
+                      <TableHead>{t('description')}</TableHead>
+                      <TableHead className="text-right">{t('amount')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -430,7 +430,7 @@ async function DashboardContent() {
                 </Table>
                 <Separator />
                 <div className="flex justify-between items-center pt-2">
-                  <span className="text-sm font-medium">Current Balance</span>
+                  <span className="text-sm font-medium">{t('currentBalance')}</span>
                   <span
                     className={`text-lg font-bold ${
                       dashboardData.accountBalance >= 0
@@ -444,7 +444,7 @@ async function DashboardContent() {
                 <Button className="w-full mt-4" variant="outline" asChild>
                   <Link href="/settings">
                     <Plus className="mr-2 h-4 w-4" />
-                    Add Funds
+                    {t('addFunds')}
                   </Link>
                 </Button>
               </div>
@@ -455,25 +455,25 @@ async function DashboardContent() {
         {/* Recent Flights */}
         <Card>
           <CardHeader>
-            <CardTitle>Recent Flights</CardTitle>
+            <CardTitle>{t('recentFlights')}</CardTitle>
             <CardDescription>
-              Your recent flight activity
+              {t('recentFlightActivity')}
             </CardDescription>
           </CardHeader>
           <CardContent>
             {dashboardData.recentFlights.length === 0 ? (
               <p className="text-sm text-muted-foreground">
-                No recent flights
+                {t('noRecentFlights')}
               </p>
             ) : (
               <div className="space-y-2">
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Aircraft</TableHead>
-                      <TableHead className="text-right">Hours</TableHead>
-                      <TableHead className="text-right">Charged</TableHead>
+                      <TableHead>{t('date')}</TableHead>
+                      <TableHead>{t('aircraft')}</TableHead>
+                      <TableHead className="text-right">{t('hours')}</TableHead>
+                      <TableHead className="text-right">{t('charged')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -502,7 +502,7 @@ async function DashboardContent() {
                 <Separator />
                 <div className="flex justify-between items-center pt-2">
                   <span className="text-sm font-medium">
-                    {format(new Date(), 'MMMM')} Total Cost
+                    {format(new Date(), 'MMMM')} {t('totalCost')}
                   </span>
                   <span className="text-lg font-bold">
                     ${dashboardData.monthlyFlightCost.toFixed(2)}

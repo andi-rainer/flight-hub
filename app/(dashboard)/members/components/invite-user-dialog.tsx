@@ -26,7 +26,7 @@ import { inviteUser } from '@/lib/actions/members'
 import { getMembershipTypes } from '@/lib/actions/memberships'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
-import Link from 'next/link'
+import { Link } from '@/navigation'
 import type { FunctionMaster, MembershipType } from '@/lib/database.types'
 import { Checkbox } from '@/components/ui/checkbox'
 

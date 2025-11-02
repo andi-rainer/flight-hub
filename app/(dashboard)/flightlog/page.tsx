@@ -1,5 +1,5 @@
 import { getUserProfile } from '@/lib/supabase/server'
-import { redirect } from 'next/navigation'
+import { redirect } from '@/navigation'
 import { FlightlogList } from './flightlog-list'
 
 export const metadata = {

@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
-import { redirect } from 'next/navigation'
+import { redirect } from '@/navigation'
+import { getTranslations } from 'next-intl/server'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
@@ -200,7 +201,11 @@ function getFunctionNames(functionIds: string[], allFunctions: FunctionMaster[])
   return names.length > 0 ? names.join(', ') : '-'
 }
 
-function getDocumentStatusBadge(status: 'ok' | 'warning' | 'expired' | 'pending', user: UserWithDocuments) {
+function getDocumentStatusBadge(
+  status: 'ok' | 'warning' | 'expired' | 'pending',
+  user: UserWithDocuments,
+  tDocuments: any
+) {
   const hasPendingDocs = user.documents.some(doc => !doc.approved)
   const hasExpiring = user.documents.some(doc => {
     if (!doc.approved || !doc.expiry_date) return false
@@ -215,49 +220,54 @@ function getDocumentStatusBadge(status: 'ok' | 'warning' | 'expired' | 'pending'
 
   switch (status) {
     case 'expired':
-      return <Badge variant="destructive">Expired Docs</Badge>
+      return <Badge variant="destructive">{tDocuments('expiredDocs')}</Badge>
     case 'warning':
       // Both pending and expiring
       if (hasPendingDocs && hasExpiring) {
         return (
           <div className="flex gap-1">
-            <Badge className="bg-blue-500 hover:bg-blue-600">Pending</Badge>
-            <Badge className="bg-orange-500 hover:bg-orange-600">Expiring Soon</Badge>
+            <Badge className="bg-blue-500 hover:bg-blue-600">{tDocuments('pending')}</Badge>
+            <Badge className="bg-orange-500 hover:bg-orange-600">{tDocuments('expiringSoon')}</Badge>
           </div>
         )
       }
-      return <Badge className="bg-orange-500 hover:bg-orange-600">Expiring Soon</Badge>
+      return <Badge className="bg-orange-500 hover:bg-orange-600">{tDocuments('expiringSoon')}</Badge>
     case 'pending':
       // Show "Incomplete" if missing mandatory docs, otherwise "Pending"
       if (isMissingMandatory && hasPendingDocs) {
         return (
             <div className="flex gap-1">
-                <Badge className="bg-red-500 hover:bg-red-600">Incomplete</Badge>
-                <Badge className="bg-blue-500 hover:bg-blue-600">Pending</Badge>
+                <Badge className="bg-red-500 hover:bg-red-600">{tDocuments('incomplete')}</Badge>
+                <Badge className="bg-blue-500 hover:bg-blue-600">{tDocuments('pending')}</Badge>
             </div>
         )
       }
       else if (hasPendingDocs && hasExpiring) {
         return (
           <div className="flex gap-1">
-            <Badge className="bg-blue-500 hover:bg-blue-600">Pending</Badge>
-            <Badge className="bg-orange-500 hover:bg-orange-600">Expiring Soon</Badge>
+            <Badge className="bg-blue-500 hover:bg-blue-600">{tDocuments('pending')}</Badge>
+            <Badge className="bg-orange-500 hover:bg-orange-600">{tDocuments('expiringSoon')}</Badge>
           </div>
         )
       }
       else if (isMissingMandatory) {
-        return <Badge className="bg-red-500 hover:bg-red-600">Incomplete</Badge>
+        return <Badge className="bg-red-500 hover:bg-red-600">{tDocuments('incomplete')}</Badge>
       }
       else {
-        return <Badge className="bg-blue-500 hover:bg-blue-600">Pending</Badge>
+        return <Badge className="bg-blue-500 hover:bg-blue-600">{tDocuments('pending')}</Badge>
       }
     case 'ok':
     default:
-      return <Badge variant="outline">Valid</Badge>
+      return <Badge variant="outline">{tDocuments('valid')}</Badge>
   }
 }
 
 export default async function MembersPage() {
+  const t = await getTranslations('members')
+  const tCommon = await getTranslations('common')
+  const tRoles = await getTranslations('roles')
+  const tMembership = await getTranslations('membership')
+  const tDocuments = await getTranslations('documents')
   const currentUser = await getCurrentUser()
 
   if (!currentUser) {
@@ -270,15 +280,14 @@ export default async function MembersPage() {
     return (
       <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Members</h1>
-          <p className="text-muted-foreground">Manage club members and roles</p>
+          <h1 className="text-3xl font-bold tracking-tight">{t('title')}</h1>
+          <p className="text-muted-foreground">{t('description')}</p>
         </div>
         <Alert variant="destructive">
           <Shield className="h-4 w-4" />
-          <AlertTitle>Board Members Only</AlertTitle>
+          <AlertTitle>{t('boardMembersOnly')}</AlertTitle>
           <AlertDescription>
-            You do not have permission to access this page. Only board members can view and manage
-            club members.
+            {t('boardMembersOnlyDescription')}
           </AlertDescription>
         </Alert>
       </div>
@@ -315,8 +324,8 @@ export default async function MembersPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Members</h1>
-          <p className="text-muted-foreground">Manage club members, roles, and documents</p>
+          <h1 className="text-3xl font-bold tracking-tight">{t('title')}</h1>
+          <p className="text-muted-foreground">{t('description')}</p>
         </div>
         <InviteUserDialog functions={functions} />
       </div>
@@ -325,24 +334,23 @@ export default async function MembersPage() {
       <Tabs defaultValue="active" className="space-y-6">
         <TabsList>
           <TabsTrigger value="active">
-            Active Members
+            {t('activeMembers')}
             <Badge variant="secondary" className="ml-2">{activeMembers.length}</Badge>
           </TabsTrigger>
           <TabsTrigger value="inactive">
-            Inactive Members
+            {t('inactiveMembers')}
             <Badge variant="outline" className="ml-2">{inactiveMembers.length}</Badge>
           </TabsTrigger>
-          <TabsTrigger value="functions">Functions</TabsTrigger>
+          <TabsTrigger value="functions">{tRoles('functions')}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="active" className="space-y-4">
           {/* Info Alert */}
           <Alert>
             <AlertCircle className="h-4 w-4" />
-            <AlertTitle>Member Management</AlertTitle>
+            <AlertTitle>{t('memberManagement')}</AlertTitle>
             <AlertDescription>
-              Invite new members, assign functions, and approve member documents. Document status
-              indicators show if licenses or certifications are expired or expiring soon.
+              {t('memberManagementDescription')}
             </AlertDescription>
           </Alert>
 
@@ -350,15 +358,15 @@ export default async function MembersPage() {
           <Tabs defaultValue="regular" className="space-y-4">
             <TabsList>
               <TabsTrigger value="all">
-                All Members
+                {t('allMembers')}
                 <Badge variant="secondary" className="ml-2">{activeMembers.length}</Badge>
               </TabsTrigger>
               <TabsTrigger value="regular">
-                Regular Members
+                {t('regularMembers')}
                 <Badge variant="secondary" className="ml-2">{regularMembers.length}</Badge>
               </TabsTrigger>
               <TabsTrigger value="short-term">
-                Short-term Members
+                {t('shortTermMembers')}
                 <Badge variant="secondary" className="ml-2">{shortTermMembers.length}</Badge>
               </TabsTrigger>
             </TabsList>
@@ -367,9 +375,9 @@ export default async function MembersPage() {
             <TabsContent value="all">
               <Card>
                 <CardHeader>
-                  <CardTitle>All Active Members</CardTitle>
+                  <CardTitle>{t('allActiveMembers')}</CardTitle>
                   <CardDescription>
-                    {activeMembers.length} active {activeMembers.length === 1 ? 'member' : 'members'}
+                    {activeMembers.length} {tCommon('active')} {activeMembers.length === 1 ? t('member') : t('members')}
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -377,21 +385,21 @@ export default async function MembersPage() {
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead>Name</TableHead>
-                          <TableHead>Email</TableHead>
-                          <TableHead>Roles</TableHead>
-                          <TableHead>Functions</TableHead>
-                          <TableHead>Membership</TableHead>
-                          <TableHead>Payment</TableHead>
-                          <TableHead>Documents</TableHead>
-                          <TableHead className="text-right">Actions</TableHead>
+                          <TableHead>{tCommon('name')}</TableHead>
+                          <TableHead>{tCommon('email')}</TableHead>
+                          <TableHead>{tRoles('roles')}</TableHead>
+                          <TableHead>{tRoles('functions')}</TableHead>
+                          <TableHead>{tMembership('membership')}</TableHead>
+                          <TableHead>{tMembership('payment')}</TableHead>
+                          <TableHead>{tDocuments('documents')}</TableHead>
+                          <TableHead className="text-right">{tCommon('actions')}</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {activeMembers.length === 0 ? (
                           <TableRow>
                             <TableCell colSpan={8} className="text-center text-muted-foreground">
-                              No active members found
+                              {t('noActiveMembersFound')}
                             </TableCell>
                           </TableRow>
                         ) : (
@@ -404,9 +412,9 @@ export default async function MembersPage() {
                               <TableCell>
                                 <div className="flex flex-wrap gap-1">
                                   {member.role?.includes('board') && (
-                                    <Badge>Board</Badge>
+                                    <Badge>{tRoles('board')}</Badge>
                                   )}
-                                  <Badge variant="outline">Member</Badge>
+                                  <Badge variant="outline">{tRoles('member')}</Badge>
                                 </div>
                               </TableCell>
                               <TableCell className="text-sm max-w-xs truncate">
@@ -416,17 +424,17 @@ export default async function MembersPage() {
                                 {member.active_membership ? (
                                   <div className="flex flex-col gap-1">
                                     <Badge variant="default">
-                                      {member.active_membership.membership_types?.name || 'Active'}
+                                      {member.active_membership.membership_types?.name || tCommon('active')}
                                     </Badge>
                                     <span className="text-xs text-muted-foreground">
                                       {member.active_membership.member_number}
                                     </span>
                                     <span className="text-xs text-muted-foreground">
-                                      {member.active_membership.auto_renew ? 'Renewal' : 'Until'}: {new Date(member.active_membership.end_date).toLocaleDateString()}
+                                      {member.active_membership.auto_renew ? tMembership('renewal') : tMembership('until')}: {new Date(member.active_membership.end_date).toLocaleDateString()}
                                     </span>
                                   </div>
                                 ) : (
-                                  <span className="text-sm text-muted-foreground">No membership</span>
+                                  <span className="text-sm text-muted-foreground">{tMembership('noMembership')}</span>
                                 )}
                               </TableCell>
                               <TableCell>
@@ -447,7 +455,7 @@ export default async function MembersPage() {
                                         : ''
                                     }
                                   >
-                                    {member.active_membership.payment_status}
+                                    {tMembership(`paymentStatus.${member.active_membership.payment_status}`)}
                                   </Badge>
                                 ) : (
                                   <span className="text-sm text-muted-foreground">-</span>
@@ -455,7 +463,7 @@ export default async function MembersPage() {
                               </TableCell>
                               <TableCell>
                                 <div className="flex items-center gap-2">
-                                  {getDocumentStatusBadge(member.document_status, member)}
+                                  {getDocumentStatusBadge(member.document_status, member, tDocuments)}
                                   <span className="text-sm text-muted-foreground">
                                     {member.mandatory_required > 0 ? (
                                       `(${member.mandatory_uploaded}/${member.mandatory_required})`
@@ -486,9 +494,9 @@ export default async function MembersPage() {
             <TabsContent value="regular">
               <Card>
                 <CardHeader>
-                  <CardTitle>Regular Members</CardTitle>
+                  <CardTitle>{t('regularMembers')}</CardTitle>
                   <CardDescription>
-                    {regularMembers.length} regular {regularMembers.length === 1 ? 'member' : 'members'}
+                    {regularMembers.length} {tMembership('category.regular').toLowerCase()} {regularMembers.length === 1 ? t('member') : t('members')}
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -496,21 +504,21 @@ export default async function MembersPage() {
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead>Name</TableHead>
-                          <TableHead>Email</TableHead>
-                          <TableHead>Roles</TableHead>
-                          <TableHead>Functions</TableHead>
-                          <TableHead>Membership</TableHead>
-                          <TableHead>Payment</TableHead>
-                          <TableHead>Documents</TableHead>
-                          <TableHead className="text-right">Actions</TableHead>
+                          <TableHead>{tCommon('name')}</TableHead>
+                          <TableHead>{tCommon('email')}</TableHead>
+                          <TableHead>{tRoles('roles')}</TableHead>
+                          <TableHead>{tRoles('functions')}</TableHead>
+                          <TableHead>{tMembership('membership')}</TableHead>
+                          <TableHead>{tMembership('payment')}</TableHead>
+                          <TableHead>{tDocuments('documents')}</TableHead>
+                          <TableHead className="text-right">{tCommon('actions')}</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {regularMembers.length === 0 ? (
                           <TableRow>
                             <TableCell colSpan={8} className="text-center text-muted-foreground">
-                              No regular members found
+                              {t('noRegularMembersFound')}
                             </TableCell>
                           </TableRow>
                         ) : (
@@ -523,9 +531,9 @@ export default async function MembersPage() {
                               <TableCell>
                                 <div className="flex flex-wrap gap-1">
                                   {member.role?.includes('board') && (
-                                    <Badge>Board</Badge>
+                                    <Badge>{tRoles('board')}</Badge>
                                   )}
-                                  <Badge variant="outline">Member</Badge>
+                                  <Badge variant="outline">{tRoles('member')}</Badge>
                                 </div>
                               </TableCell>
                               <TableCell className="text-sm max-w-xs truncate">
@@ -535,17 +543,17 @@ export default async function MembersPage() {
                                 {member.active_membership ? (
                                   <div className="flex flex-col gap-1">
                                     <Badge variant="default">
-                                      {member.active_membership.membership_types?.name || 'Active'}
+                                      {member.active_membership.membership_types?.name || tCommon('active')}
                                     </Badge>
                                     <span className="text-xs text-muted-foreground">
                                       {member.active_membership.member_number}
                                     </span>
                                     <span className="text-xs text-muted-foreground">
-                                      {member.active_membership.auto_renew ? 'Renewal' : 'Until'}: {new Date(member.active_membership.end_date).toLocaleDateString()}
+                                      {member.active_membership.auto_renew ? tMembership('renewal') : tMembership('until')}: {new Date(member.active_membership.end_date).toLocaleDateString()}
                                     </span>
                                   </div>
                                 ) : (
-                                  <span className="text-sm text-muted-foreground">No membership</span>
+                                  <span className="text-sm text-muted-foreground">{tMembership('noMembership')}</span>
                                 )}
                               </TableCell>
                               <TableCell>
@@ -566,7 +574,7 @@ export default async function MembersPage() {
                                         : ''
                                     }
                                   >
-                                    {member.active_membership.payment_status}
+                                    {tMembership(`paymentStatus.${member.active_membership.payment_status}`)}
                                   </Badge>
                                 ) : (
                                   <span className="text-sm text-muted-foreground">-</span>
@@ -574,7 +582,7 @@ export default async function MembersPage() {
                               </TableCell>
                               <TableCell>
                                 <div className="flex items-center gap-2">
-                                  {getDocumentStatusBadge(member.document_status, member)}
+                                  {getDocumentStatusBadge(member.document_status, member, tDocuments)}
                                   <span className="text-sm text-muted-foreground">
                                     {member.mandatory_required > 0 ? (
                                       `(${member.mandatory_uploaded}/${member.mandatory_required})`
@@ -605,9 +613,9 @@ export default async function MembersPage() {
             <TabsContent value="short-term">
               <Card>
                 <CardHeader>
-                  <CardTitle>Short-term Members</CardTitle>
+                  <CardTitle>{t('shortTermMembers')}</CardTitle>
                   <CardDescription>
-                    {shortTermMembers.length} short-term {shortTermMembers.length === 1 ? 'member' : 'members'}
+                    {shortTermMembers.length} {tMembership('category.shortTerm').toLowerCase()} {shortTermMembers.length === 1 ? t('member') : t('members')}
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -615,21 +623,21 @@ export default async function MembersPage() {
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead>Name</TableHead>
-                          <TableHead>Email</TableHead>
-                          <TableHead>Roles</TableHead>
-                          <TableHead>Functions</TableHead>
-                          <TableHead>Membership</TableHead>
-                          <TableHead>Payment</TableHead>
-                          <TableHead>Documents</TableHead>
-                          <TableHead className="text-right">Actions</TableHead>
+                          <TableHead>{tCommon('name')}</TableHead>
+                          <TableHead>{tCommon('email')}</TableHead>
+                          <TableHead>{tRoles('roles')}</TableHead>
+                          <TableHead>{tRoles('functions')}</TableHead>
+                          <TableHead>{tMembership('membership')}</TableHead>
+                          <TableHead>{tMembership('payment')}</TableHead>
+                          <TableHead>{tDocuments('documents')}</TableHead>
+                          <TableHead className="text-right">{tCommon('actions')}</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {shortTermMembers.length === 0 ? (
                           <TableRow>
                             <TableCell colSpan={8} className="text-center text-muted-foreground">
-                              No short-term members found
+                              {t('noShortTermMembersFound')}
                             </TableCell>
                           </TableRow>
                         ) : (
@@ -642,9 +650,9 @@ export default async function MembersPage() {
                               <TableCell>
                                 <div className="flex flex-wrap gap-1">
                                   {member.role?.includes('board') && (
-                                    <Badge>Board</Badge>
+                                    <Badge>{tRoles('board')}</Badge>
                                   )}
-                                  <Badge variant="outline">Member</Badge>
+                                  <Badge variant="outline">{tRoles('member')}</Badge>
                                 </div>
                               </TableCell>
                               <TableCell className="text-sm max-w-xs truncate">
@@ -654,17 +662,17 @@ export default async function MembersPage() {
                                 {member.active_membership ? (
                                   <div className="flex flex-col gap-1">
                                     <Badge variant="default">
-                                      {member.active_membership.membership_types?.name || 'Active'}
+                                      {member.active_membership.membership_types?.name || tCommon('active')}
                                     </Badge>
                                     <span className="text-xs text-muted-foreground">
                                       {member.active_membership.member_number}
                                     </span>
                                     <span className="text-xs text-muted-foreground">
-                                      {member.active_membership.auto_renew ? 'Renewal' : 'Until'}: {new Date(member.active_membership.end_date).toLocaleDateString()}
+                                      {member.active_membership.auto_renew ? tMembership('renewal') : tMembership('until')}: {new Date(member.active_membership.end_date).toLocaleDateString()}
                                     </span>
                                   </div>
                                 ) : (
-                                  <span className="text-sm text-muted-foreground">No membership</span>
+                                  <span className="text-sm text-muted-foreground">{tMembership('noMembership')}</span>
                                 )}
                               </TableCell>
                               <TableCell>
@@ -685,7 +693,7 @@ export default async function MembersPage() {
                                         : ''
                                     }
                                   >
-                                    {member.active_membership.payment_status}
+                                    {tMembership(`paymentStatus.${member.active_membership.payment_status}`)}
                                   </Badge>
                                 ) : (
                                   <span className="text-sm text-muted-foreground">-</span>
@@ -693,7 +701,7 @@ export default async function MembersPage() {
                               </TableCell>
                               <TableCell>
                                 <div className="flex items-center gap-2">
-                                  {getDocumentStatusBadge(member.document_status, member)}
+                                  {getDocumentStatusBadge(member.document_status, member, tDocuments)}
                                   <span className="text-sm text-muted-foreground">
                                     {member.mandatory_required > 0 ? (
                                       `(${member.mandatory_uploaded}/${member.mandatory_required})`
@@ -726,10 +734,9 @@ export default async function MembersPage() {
           {/* Info Alert */}
           <Alert>
             <AlertCircle className="h-4 w-4" />
-            <AlertTitle>Inactive Members</AlertTitle>
+            <AlertTitle>{t('inactiveMembers')}</AlertTitle>
             <AlertDescription>
-              These members have expired or cancelled memberships and cannot access the system or be selected for flights.
-              Board members can renew memberships to reactivate these users.
+              {t('inactiveMembersDescription')}
             </AlertDescription>
           </Alert>
 
@@ -737,15 +744,15 @@ export default async function MembersPage() {
           <Tabs defaultValue="regular" className="space-y-4">
             <TabsList>
               <TabsTrigger value="all">
-                All Members
+                {t('allMembers')}
                 <Badge variant="secondary" className="ml-2">{inactiveMembers.length}</Badge>
               </TabsTrigger>
               <TabsTrigger value="regular">
-                Regular Members
+                {t('regularMembers')}
                 <Badge variant="secondary" className="ml-2">{inactiveRegularMembers.length}</Badge>
               </TabsTrigger>
               <TabsTrigger value="short-term">
-                Short-term Members
+                {t('shortTermMembers')}
                 <Badge variant="secondary" className="ml-2">{inactiveShortTermMembers.length}</Badge>
               </TabsTrigger>
             </TabsList>
@@ -754,9 +761,9 @@ export default async function MembersPage() {
             <TabsContent value="all">
               <Card>
                 <CardHeader>
-                  <CardTitle>All Inactive Members</CardTitle>
+                  <CardTitle>{t('allInactiveMembers')}</CardTitle>
                   <CardDescription>
-                    {inactiveMembers.length} inactive {inactiveMembers.length === 1 ? 'member' : 'members'}
+                    {inactiveMembers.length} {tCommon('inactive')} {inactiveMembers.length === 1 ? t('member') : t('members')}
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -764,18 +771,18 @@ export default async function MembersPage() {
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead>Name</TableHead>
-                          <TableHead>Email</TableHead>
-                          <TableHead>Membership Status</TableHead>
-                          <TableHead>Last Active</TableHead>
-                          <TableHead className="text-right">Actions</TableHead>
+                          <TableHead>{tCommon('name')}</TableHead>
+                          <TableHead>{tCommon('email')}</TableHead>
+                          <TableHead>{tMembership('membershipStatus')}</TableHead>
+                          <TableHead>{tMembership('lastActive')}</TableHead>
+                          <TableHead className="text-right">{tCommon('actions')}</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {inactiveMembers.length === 0 ? (
                           <TableRow>
                             <TableCell colSpan={5} className="text-center text-muted-foreground">
-                              No inactive members
+                              {t('noInactiveMembers')}
                             </TableCell>
                           </TableRow>
                         ) : (
@@ -788,22 +795,22 @@ export default async function MembersPage() {
                               <TableCell>
                                 {member.active_membership ? (
                                   <div className="flex flex-col gap-1">
-                                    <Badge variant="destructive">Expired</Badge>
+                                    <Badge variant="destructive">{tMembership('expired')}</Badge>
                                     <span className="text-xs text-muted-foreground">
                                       {member.active_membership.member_number}
                                     </span>
                                     <span className="text-xs text-muted-foreground">
-                                      Ended: {new Date(member.active_membership.end_date).toLocaleDateString()}
+                                      {tMembership('ended')}: {new Date(member.active_membership.end_date).toLocaleDateString()}
                                     </span>
                                   </div>
                                 ) : (
-                                  <Badge variant="outline">No membership</Badge>
+                                  <Badge variant="outline">{tMembership('noMembership')}</Badge>
                                 )}
                               </TableCell>
                               <TableCell className="text-sm text-muted-foreground">
                                 {member.active_membership
                                   ? new Date(member.active_membership.end_date).toLocaleDateString()
-                                  : 'Never'}
+                                  : t('never')}
                               </TableCell>
                               <TableCell className="text-right">
                                 <div className="flex items-center justify-end gap-1">
@@ -825,9 +832,9 @@ export default async function MembersPage() {
             <TabsContent value="regular">
               <Card>
                 <CardHeader>
-                  <CardTitle>Inactive Regular Members</CardTitle>
+                  <CardTitle>{t('inactiveRegularMembers')}</CardTitle>
                   <CardDescription>
-                    {inactiveRegularMembers.length} inactive regular {inactiveRegularMembers.length === 1 ? 'member' : 'members'}
+                    {inactiveRegularMembers.length} {tCommon('inactive')} {tMembership('category.regular').toLowerCase()} {inactiveRegularMembers.length === 1 ? t('member') : t('members')}
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -835,18 +842,18 @@ export default async function MembersPage() {
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead>Name</TableHead>
-                          <TableHead>Email</TableHead>
-                          <TableHead>Membership Status</TableHead>
-                          <TableHead>Last Active</TableHead>
-                          <TableHead className="text-right">Actions</TableHead>
+                          <TableHead>{tCommon('name')}</TableHead>
+                          <TableHead>{tCommon('email')}</TableHead>
+                          <TableHead>{tMembership('membershipStatus')}</TableHead>
+                          <TableHead>{tMembership('lastActive')}</TableHead>
+                          <TableHead className="text-right">{tCommon('actions')}</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {inactiveRegularMembers.length === 0 ? (
                           <TableRow>
                             <TableCell colSpan={5} className="text-center text-muted-foreground">
-                              No inactive regular members
+                              {t('noInactiveRegularMembers')}
                             </TableCell>
                           </TableRow>
                         ) : (
@@ -859,22 +866,22 @@ export default async function MembersPage() {
                               <TableCell>
                                 {member.active_membership ? (
                                   <div className="flex flex-col gap-1">
-                                    <Badge variant="destructive">Expired</Badge>
+                                    <Badge variant="destructive">{tMembership('expired')}</Badge>
                                     <span className="text-xs text-muted-foreground">
                                       {member.active_membership.member_number}
                                     </span>
                                     <span className="text-xs text-muted-foreground">
-                                      Ended: {new Date(member.active_membership.end_date).toLocaleDateString()}
+                                      {tMembership('ended')}: {new Date(member.active_membership.end_date).toLocaleDateString()}
                                     </span>
                                   </div>
                                 ) : (
-                                  <Badge variant="outline">No membership</Badge>
+                                  <Badge variant="outline">{tMembership('noMembership')}</Badge>
                                 )}
                               </TableCell>
                               <TableCell className="text-sm text-muted-foreground">
                                 {member.active_membership
                                   ? new Date(member.active_membership.end_date).toLocaleDateString()
-                                  : 'Never'}
+                                  : t('never')}
                               </TableCell>
                               <TableCell className="text-right">
                                 <div className="flex items-center justify-end gap-1">
@@ -896,9 +903,9 @@ export default async function MembersPage() {
             <TabsContent value="short-term">
               <Card>
                 <CardHeader>
-                  <CardTitle>Inactive Short-term Members</CardTitle>
+                  <CardTitle>{t('inactiveShortTermMembers')}</CardTitle>
                   <CardDescription>
-                    {inactiveShortTermMembers.length} inactive short-term {inactiveShortTermMembers.length === 1 ? 'member' : 'members'}
+                    {inactiveShortTermMembers.length} {tCommon('inactive')} {tMembership('category.shortTerm').toLowerCase()} {inactiveShortTermMembers.length === 1 ? t('member') : t('members')}
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -906,18 +913,18 @@ export default async function MembersPage() {
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead>Name</TableHead>
-                          <TableHead>Email</TableHead>
-                          <TableHead>Membership Status</TableHead>
-                          <TableHead>Last Active</TableHead>
-                          <TableHead className="text-right">Actions</TableHead>
+                          <TableHead>{tCommon('name')}</TableHead>
+                          <TableHead>{tCommon('email')}</TableHead>
+                          <TableHead>{tMembership('membershipStatus')}</TableHead>
+                          <TableHead>{tMembership('lastActive')}</TableHead>
+                          <TableHead className="text-right">{tCommon('actions')}</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {inactiveShortTermMembers.length === 0 ? (
                           <TableRow>
                             <TableCell colSpan={5} className="text-center text-muted-foreground">
-                              No inactive short-term members
+                              {t('noInactiveShortTermMembers')}
                             </TableCell>
                           </TableRow>
                         ) : (
@@ -930,22 +937,22 @@ export default async function MembersPage() {
                               <TableCell>
                                 {member.active_membership ? (
                                   <div className="flex flex-col gap-1">
-                                    <Badge variant="destructive">Expired</Badge>
+                                    <Badge variant="destructive">{tMembership('expired')}</Badge>
                                     <span className="text-xs text-muted-foreground">
                                       {member.active_membership.member_number}
                                     </span>
                                     <span className="text-xs text-muted-foreground">
-                                      Ended: {new Date(member.active_membership.end_date).toLocaleDateString()}
+                                      {tMembership('ended')}: {new Date(member.active_membership.end_date).toLocaleDateString()}
                                     </span>
                                   </div>
                                 ) : (
-                                  <Badge variant="outline">No membership</Badge>
+                                  <Badge variant="outline">{tMembership('noMembership')}</Badge>
                                 )}
                               </TableCell>
                               <TableCell className="text-sm text-muted-foreground">
                                 {member.active_membership
                                   ? new Date(member.active_membership.end_date).toLocaleDateString()
-                                  : 'Never'}
+                                  : t('never')}
                               </TableCell>
                               <TableCell className="text-right">
                                 <div className="flex items-center justify-end gap-1">
@@ -968,10 +975,9 @@ export default async function MembersPage() {
         <TabsContent value="functions" className="space-y-4">
           <Alert>
             <Shield className="h-4 w-4" />
-            <AlertTitle>Board Member Access</AlertTitle>
+            <AlertTitle>{t('boardMemberAccess')}</AlertTitle>
             <AlertDescription>
-              Manage member functions for classification and role assignment. These functions help
-              organize and categorize club members.
+              {t('boardMemberAccessDescription')}
             </AlertDescription>
           </Alert>
           <FunctionsSection functions={functions} />

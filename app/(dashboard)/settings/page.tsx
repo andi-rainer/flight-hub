@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
-import { redirect } from 'next/navigation'
+import { redirect } from '@/navigation'
+import { getTranslations } from 'next-intl/server'
 import { SettingsTabs } from './components/settings-tabs'
 import type { User } from '@/lib/database.types'
 
@@ -19,6 +20,7 @@ async function getCurrentUser(): Promise<User | null> {
 }
 
 export default async function SettingsPage() {
+  const t = await getTranslations('settings')
   const user = await getCurrentUser()
 
   if (!user) {
@@ -31,12 +33,9 @@ export default async function SettingsPage() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
+        <h1 className="text-3xl font-bold tracking-tight">{t('title')}</h1>
         <p className="text-muted-foreground">
-          {isBoardMember
-            ? 'Manage system configuration, documents, and organization settings'
-            : 'Manage your documents and notifications'
-          }
+          {isBoardMember ? t('boardDescription') : t('memberDescription')}
         </p>
       </div>
 

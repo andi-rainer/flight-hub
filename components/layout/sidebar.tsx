@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { useTranslations } from 'next-intl'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -26,7 +27,7 @@ import {
 } from 'lucide-react'
 
 interface NavItem {
-  title: string
+  titleKey: string
   href: string
   icon: React.ComponentType<{ className?: string }>
   badge?: string
@@ -41,56 +42,57 @@ interface SidebarProps {
 
 const navItems: NavItem[] = [
   {
-    title: 'Dashboard',
+    titleKey: 'dashboard',
     href: '/dashboard',
     icon: LayoutDashboard,
   },
   {
-    title: 'Aircrafts',
+    titleKey: 'aircrafts',
     href: '/aircrafts',
     icon: Plane,
   },
   {
-    title: 'Reservations',
+    titleKey: 'reservations',
     href: '/reservations',
     icon: Calendar,
   },
   {
-    title: 'Flight Log',
+    titleKey: 'flightLog',
     href: '/flightlog',
     icon: BookOpen,
   },
   {
-    title: 'Members',
+    titleKey: 'members',
     href: '/members',
     icon: Users,
     requiresBoard: true,
   },
   {
-    title: 'Billing',
+    titleKey: 'billing',
     href: '/billing',
     icon: CreditCard,
     requiresBoard: true,
   },
   {
-    title: 'Accounting',
+    titleKey: 'accounting',
     href: '/accounting',
     icon: Calculator,
     requiresBoard: true,
   },
   {
-    title: 'Documents',
+    titleKey: 'documents',
     href: '/documents',
     icon: FileText,
   },
   {
-    title: 'Settings',
+    titleKey: 'settings',
     href: '/settings',
     icon: Settings,
   },
 ]
 
 function SidebarContent({ user, onNavigate, collapsed, onToggle }: { user: User; onNavigate?: () => void; collapsed?: boolean; onToggle?: () => void }) {
+  const t = useTranslations('nav')
   const pathname = usePathname()
   const isBoardMember = user.role?.includes('board') ?? false
   const [pendingApprovalsCount, setPendingApprovalsCount] = useState(0)
@@ -190,7 +192,7 @@ function SidebarContent({ user, onNavigate, collapsed, onToggle }: { user: User;
       </div>
 
       {/* Navigation */}
-      <ScrollArea className="flex-1 px-3 py-4">
+      <ScrollArea className="flex-1 px-1 py-4">
         <nav className="space-y-1">
           {filteredNavItems.map((item) => {
             const Icon = item.icon
@@ -212,6 +214,8 @@ function SidebarContent({ user, onNavigate, collapsed, onToggle }: { user: User;
               badgeContent = item.badge
             }
 
+            const title = t(item.titleKey)
+
             return (
               <Link key={item.href} href={item.href} onClick={onNavigate}>
                 <Button
@@ -221,10 +225,10 @@ function SidebarContent({ user, onNavigate, collapsed, onToggle }: { user: User;
                     collapsed ? 'justify-center px-2' : 'justify-start',
                     isActive && 'bg-secondary font-medium'
                   )}
-                  title={collapsed ? item.title : undefined}
+                  title={collapsed ? title : undefined}
                 >
                   <Icon className="h-4 w-4 flex-shrink-0" />
-                  {!collapsed && <span className="flex-1 text-left">{item.title}</span>}
+                  {!collapsed && <span className="flex-1 text-left">{title}</span>}
                   {!collapsed && showBadge && (
                     badgeContent ? (
                       <Badge
@@ -267,7 +271,7 @@ function SidebarContent({ user, onNavigate, collapsed, onToggle }: { user: User;
               variant="ghost"
               size="icon"
               onClick={onToggle}
-              title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+              title={collapsed ? t('expandSidebar') : t('collapseSidebar')}
               className="h-8 w-8"
             >
               {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
@@ -308,6 +312,7 @@ export function Sidebar({ user }: SidebarProps) {
 }
 
 export function MobileSidebar({ user }: SidebarProps) {
+  const t = useTranslations('nav')
   const [open, setOpen] = useState(false)
 
   return (
@@ -315,7 +320,7 @@ export function MobileSidebar({ user }: SidebarProps) {
       <SheetTrigger asChild>
         <Button variant="ghost" size="icon" className="md:hidden">
           <Menu className="h-5 w-5" />
-          <span className="sr-only">Toggle menu</span>
+          <span className="sr-only">{t('toggleMenu')}</span>
         </Button>
       </SheetTrigger>
       <SheetContent side="left" className="p-0 w-64">

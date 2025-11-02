@@ -7,7 +7,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Bell, AlertCircle, CheckCircle2, Info, FileText } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { formatDistance } from 'date-fns'
-import Link from 'next/link'
+import { Link } from '@/navigation'
 import { MarkNotificationRead } from '../mark-notification-read'
 
 interface Notification {

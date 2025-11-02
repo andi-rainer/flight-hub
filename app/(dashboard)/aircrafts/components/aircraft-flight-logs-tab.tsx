@@ -4,9 +4,10 @@ import { Badge } from '@/components/ui/badge'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Button } from '@/components/ui/button'
 import { FileText, Lock, Download } from 'lucide-react'
-import Link from 'next/link'
+import { Link } from '@/navigation'
 import type { FlightlogWithTimes } from '@/lib/database.types'
 import { FlightLogsPagination } from './flight-logs-pagination'
+import { getTranslations } from 'next-intl/server'
 
 const LOGS_PER_PAGE = 20
 
@@ -54,6 +55,8 @@ interface AircraftFlightLogsTabProps {
 }
 
 export async function AircraftFlightLogsTab({ aircraftId, page = 1 }: AircraftFlightLogsTabProps) {
+  const t = await getTranslations()
+
   const { logs, totalCount } = await getFlightLogs(aircraftId, page)
   const totalPages = Math.ceil(totalCount / LOGS_PER_PAGE)
 
@@ -61,9 +64,9 @@ export async function AircraftFlightLogsTab({ aircraftId, page = 1 }: AircraftFl
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>Flight Logs</CardTitle>
+          <CardTitle>{t('aircrafts.flightLogs')}</CardTitle>
           <CardDescription>
-            View-only flight log history for this aircraft. Edit logs in the main Flightlog page.
+            {t('aircrafts.flightLogsDescription')}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -79,11 +82,11 @@ export async function AircraftFlightLogsTab({ aircraftId, page = 1 }: AircraftFl
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Date</TableHead>
+                      <TableHead>{t('common.date')}</TableHead>
                       <TableHead>Pilot</TableHead>
                       <TableHead>Copilot</TableHead>
-                      <TableHead>Block Time</TableHead>
-                      <TableHead>Flight Time</TableHead>
+                      <TableHead>{t('flightLog.blockTime')}</TableHead>
+                      <TableHead>{t('flightLog.flightTime')}</TableHead>
                       <TableHead>Fuel (L)</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>M&B</TableHead>
@@ -111,10 +114,10 @@ export async function AircraftFlightLogsTab({ aircraftId, page = 1 }: AircraftFl
                             {log.locked && (
                               <Badge variant="secondary">
                                 <Lock className="h-3 w-3 mr-1" />
-                                Locked
+                                {t('flightLog.locked')}
                               </Badge>
                             )}
-                            {log.charged && <Badge variant="default">Charged</Badge>}
+                            {log.charged && <Badge variant="default">{t('flightLog.charged')}</Badge>}
                           </div>
                         </TableCell>
                         <TableCell>

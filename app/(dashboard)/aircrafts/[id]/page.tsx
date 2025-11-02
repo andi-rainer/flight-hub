@@ -1,11 +1,12 @@
 import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
+import { getTranslations } from 'next-intl/server'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { AlertCircle, ArrowLeft, AlertTriangle, CheckCircle, Clock, Wrench } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import Link from 'next/link'
+import { Link } from '@/navigation'
 import { AircraftDetailsTab } from '../components/aircraft-details-tab'
 import { AircraftDocumentsTab } from '../components/aircraft-documents-tab'
 import { AircraftFlightLogsTab } from '../components/aircraft-flight-logs-tab'
@@ -101,12 +102,12 @@ function getDocumentExpiryStatus(expiryDate: string | null) {
   return 'ok'
 }
 
-function getMaintenanceStatusBadge(status?: string, hoursRemaining?: number | null) {
+function getMaintenanceStatusBadge(status?: string, hoursRemaining?: number | null, t?: any) {
   if (!status || status === 'not_scheduled') {
     return (
       <Badge variant="secondary" className="gap-1">
         <Clock className="h-3 w-3" />
-        MX Not Set
+        {t?.('mxNotSet') || 'MX Not Set'}
       </Badge>
     )
   }
@@ -116,32 +117,32 @@ function getMaintenanceStatusBadge(status?: string, hoursRemaining?: number | nu
       return (
         <Badge variant="default" className="gap-1 bg-green-600 hover:bg-green-700">
           <CheckCircle className="h-3 w-3" />
-          MX OK ({hoursRemaining?.toFixed(0)}h)
+          {t?.('mxOk') || 'MX OK'} ({hoursRemaining?.toFixed(0)}h)
         </Badge>
       )
     case 'warning':
       return (
         <Badge variant="default" className="gap-1 bg-yellow-600 hover:bg-yellow-700">
           <AlertTriangle className="h-3 w-3" />
-          MX Due Soon ({hoursRemaining?.toFixed(0)}h)
+          {t?.('mxDueSoon') || 'MX Due Soon'} ({hoursRemaining?.toFixed(0)}h)
         </Badge>
       )
     case 'critical':
       return (
         <Badge variant="default" className="gap-1 bg-orange-600 hover:bg-orange-700">
           <AlertTriangle className="h-3 w-3" />
-          MX Critical ({hoursRemaining?.toFixed(0)}h)
+          {t?.('mxCritical') || 'MX Critical'} ({hoursRemaining?.toFixed(0)}h)
         </Badge>
       )
     case 'overdue':
       return (
         <Badge variant="destructive" className="gap-1">
           <AlertTriangle className="h-3 w-3" />
-          MX Overdue
+          {t?.('mxOverdue') || 'MX Overdue'}
         </Badge>
       )
     default:
-      return <Badge variant="secondary">Unknown</Badge>
+      return <Badge variant="secondary">{t?.('unknown') || 'Unknown'}</Badge>
   }
 }
 
@@ -154,6 +155,9 @@ export default async function AircraftDetailPage({
 }) {
   const { id } = await params
   const { page: pageParam } = await searchParams
+
+  const t = await getTranslations('aircrafts')
+  const tCommon = await getTranslations('common')
 
   const [aircraft, currentUser, operationTypes, costCenters, aircraftWithMaintenance, maintenanceHistory] = await Promise.all([
     getAircraft(id),
@@ -184,7 +188,7 @@ export default async function AircraftDetailPage({
         <Button variant="ghost" size="sm" asChild className="mb-4">
           <Link href="/aircrafts">
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Aircrafts
+            {t('backToAircrafts')}
           </Link>
         </Button>
 
@@ -193,19 +197,20 @@ export default async function AircraftDetailPage({
             <div className="flex items-center gap-3 flex-wrap">
               <h1 className="text-3xl font-bold tracking-tight">{aircraft.tail_number}</h1>
               <Badge variant={aircraft.active ? 'default' : 'secondary'}>
-                {aircraft.active ? 'Active' : 'Inactive'}
+                {aircraft.active ? tCommon('active') : tCommon('inactive')}
               </Badge>
               {aircraftWithMaintenance?.data && (
                 getMaintenanceStatusBadge(
                   aircraftWithMaintenance.data.maintenance_status,
-                  aircraftWithMaintenance.data.hours_until_maintenance
+                  aircraftWithMaintenance.data.hours_until_maintenance,
+                  t
                 )
               )}
             </div>
             <p className="text-muted-foreground">{aircraft.type}</p>
             {aircraftWithMaintenance?.data?.total_flight_hours && (
               <p className="text-sm text-muted-foreground mt-1">
-                Total Hours: {aircraftWithMaintenance.data.total_flight_hours.toFixed(1)}
+                {t('totalHours')}: {aircraftWithMaintenance.data.total_flight_hours.toFixed(1)}
               </p>
             )}
           </div>
@@ -217,9 +222,10 @@ export default async function AircraftDetailPage({
         <Alert variant="destructive">
           <AlertTriangle className="h-4 w-4" />
           <AlertDescription>
-            <strong>Maintenance Overdue:</strong> This aircraft is{' '}
-            {Math.abs(aircraftWithMaintenance.data.hours_until_maintenance || 0).toFixed(1)} hours overdue for
-            maintenance. Operations should be restricted until maintenance is completed.
+            <strong>{t('maintenanceOverdue')}:</strong>{' '}
+            {t('maintenanceOverdueMessage', {
+              hours: Math.abs(aircraftWithMaintenance.data.hours_until_maintenance || 0).toFixed(1)
+            })}
           </AlertDescription>
         </Alert>
       )}
@@ -229,9 +235,10 @@ export default async function AircraftDetailPage({
         <Alert variant="destructive" className="border-orange-600 bg-orange-50">
           <AlertTriangle className="h-4 w-4 text-orange-800" />
           <AlertDescription className="text-orange-700">
-            <strong>Maintenance Critical:</strong> Only{' '}
-            {aircraftWithMaintenance.data.hours_until_maintenance?.toFixed(1)} hours remaining until maintenance is
-            due. Schedule maintenance soon.
+            <strong>{t('maintenanceCritical')}:</strong>{' '}
+            {t('maintenanceCriticalMessage', {
+              hours: aircraftWithMaintenance.data.hours_until_maintenance?.toFixed(1)
+            })}
           </AlertDescription>
         </Alert>
       )}
@@ -241,9 +248,12 @@ export default async function AircraftDetailPage({
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
-            <strong>Aircraft Grounded:</strong> This aircraft has {expiredBlockingDocs.length} expired
-            document{expiredBlockingDocs.length > 1 ? 's' : ''} that block operations:{' '}
-            {expiredBlockingDocs.map((doc) => doc.name).join(', ')}
+            <strong>{t('aircraftGrounded')}:</strong>{' '}
+            {t('aircraftGroundedMessage', {
+              count: expiredBlockingDocs.length,
+              plural: expiredBlockingDocs.length > 1 ? 's' : '',
+              documents: expiredBlockingDocs.map((doc) => doc.name).join(', ')
+            })}
           </AlertDescription>
         </Alert>
       )}
@@ -251,9 +261,9 @@ export default async function AircraftDetailPage({
       {/* Tabs */}
       <Tabs defaultValue="details" className="space-y-4">
         <TabsList>
-          <TabsTrigger value="details">Details</TabsTrigger>
+          <TabsTrigger value="details">{t('details')}</TabsTrigger>
           <TabsTrigger value="documents">
-            Documents
+            {t('documents')}
             {aircraft.documents.length > 0 && (
               <Badge variant="secondary" className="ml-2">
                 {aircraft.documents.length}
@@ -261,7 +271,7 @@ export default async function AircraftDetailPage({
             )}
           </TabsTrigger>
           <TabsTrigger value="maintenance">
-            Maintenance
+            {t('maintenance')}
             {aircraftWithMaintenance?.data?.maintenance_status && aircraftWithMaintenance.data.maintenance_status !== 'ok' && aircraftWithMaintenance.data.maintenance_status !== 'not_scheduled' && (
               <Badge
                 variant={aircraftWithMaintenance.data.maintenance_status === 'overdue' ? 'destructive' : 'secondary'}
@@ -271,9 +281,9 @@ export default async function AircraftDetailPage({
               </Badge>
             )}
           </TabsTrigger>
-          {isBoardMember && <TabsTrigger value="components">Components</TabsTrigger>}
-          <TabsTrigger value="flightlogs">Flight Logs</TabsTrigger>
-          {isBoardMember && <TabsTrigger value="billing">Billing</TabsTrigger>}
+          {isBoardMember && <TabsTrigger value="components">{t('components')}</TabsTrigger>}
+          <TabsTrigger value="flightlogs">{t('flightLogs')}</TabsTrigger>
+          {isBoardMember && <TabsTrigger value="billing">{t('billing')}</TabsTrigger>}
         </TabsList>
 
         <TabsContent value="details" className="space-y-4">
@@ -297,7 +307,7 @@ export default async function AircraftDetailPage({
             />
           ) : (
             <div className="text-center py-12">
-              <p className="text-muted-foreground">Unable to load maintenance data</p>
+              <p className="text-muted-foreground">{t('unableToLoadMaintenanceData')}</p>
             </div>
           )}
         </TabsContent>
@@ -313,7 +323,7 @@ export default async function AircraftDetailPage({
               />
             ) : (
               <div className="text-center py-12">
-                <p className="text-muted-foreground">Unable to load aircraft data</p>
+                <p className="text-muted-foreground">{t('unableToLoadAircraftData')}</p>
               </div>
             )}
           </TabsContent>

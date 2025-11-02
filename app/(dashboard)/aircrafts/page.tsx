@@ -1,10 +1,11 @@
 import { createClient } from '@/lib/supabase/server'
+import { getTranslations } from 'next-intl/server'
 import { Plane, User } from '@/lib/database.types'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import Link from 'next/link'
+import { Link } from '@/navigation'
 import { AircraftFilters } from './components/aircraft-filters'
 import { AddAircraftDialog } from './components/add-aircraft-dialog'
 import { Eye, AlertTriangle, CheckCircle, Clock, Wrench } from 'lucide-react'
@@ -88,12 +89,12 @@ async function getCurrentUser(): Promise<User | null> {
   return profile
 }
 
-function getMaintenanceStatusBadge(status?: string, hoursRemaining?: number | null) {
+function getMaintenanceStatusBadge(status?: string, hoursRemaining?: number | null, t?: any) {
   if (!status || status === 'not_scheduled') {
     return (
       <Badge variant="secondary" className="gap-1 text-xs">
         <Clock className="h-3 w-3" />
-        Not Set
+        {t?.('notSet') || 'Not Set'}
       </Badge>
     )
   }
@@ -124,11 +125,11 @@ function getMaintenanceStatusBadge(status?: string, hoursRemaining?: number | nu
       return (
         <Badge variant="destructive" className="gap-1 text-xs">
           <AlertTriangle className="h-3 w-3" />
-          Overdue
+          {t?.('overdue') || 'Overdue'}
         </Badge>
       )
     default:
-      return <Badge variant="secondary" className="text-xs">Unknown</Badge>
+      return <Badge variant="secondary" className="text-xs">{t?.('unknown') || 'Unknown'}</Badge>
   }
 }
 
@@ -137,6 +138,9 @@ export default async function AircraftsPage({
 }: {
   searchParams: { status?: string; search?: string }
 }) {
+  const t = await getTranslations('aircrafts')
+  const tCommon = await getTranslations('common')
+
   const [aircrafts, currentUser] = await Promise.all([
     getAircrafts(searchParams),
     getCurrentUser(),
@@ -148,8 +152,8 @@ export default async function AircraftsPage({
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Aircrafts</h1>
-          <p className="text-muted-foreground">Manage your fleet of aircraft</p>
+          <h1 className="text-3xl font-bold tracking-tight">{t('title')}</h1>
+          <p className="text-muted-foreground">{t('description')}</p>
         </div>
         {isBoardMember && <AddAircraftDialog />}
       </div>
@@ -161,24 +165,24 @@ export default async function AircraftsPage({
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Tail Number</TableHead>
-              <TableHead>Type</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Availability</TableHead>
+              <TableHead>{t('tailNumber')}</TableHead>
+              <TableHead>{t('type')}</TableHead>
+              <TableHead>{t('status')}</TableHead>
+              <TableHead>{t('availability')}</TableHead>
               <TableHead>
                 <div className="flex items-center gap-1">
                   <Wrench className="h-3 w-3" />
-                  Maintenance
+                  {t('maintenance')}
                 </div>
               </TableHead>
-              <TableHead className="text-right">Actions</TableHead>
+              <TableHead className="text-right">{t('actions')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {aircrafts.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={6} className="text-center text-muted-foreground">
-                  No aircrafts found
+                  {t('noAircraftsFound')}
                 </TableCell>
               </TableRow>
             ) : (
@@ -188,22 +192,22 @@ export default async function AircraftsPage({
                   <TableCell>{aircraft.type}</TableCell>
                   <TableCell>
                     <Badge variant={aircraft.active ? 'default' : 'secondary'}>
-                      {aircraft.active ? 'Active' : 'Inactive'}
+                      {aircraft.active ? tCommon('active') : tCommon('inactive')}
                     </Badge>
                   </TableCell>
                   <TableCell>
                     <Badge variant={aircraft.isAvailable ? 'outline' : 'destructive'}>
-                      {aircraft.isAvailable ? 'Available' : 'Reserved'}
+                      {aircraft.isAvailable ? t('available') : t('reserved')}
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    {getMaintenanceStatusBadge(aircraft.maintenance_status, aircraft.hours_until_maintenance)}
+                    {getMaintenanceStatusBadge(aircraft.maintenance_status, aircraft.hours_until_maintenance, t)}
                   </TableCell>
                   <TableCell className="text-right">
                     <Button variant="ghost" size="sm" asChild>
                       <Link href={`/aircrafts/${aircraft.id}`}>
                         <Eye className="h-4 w-4 mr-2" />
-                        View Details
+                        {t('viewDetails')}
                       </Link>
                     </Button>
                   </TableCell>
@@ -219,7 +223,7 @@ export default async function AircraftsPage({
         {aircrafts.length === 0 ? (
           <Card>
             <CardContent className="pt-6 text-center text-muted-foreground">
-              No aircrafts found
+              {t('noAircraftsFound')}
             </CardContent>
           </Card>
         ) : (
@@ -233,12 +237,12 @@ export default async function AircraftsPage({
                   </div>
                   <div className="flex flex-col gap-2">
                     <Badge variant={aircraft.active ? 'default' : 'secondary'}>
-                      {aircraft.active ? 'Active' : 'Inactive'}
+                      {aircraft.active ? tCommon('active') : tCommon('inactive')}
                     </Badge>
                     <Badge variant={aircraft.isAvailable ? 'outline' : 'destructive'}>
-                      {aircraft.isAvailable ? 'Available' : 'Reserved'}
+                      {aircraft.isAvailable ? t('available') : t('reserved')}
                     </Badge>
-                    {getMaintenanceStatusBadge(aircraft.maintenance_status, aircraft.hours_until_maintenance)}
+                    {getMaintenanceStatusBadge(aircraft.maintenance_status, aircraft.hours_until_maintenance, t)}
                   </div>
                 </div>
               </CardHeader>
@@ -246,7 +250,7 @@ export default async function AircraftsPage({
                 <Button variant="outline" size="sm" asChild className="w-full">
                   <Link href={`/aircrafts/${aircraft.id}`}>
                     <Eye className="h-4 w-4 mr-2" />
-                    View Details
+                    {t('viewDetails')}
                   </Link>
                 </Button>
               </CardContent>

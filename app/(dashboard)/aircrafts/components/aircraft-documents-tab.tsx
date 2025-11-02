@@ -8,6 +8,7 @@ import { FileText, Upload, Download, Trash2, Check, X } from 'lucide-react'
 import type { Plane, Document as AircraftDocument } from '@/lib/database.types'
 import { DocumentUploadDialog } from './document-upload-dialog'
 import { DocumentRow } from './document-row'
+import { useTranslations } from 'next-intl'
 
 interface AircraftDocumentsTabProps {
   aircraft: Plane
@@ -29,14 +30,16 @@ function getDocumentExpiryStatus(expiryDate: string | null) {
 }
 
 export function AircraftDocumentsTab({ aircraft, documents, isBoardMember }: AircraftDocumentsTabProps) {
+  const t = useTranslations('aircrafts')
+
   return (
     <div className="space-y-6">
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle>Aircraft Documents</CardTitle>
-              <CardDescription>Manage documents for this aircraft</CardDescription>
+              <CardTitle>{t('aircraftDocuments')}</CardTitle>
+              <CardDescription>{t('manageDocumentsForAircraft')}</CardDescription>
             </div>
             {isBoardMember && <DocumentUploadDialog aircraftId={aircraft.id} />}
           </div>
@@ -45,10 +48,10 @@ export function AircraftDocumentsTab({ aircraft, documents, isBoardMember }: Air
           {documents.length === 0 ? (
             <div className="text-center py-12">
               <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-              <p className="text-muted-foreground">No documents uploaded yet</p>
+              <p className="text-muted-foreground">{t('noDocumentsUploadedYet')}</p>
               {isBoardMember && (
                 <p className="text-sm text-muted-foreground mt-2">
-                  Click the upload button to add documents
+                  {t('clickUploadButton')}
                 </p>
               )}
             </div>
@@ -59,12 +62,12 @@ export function AircraftDocumentsTab({ aircraft, documents, isBoardMember }: Air
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Tags</TableHead>
-                      <TableHead>Upload Date</TableHead>
-                      <TableHead>Expiry Date</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
+                      <TableHead>{t('name')}</TableHead>
+                      <TableHead>{t('tags')}</TableHead>
+                      <TableHead>{t('uploadDate')}</TableHead>
+                      <TableHead>{t('expiryDate')}</TableHead>
+                      <TableHead>{t('status')}</TableHead>
+                      <TableHead className="text-right">{t('actions')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -91,12 +94,12 @@ export function AircraftDocumentsTab({ aircraft, documents, isBoardMember }: Air
                           <div className="flex-1">
                             <CardTitle className="text-base">{document.name}</CardTitle>
                             <CardDescription className="text-xs">
-                              Uploaded: {new Date(document.uploaded_at).toLocaleDateString()}
+                              {t('uploaded')}: {new Date(document.uploaded_at).toLocaleDateString()}
                             </CardDescription>
                           </div>
                           {document.blocks_aircraft && (
                             <Badge variant="destructive" className="text-xs">
-                              Blocks Aircraft
+                              {t('blocksAircraft')}
                             </Badge>
                           )}
                         </div>
@@ -113,7 +116,7 @@ export function AircraftDocumentsTab({ aircraft, documents, isBoardMember }: Air
                         )}
                         {document.expiry_date && (
                           <div>
-                            <p className="text-xs text-muted-foreground">Expires:</p>
+                            <p className="text-xs text-muted-foreground">{t('expires')}:</p>
                             <p
                               className={`text-sm font-medium ${
                                 expiryStatus === 'expired' || expiryStatus === 'critical'
@@ -129,14 +132,14 @@ export function AircraftDocumentsTab({ aircraft, documents, isBoardMember }: Air
                         )}
                         <div className="flex items-center gap-2">
                           <Badge variant={document.approved ? 'default' : 'secondary'}>
-                            {document.approved ? 'Approved' : 'Pending'}
+                            {document.approved ? t('approved') : t('pending')}
                           </Badge>
                         </div>
                         <div className="flex gap-2">
                           <Button variant="outline" size="sm" asChild className="flex-1">
                             <a href={document.file_url} download target="_blank" rel="noopener noreferrer">
                               <Download className="h-3 w-3 mr-1" />
-                              Download
+                              {t('download')}
                             </a>
                           </Button>
                           {isBoardMember && (

@@ -1,6 +1,6 @@
 import { Suspense } from 'react'
 import { getUserProfile } from '@/lib/supabase/server'
-import { redirect } from 'next/navigation'
+import { redirect } from '@/navigation'
 import { ReservationsContent } from './reservations-content'
 import { Loader2 } from 'lucide-react'
 

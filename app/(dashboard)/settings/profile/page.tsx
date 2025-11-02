@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
-import { redirect } from 'next/navigation'
+import { redirect } from '@/navigation'
 import { UserProfileSection } from './user-profile-section'
 import type { User } from '@/lib/database.types'
 

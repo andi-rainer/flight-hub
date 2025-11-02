@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useTranslations } from 'next-intl'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -30,6 +31,7 @@ type AircraftWithMaintenance = Pick<Plane, 'id' | 'tail_number' | 'type' | 'colo
 }
 
 export function ReservationsContent({ userId, isBoardMember }: ReservationsContentProps) {
+  const t = useTranslations('reservations')
   const [reservations, setReservations] = useState<ActiveReservation[]>([])
   const [aircraft, setAircraft] = useState<AircraftWithMaintenance[]>([])
   const [filteredReservations, setFilteredReservations] = useState<ActiveReservation[]>([])
@@ -86,14 +88,14 @@ export function ReservationsContent({ userId, isBoardMember }: ReservationsConte
     ])
 
     if (reservationsResult.error) {
-      toast.error('Failed to load reservations')
+      toast.error(t('failedToLoadReservations'))
       console.error(reservationsResult.error)
     } else {
       setReservations(reservationsResult.data || [])
     }
 
     if (aircraftResult.error) {
-      toast.error('Failed to load aircraft')
+      toast.error(t('failedToLoadAircraft'))
       console.error(aircraftResult.error)
     } else {
       setAircraft(aircraftResult.data || [])
@@ -158,10 +160,10 @@ export function ReservationsContent({ userId, isBoardMember }: ReservationsConte
             <Filter className="h-4 w-4 text-muted-foreground" />
             <Select value={selectedAircraft} onValueChange={setSelectedAircraft}>
               <SelectTrigger className="w-[200px]">
-                <SelectValue placeholder="Filter by aircraft" />
+                <SelectValue placeholder={t('filterByAircraft')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Aircraft</SelectItem>
+                <SelectItem value="all">{t('allAircraft')}</SelectItem>
                 {aircraft.map((plane) => (
                   <SelectItem key={plane.id} value={plane.id}>
                     {plane.tail_number} - {plane.type}
@@ -175,19 +177,19 @@ export function ReservationsContent({ userId, isBoardMember }: ReservationsConte
           <div className="flex flex-wrap gap-3 items-center">
             <div className="flex items-center gap-1.5">
               <div className="h-3 w-3 rounded bg-blue-500" />
-              <span className="text-xs text-muted-foreground">Active</span>
+              <span className="text-xs text-muted-foreground">{t('active')}</span>
             </div>
             <div className="flex items-center gap-1.5">
               <div className="h-3 w-3 rounded bg-amber-500 border border-dashed border-amber-600" style={{backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 3px, rgba(0,0,0,.15) 3px, rgba(0,0,0,.15) 6px)'}} />
-              <span className="text-xs text-muted-foreground">Standby</span>
+              <span className="text-xs text-muted-foreground">{t('standby')}</span>
             </div>
             <div className="flex items-center gap-1.5">
               <div className="h-3 w-3 rounded bg-purple-500 border border-purple-400" />
-              <span className="text-xs text-muted-foreground">Priority</span>
+              <span className="text-xs text-muted-foreground">{t('priority')}</span>
             </div>
             <div className="flex items-center gap-1.5">
               <div className="h-3 w-3 rounded bg-gray-500 opacity-60" />
-              <span className="text-xs text-muted-foreground">Cancelled</span>
+              <span className="text-xs text-muted-foreground">{t('cancelled')}</span>
             </div>
           </div>
         </div>
@@ -204,7 +206,7 @@ export function ReservationsContent({ userId, isBoardMember }: ReservationsConte
           }}
         >
           <Plus className="mr-2 h-4 w-4" />
-          New Reservation
+          {t('newReservation')}
         </Button>
       </div>
 
