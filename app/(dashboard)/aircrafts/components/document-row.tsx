@@ -14,9 +14,9 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Download, Trash2, Check, X, Edit2, AlertTriangle } from 'lucide-react'
+import { Download, Trash2, Edit2, AlertTriangle } from 'lucide-react'
 import type { Document as AircraftDocument } from '@/lib/database.types'
-import { deleteAircraftDocument, toggleDocumentApproval, updateDocumentName } from '../actions'
+import { deleteAircraftDocument, updateDocumentName } from '../actions'
 import { useRouter } from 'next/navigation'
 import {
   DropdownMenu,
@@ -64,13 +64,6 @@ export function DocumentRow({ document, aircraftId, isBoardMember, mobileView = 
     })
   }
 
-  const handleApprovalToggle = async () => {
-    startTransition(async () => {
-      await toggleDocumentApproval(document.id, aircraftId, !document.approved)
-      router.refresh()
-    })
-  }
-
   const handleRename = async () => {
     if (!newName.trim()) return
 
@@ -92,19 +85,6 @@ export function DocumentRow({ document, aircraftId, isBoardMember, mobileView = 
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={handleApprovalToggle} disabled={isPending}>
-              {document.approved ? (
-                <>
-                  <X className="h-4 w-4 mr-2" />
-                  Unapprove
-                </>
-              ) : (
-                <>
-                  <Check className="h-4 w-4 mr-2" />
-                  Approve
-                </>
-              )}
-            </DropdownMenuItem>
             <DropdownMenuItem onClick={() => setRenameDialogOpen(true)}>
               <Edit2 className="h-4 w-4 mr-2" />
               Rename
@@ -221,11 +201,6 @@ export function DocumentRow({ document, aircraftId, isBoardMember, mobileView = 
             <span className="text-muted-foreground text-sm">No expiry</span>
           )}
         </TableCell>
-        <TableCell>
-          <Badge variant={document.approved ? 'default' : 'secondary'}>
-            {document.approved ? 'Approved' : 'Pending'}
-          </Badge>
-        </TableCell>
         <TableCell className="text-right">
           <div className="flex items-center justify-end gap-2">
             <Button variant="ghost" size="sm" asChild>
@@ -235,19 +210,6 @@ export function DocumentRow({ document, aircraftId, isBoardMember, mobileView = 
             </Button>
             {isBoardMember && (
               <>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleApprovalToggle}
-                  disabled={isPending}
-                  title={document.approved ? 'Unapprove' : 'Approve'}
-                >
-                  {document.approved ? (
-                    <X className="h-4 w-4" />
-                  ) : (
-                    <Check className="h-4 w-4" />
-                  )}
-                </Button>
                 <Button
                   variant="ghost"
                   size="sm"

@@ -298,18 +298,6 @@ export async function updateMemberProfile(userId: string, data: {
     return { success: false, error: 'Not authorized - board members only' }
   }
 
-  // Validate required address fields if any address field is being updated
-  if (data.street !== undefined || data.house_number !== undefined ||
-      data.city !== undefined || data.zip !== undefined || data.country !== undefined) {
-    if (!data.street?.trim() || !data.house_number?.trim() ||
-        !data.city?.trim() || !data.zip?.trim() || !data.country?.trim()) {
-      return {
-        success: false,
-        error: 'All address fields are required: Street, House Number, City, ZIP, and Country'
-      }
-    }
-  }
-
   // Validate email is not empty if being updated
   if (data.email !== undefined && !data.email?.trim()) {
     return { success: false, error: 'Email cannot be empty' }

@@ -319,9 +319,5 @@ INSERT INTO public.airports (icao_code, airport_name, notes) VALUES
     ('LOWI', 'Innsbruck Airport', 'Alpine airport'),
     ('LOWG', 'Graz Airport', 'Regional airport'),
     ('LOWK', 'Klagenfurt Airport', 'Carinthian airport'),
-    ('LOWL', 'Linz Airport', 'Upper Austrian airport'),
-    ('LOXL', 'Linz-Hörsching Air Base', 'Military and general aviation'),
-    ('LOAN', 'Wiener Neustadt East Airport', 'General aviation'),
-    ('LOKW', 'Wels Airport', 'General aviation'),
-    ('LOLW', 'Wels-Flugplatz', 'Small general aviation')
+    ('LOWL', 'Linz Airport', 'Upper Austrian airport')
 ON CONFLICT (icao_code) DO NOTHING;

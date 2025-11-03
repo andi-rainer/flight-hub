@@ -137,18 +137,32 @@ export async function deleteMembershipType(id: string) {
     return { success: false, error: 'Not authorized - board members only' }
   }
 
-  // Check if any users have this membership type
+  // Check if any users have this membership type as ACTIVE
   const { data: usersWithMembership } = await supabase
     .from('user_memberships')
     .select('id')
     .eq('membership_type_id', id)
+    .eq('status', 'active')
     .limit(1)
 
   if (usersWithMembership && usersWithMembership.length > 0) {
     return {
       success: false,
-      error: 'Cannot delete membership type - it is assigned to one or more users'
+      error: 'Cannot delete membership type - it is currently assigned to one or more active users'
     }
+  }
+
+  // Set membership_type_id to NULL for all inactive memberships to preserve history
+  // but remove the foreign key reference that would block deletion
+  const { error: unlinkError } = await supabase
+    .from('user_memberships')
+    .update({ membership_type_id: null })
+    .eq('membership_type_id', id)
+    .neq('status', 'active')
+
+  if (unlinkError) {
+    console.error('Error unlinking inactive memberships:', unlinkError)
+    return { success: false, error: 'Failed to unlink historical membership records' }
   }
 
   // Delete membership type

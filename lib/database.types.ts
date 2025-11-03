@@ -514,6 +514,7 @@ export type Database = {
           default_tbo_hours: number
           description: string | null
           id: string
+          is_common: boolean | null
           manufacturer: string | null
           model: string | null
           notes: string | null
@@ -526,6 +527,7 @@ export type Database = {
           default_tbo_hours: number
           description?: string | null
           id?: string
+          is_common?: boolean | null
           manufacturer?: string | null
           model?: string | null
           notes?: string | null
@@ -538,6 +540,7 @@ export type Database = {
           default_tbo_hours?: number
           description?: string | null
           id?: string
+          is_common?: boolean | null
           manufacturer?: string | null
           model?: string | null
           notes?: string | null
@@ -728,10 +731,8 @@ export type Database = {
         Row: {
           category: string | null
           created_at: string
-          default_validity_months: number | null
           description: string | null
           expires: boolean
-          expiry_type: string | null
           id: string
           mandatory: boolean
           name: string
@@ -741,10 +742,8 @@ export type Database = {
         Insert: {
           category?: string | null
           created_at?: string
-          default_validity_months?: number | null
           description?: string | null
           expires?: boolean
-          expiry_type?: string | null
           id?: string
           mandatory?: boolean
           name: string
@@ -754,10 +753,8 @@ export type Database = {
         Update: {
           category?: string | null
           created_at?: string
-          default_validity_months?: number | null
           description?: string | null
           expires?: boolean
-          expiry_type?: string | null
           id?: string
           mandatory?: boolean
           name?: string
@@ -1214,7 +1211,7 @@ export type Database = {
         Row: {
           cost: number | null
           created_at: string | null
-          description: string
+          description: string | null
           hobbs_hours: number | null
           id: string
           maintenance_type: string
@@ -1231,7 +1228,7 @@ export type Database = {
         Insert: {
           cost?: number | null
           created_at?: string | null
-          description: string
+          description?: string | null
           hobbs_hours?: number | null
           id?: string
           maintenance_type: string
@@ -1248,7 +1245,7 @@ export type Database = {
         Update: {
           cost?: number | null
           created_at?: string | null
-          description?: string
+          description?: string | null
           hobbs_hours?: number | null
           id?: string
           maintenance_type?: string
@@ -2410,6 +2407,7 @@ export type Database = {
           notes: string | null
           part_number: string | null
           percent_remaining: number | null
+          percentage_used: number | null
           plane_id: string | null
           position: string | null
           removal_mx_record_id: string | null
@@ -2421,6 +2419,7 @@ export type Database = {
           status_color: string | null
           tail_number: string | null
           tbo_hours: number | null
+          tbo_status: string | null
           updated_at: string | null
         }
         Relationships: [
@@ -3116,7 +3115,6 @@ export type Database = {
           document_type_name: string | null
           expiry_date: string | null
           expiry_status: string | null
-          expiry_type: string | null
           file_url: string | null
           id: string | null
           name: string | null
@@ -3327,7 +3325,12 @@ export type Database = {
       }
     }
     Enums: {
-      component_status: "installed" | "removed" | "maintenance" | "scrapped"
+      component_status:
+        | "active"
+        | "installed"
+        | "removed"
+        | "maintenance"
+        | "scrapped"
       component_type:
         | "engine"
         | "propeller"
@@ -3465,7 +3468,13 @@ export const Constants = {
   },
   public: {
     Enums: {
-      component_status: ["installed", "removed", "maintenance", "scrapped"],
+      component_status: [
+        "active",
+        "installed",
+        "removed",
+        "maintenance",
+        "scrapped",
+      ],
       component_type: [
         "engine",
         "propeller",

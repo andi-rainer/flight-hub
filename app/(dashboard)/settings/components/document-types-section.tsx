@@ -56,8 +56,6 @@ export function DocumentTypesSection() {
     category: '',
     mandatory: false,
     expires: false,
-    expiry_type: 'DATE',
-    default_validity_months: '',
     required_for_functions: [] as string[],
   })
 
@@ -97,8 +95,6 @@ export function DocumentTypesSection() {
       category: '',
       mandatory: false,
       expires: false,
-      expiry_type: 'DATE',
-      default_validity_months: '',
       required_for_functions: [],
     })
   }
@@ -111,12 +107,7 @@ export function DocumentTypesSection() {
       const response = await fetch('/api/documents/types', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...formData,
-          default_validity_months: formData.default_validity_months
-            ? parseInt(formData.default_validity_months)
-            : null,
-        }),
+        body: JSON.stringify(formData),
       })
 
       if (response.ok) {
@@ -146,12 +137,7 @@ export function DocumentTypesSection() {
       const response = await fetch(`/api/documents/types?id=${editingDocType.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...formData,
-          default_validity_months: formData.default_validity_months
-            ? parseInt(formData.default_validity_months)
-            : null,
-        }),
+        body: JSON.stringify(formData),
       })
 
       if (response.ok) {
@@ -198,8 +184,6 @@ export function DocumentTypesSection() {
       category: docType.category || '',
       mandatory: docType.mandatory,
       expires: docType.expires,
-      expiry_type: docType.expiry_type || 'DATE',
-      default_validity_months: docType.default_validity_months?.toString() || '',
       required_for_functions: docType.required_for_functions || [],
     })
   }
@@ -318,44 +302,13 @@ export function DocumentTypesSection() {
                         }
                       />
                       <Label htmlFor="expires" className="font-normal cursor-pointer">
-                        This document expires
+                        This document has an expiry date
                       </Label>
                     </div>
-
                     {formData.expires && (
-                      <>
-                        <div className="space-y-2">
-                          <Label htmlFor="expiry_type">Expiry Type</Label>
-                          <Select
-                            value={formData.expiry_type}
-                            onValueChange={(value) => setFormData({ ...formData, expiry_type: value })}
-                          >
-                            <SelectTrigger id="expiry_type">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="DATE">Specific Date</SelectItem>
-                              <SelectItem value="DURATION">Duration from Upload</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-
-                        {formData.expiry_type === 'DURATION' && (
-                          <div className="space-y-2">
-                            <Label htmlFor="validity_months">Default Validity (Months)</Label>
-                            <Input
-                              id="validity_months"
-                              type="number"
-                              min="1"
-                              placeholder="12"
-                              value={formData.default_validity_months}
-                              onChange={(e) =>
-                                setFormData({ ...formData, default_validity_months: e.target.value })
-                              }
-                            />
-                          </div>
-                        )}
-                      </>
+                      <p className="text-xs text-muted-foreground">
+                        Users will need to provide an expiry date when uploading this document type
+                      </p>
                     )}
 
                     <div className="space-y-2">
@@ -438,13 +391,9 @@ export function DocumentTypesSection() {
                       </TableCell>
                       <TableCell>
                         {docType.expires ? (
-                          <Badge variant="secondary">
-                            {docType.expiry_type === 'DURATION'
-                              ? `${docType.default_validity_months}mo`
-                              : 'Date'}
-                          </Badge>
+                          <Badge variant="secondary">Yes</Badge>
                         ) : (
-                          '—'
+                          <Badge variant="outline">No</Badge>
                         )}
                       </TableCell>
                       <TableCell className="text-sm">
@@ -528,50 +477,13 @@ export function DocumentTypesSection() {
                                       }
                                     />
                                     <Label htmlFor="edit-expires" className="font-normal cursor-pointer">
-                                      This document expires
+                                      This document has an expiry date
                                     </Label>
                                   </div>
-
                                   {formData.expires && (
-                                    <>
-                                      <div className="space-y-2">
-                                        <Label htmlFor="edit-expiry_type">Expiry Type</Label>
-                                        <Select
-                                          value={formData.expiry_type}
-                                          onValueChange={(value) =>
-                                            setFormData({ ...formData, expiry_type: value })
-                                          }
-                                        >
-                                          <SelectTrigger id="edit-expiry_type">
-                                            <SelectValue />
-                                          </SelectTrigger>
-                                          <SelectContent>
-                                            <SelectItem value="DATE">Specific Date</SelectItem>
-                                            <SelectItem value="DURATION">Duration from Upload</SelectItem>
-                                          </SelectContent>
-                                        </Select>
-                                      </div>
-
-                                      {formData.expiry_type === 'DURATION' && (
-                                        <div className="space-y-2">
-                                          <Label htmlFor="edit-validity_months">
-                                            Default Validity (Months)
-                                          </Label>
-                                          <Input
-                                            id="edit-validity_months"
-                                            type="number"
-                                            min="1"
-                                            value={formData.default_validity_months}
-                                            onChange={(e) =>
-                                              setFormData({
-                                                ...formData,
-                                                default_validity_months: e.target.value,
-                                              })
-                                            }
-                                          />
-                                        </div>
-                                      )}
-                                    </>
+                                    <p className="text-xs text-muted-foreground">
+                                      Users will need to provide an expiry date when uploading this document type
+                                    </p>
                                   )}
 
                                   <div className="space-y-2">

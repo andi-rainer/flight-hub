@@ -24,6 +24,7 @@ interface UserWithDocuments extends User {
   mandatory_uploaded: number
   mandatory_required: number
   active_membership: UserMembershipWithType | null
+  last_membership: UserMembershipWithType | null
   is_active: boolean
 }
 
@@ -46,6 +47,7 @@ async function getMembers(): Promise<UserWithDocuments[]> {
   const supabase = await createClient()
 
   // Get all users with their documents, document types, and active memberships
+  // Exclude deleted users (those with @deleted.local emails)
   const [usersResult, documentTypesResult, userFunctionsResult] = await Promise.all([
     supabase
       .from('users')
@@ -53,6 +55,7 @@ async function getMembers(): Promise<UserWithDocuments[]> {
         *,
         documents:documents!documents_user_id_fkey(*)
       `)
+      .not('email', 'like', '%@deleted.local')
       .order('name', { ascending: true }),
     supabase
       .from('document_types')
@@ -96,18 +99,35 @@ async function getMembers(): Promise<UserWithDocuments[]> {
   }
 
   // Fetch active memberships for all users
-  const { data: memberships } = await supabase
+  const { data: activeMemberships } = await supabase
     .from('user_memberships')
     .select('*, membership_types(*)')
     .eq('status', 'active')
     .order('end_date', { ascending: false })
 
+  // Fetch last membership for ALL users (for inactive categorization)
+  const { data: allMemberships } = await supabase
+    .from('user_memberships')
+    .select('*, membership_types(*)')
+    .order('end_date', { ascending: false })
+
   const membershipsMap = new Map<string, UserMembershipWithType>()
-  if (memberships) {
-    for (const membership of memberships) {
+  const lastMembershipMap = new Map<string, UserMembershipWithType>()
+
+  if (activeMemberships) {
+    for (const membership of activeMemberships) {
       // Keep only the first (latest) active membership per user
       if (!membershipsMap.has(membership.user_id)) {
         membershipsMap.set(membership.user_id, membership as UserMembershipWithType)
+      }
+    }
+  }
+
+  if (allMemberships) {
+    for (const membership of allMemberships) {
+      // Keep only the most recent membership per user (for inactive categorization)
+      if (!lastMembershipMap.has(membership.user_id)) {
+        lastMembershipMap.set(membership.user_id, membership as UserMembershipWithType)
       }
     }
   }
@@ -121,6 +141,7 @@ async function getMembers(): Promise<UserWithDocuments[]> {
     const userFunctionCodes = userFunctionCodesMap.get(user.id) || []
     const userFunctionNames = userFunctionNamesMap.get(user.id) || []
     const activeMembership = membershipsMap.get(user.id)
+    const lastMembership = lastMembershipMap.get(user.id)
 
     // Override the old functions field with new function IDs
     const userWithFunctions = {
@@ -211,6 +232,7 @@ async function getMembers(): Promise<UserWithDocuments[]> {
       mandatory_uploaded: uploadedMandatoryCount,
       mandatory_required: mandatoryCount,
       active_membership: activeMembership || null,
+      last_membership: lastMembership || null,
       is_active: isActive,
     }
   })
@@ -372,12 +394,12 @@ export default async function MembersPage() {
     m.active_membership?.membership_types?.member_category === 'short-term'
   )
 
-  // Filter inactive members by category
+  // Filter inactive members by category (based on their last membership)
   const inactiveRegularMembers = inactiveMembers.filter(m =>
-    m.active_membership?.membership_types?.member_category === 'regular'
+    m.last_membership?.membership_types?.member_category === 'regular'
   )
   const inactiveShortTermMembers = inactiveMembers.filter(m =>
-    m.active_membership?.membership_types?.member_category === 'short-term'
+    m.last_membership?.membership_types?.member_category === 'short-term'
   )
 
   return (

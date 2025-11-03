@@ -59,8 +59,9 @@ export async function GET(request: NextRequest) {
     }
 
     // Filter by function codes (if specified)
+    // Use overlaps to match users with ANY of the specified functions
     if (functionCodes.length > 0) {
-      dbQuery = dbQuery.contains('function_codes', functionCodes)
+      dbQuery = dbQuery.overlaps('function_codes', functionCodes)
     }
 
     // Filter by membership category

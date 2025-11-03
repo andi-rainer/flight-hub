@@ -292,3 +292,11 @@ INSERT INTO public.system_settings (key, value, description) VALUES
     ('tandem_registration_password', '""'::jsonb, 'Password required to access the tandem registration form'),
     ('tandem_registration_custom_fields', '[]'::jsonb, 'Custom text fields and checkboxes for the tandem registration form')
 ON CONFLICT (key) DO NOTHING;
+
+-- =====================================================
+-- 10. SEED DATA: SAMPLE MEMBERSHIP TYPES
+-- =====================================================
+
+INSERT INTO public.membership_types (name, description, duration_value, duration_unit, price, member_category, member_number_prefix, active) VALUES
+    ('Regular Membership', 'Full year membership with all benefits', 1, 'years', 500.00, 'regular', 'M', true)
+ON CONFLICT DO NOTHING;

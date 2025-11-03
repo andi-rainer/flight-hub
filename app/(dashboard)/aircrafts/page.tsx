@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { getTranslations } from 'next-intl/server'
+import { redirect } from 'next/navigation'
 import { Plane, User } from '@/lib/database.types'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -136,15 +137,23 @@ function getMaintenanceStatusBadge(status?: string, hoursRemaining?: number | nu
 export default async function AircraftsPage({
   searchParams,
 }: {
-  searchParams: { status?: string; search?: string }
+  searchParams: Promise<{ status?: string; search?: string }>
 }) {
   const t = await getTranslations('aircrafts')
   const tCommon = await getTranslations('common')
 
+  // Await searchParams before using it (Next.js 15)
+  const params = await searchParams
+
   const [aircrafts, currentUser] = await Promise.all([
-    getAircrafts(searchParams),
+    getAircrafts(params),
     getCurrentUser(),
   ])
+
+  // If exactly one aircraft is visible, redirect to it directly
+  if (aircrafts.length === 1) {
+    redirect(`/aircrafts/${aircrafts[0].id}`)
+  }
 
   const isBoardMember = currentUser?.role?.includes('board') ?? false
 

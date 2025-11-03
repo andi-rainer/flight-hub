@@ -468,18 +468,16 @@ export function FlightlogDialog({
             </div>
           </div>
 
-          {/* Pilot Selection (Board members only) */}
-          {isBoardMember ? (
-            <PersonSelector
-              context={PERSON_SELECTOR_CONTEXTS.PILOT_IN_COMMAND}
-              value={pilotId}
-              onChange={(userId) => setPilotId(userId || currentUserId)}
-              label="Pilot"
-              placeholder="Select pilot..."
-              required
-              disabled={isPending || (isEditMode && !canEdit)}
-            />
-          ) : null}
+          {/* Pilot Selection */}
+          <PersonSelector
+            context={PERSON_SELECTOR_CONTEXTS.PILOT_IN_COMMAND}
+            value={pilotId}
+            onChange={(userId) => setPilotId(userId || currentUserId)}
+            label="Pilot"
+            placeholder="Select pilot..."
+            required
+            disabled={isPending || (isEditMode && !canEdit)}
+          />
 
           {/* Additional Crewmember Selection */}
           <div className="space-y-2">

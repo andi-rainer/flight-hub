@@ -26,10 +26,8 @@ CREATE TABLE IF NOT EXISTS public.maintenance_records (
     performed_by UUID REFERENCES public.users(id) ON DELETE SET NULL,
 
     -- What was done
-    maintenance_type TEXT NOT NULL CHECK (maintenance_type IN (
-        'inspection', 'repair', 'modification', 'service', 'component_replacement', 'other'
-    )),
-    description TEXT NOT NULL,
+    maintenance_type TEXT NOT NULL,
+    description TEXT,
 
     -- Next due
     next_due_hours NUMERIC(10, 2),
@@ -40,9 +38,7 @@ CREATE TABLE IF NOT EXISTS public.maintenance_records (
 
     notes TEXT,
     created_at TIMESTAMPTZ DEFAULT NOW(),
-    updated_at TIMESTAMPTZ DEFAULT NOW(),
-
-    CONSTRAINT maintenance_records_description_check CHECK (LENGTH(description) > 0)
+    updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 CREATE INDEX idx_maintenance_records_plane_id ON public.maintenance_records(plane_id);
@@ -57,6 +53,7 @@ COMMENT ON COLUMN public.maintenance_records.tach_hours IS 'Tachometer reading a
 COMMENT ON COLUMN public.maintenance_records.hobbs_hours IS 'Hobbs meter reading at time of maintenance';
 COMMENT ON COLUMN public.maintenance_records.next_due_hours IS 'Aircraft hours when next maintenance is due';
 COMMENT ON COLUMN public.maintenance_records.maintenance_type IS 'Type of maintenance: inspection, repair, modification, service, component_replacement, or other';
+COMMENT ON COLUMN public.maintenance_records.description IS 'Description of maintenance work performed';
 
 -- =====================================================
 -- 2. AIRCRAFT COMPONENTS TABLE
@@ -86,7 +83,7 @@ CREATE TABLE IF NOT EXISTS public.aircraft_components (
     installation_mx_record_id UUID REFERENCES public.maintenance_records(id) ON DELETE SET NULL,
 
     -- Status
-    status component_status DEFAULT 'installed',
+    status component_status DEFAULT 'active',
 
     -- Removal (if applicable)
     removed_at TIMESTAMPTZ,
@@ -127,6 +124,7 @@ CREATE TABLE IF NOT EXISTS public.component_tbo_presets (
     part_number TEXT,
     default_tbo_hours NUMERIC(10, 2) NOT NULL,
     description TEXT,
+    is_common BOOLEAN DEFAULT false,
     notes TEXT,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW(),

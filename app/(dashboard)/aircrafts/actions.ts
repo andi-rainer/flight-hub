@@ -108,6 +108,12 @@ export async function uploadAircraftDocument(formData: FormData) {
     return { error: 'Missing required fields' }
   }
 
+  // Validate file size (10MB max)
+  const maxSize = 10 * 1024 * 1024 // 10MB in bytes
+  if (file.size > maxSize) {
+    return { error: 'File size must be less than 10MB' }
+  }
+
   // Upload file to Supabase Storage
   const fileExt = file.name.split('.').pop()
   const fileName = `${planeId}/${Date.now()}.${fileExt}`
@@ -121,10 +127,19 @@ export async function uploadAircraftDocument(formData: FormData) {
     return { error: uploadError.message }
   }
 
-  // Get public URL
-  const { data: { publicUrl } } = supabase.storage
+  // Generate signed URL (valid for 10 years) since bucket is private
+  const { data: signedUrlData, error: signedUrlError } = await supabase.storage
     .from('aircraft-documents')
-    .getPublicUrl(uploadData.path)
+    .createSignedUrl(uploadData.path, 315360000) // 10 years in seconds
+
+  if (signedUrlError) {
+    console.error('Error creating signed URL:', signedUrlError)
+    // Clean up uploaded file
+    await supabase.storage.from('aircraft-documents').remove([uploadData.path])
+    return { error: signedUrlError.message }
+  }
+
+  const fileUrl = signedUrlData.signedUrl
 
   // Create document record
   const tagsArray = tags ? tags.split(',').map(t => t.trim()) : []
@@ -134,12 +149,12 @@ export async function uploadAircraftDocument(formData: FormData) {
     .insert({
       plane_id: planeId,
       name,
-      file_url: publicUrl,
+      file_url: fileUrl,
       tags: tagsArray,
       uploaded_by: user.id,
       expiry_date: expiryDate || null,
       blocks_aircraft: blocksAircraft,
-      approved: false,
+      approved: true, // Aircraft documents are auto-approved
     })
     .select()
     .single()

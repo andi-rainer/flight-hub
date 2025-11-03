@@ -66,7 +66,6 @@ export function AircraftDocumentsTab({ aircraft, documents, isBoardMember }: Air
                       <TableHead>{t('tags')}</TableHead>
                       <TableHead>{t('uploadDate')}</TableHead>
                       <TableHead>{t('expiryDate')}</TableHead>
-                      <TableHead>{t('status')}</TableHead>
                       <TableHead className="text-right">{t('actions')}</TableHead>
                     </TableRow>
                   </TableHeader>

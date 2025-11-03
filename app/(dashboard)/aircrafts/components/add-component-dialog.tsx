@@ -18,11 +18,11 @@ type ComponentType = 'engine' | 'propeller' | 'landing_gear' | 'constant_speed_u
 interface TBOPreset {
   id: string
   component_type: ComponentType
-  manufacturer: string
-  model: string
-  tbo_hours: number
+  manufacturer: string | null
+  model: string | null
+  default_tbo_hours: number
   description: string | null
-  is_common: boolean
+  is_common: boolean | null
 }
 
 interface AddComponentDialogProps {
@@ -99,9 +99,9 @@ export function AddComponentDialog({
 
     const preset = presets.find(p => p.id === selectedPreset)
     if (preset) {
-      setManufacturer(preset.manufacturer)
-      setModel(preset.model)
-      setTboHours(preset.tbo_hours.toString())
+      setManufacturer(preset.manufacturer || '')
+      setModel(preset.model || '')
+      setTboHours(preset.default_tbo_hours.toString())
     }
   }, [selectedPreset, presets])
 
@@ -216,7 +216,7 @@ export function AddComponentDialog({
                 <SelectContent>
                   {presets.map((preset) => (
                     <SelectItem key={preset.id} value={preset.id}>
-                      {preset.manufacturer} {preset.model} - {preset.tbo_hours}h TBO
+                      {preset.manufacturer} {preset.model} - {preset.default_tbo_hours}h TBO
                       {preset.is_common && ' ⭐'}
                     </SelectItem>
                   ))}

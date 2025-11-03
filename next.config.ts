@@ -10,6 +10,9 @@ const nextConfig: NextConfig = {
     turbo: {
       resolveAlias: {},
     },
+    serverActions: {
+      bodySizeLimit: '10mb',
+    },
   },
 };
 

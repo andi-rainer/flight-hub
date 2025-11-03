@@ -362,7 +362,5 @@ ON CONFLICT (plane_id, name) DO NOTHING;
 -- Create common cost centers
 INSERT INTO public.cost_centers (name, description, active) VALUES
     ('Skydive Operations', 'Costs related to skydiving operations', true),
-    ('Maintenance Flights', 'Test and maintenance flights', true),
-    ('Club Operations', 'General club operational costs', true),
-    ('Training', 'Training and instruction costs', true)
+    ('Maintenance Flights', 'Test and maintenance flights', true)
 ON CONFLICT (name) DO NOTHING;

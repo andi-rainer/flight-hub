@@ -5,7 +5,9 @@
 --
 -- Consolidated from:
 -- - 20250117000001_create_document_types.sql
+-- - 20250202100015_simplify_document_expiry.sql
 --
+-- Documents use fixed expiry dates only (no duration-based expiry)
 -- =====================================================
 
 -- Document types table
@@ -13,19 +15,14 @@ CREATE TABLE IF NOT EXISTS public.document_types (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name TEXT NOT NULL UNIQUE,
     description TEXT,
-    category TEXT CHECK (category IN ('aircraft', 'user', 'club')),
+    category TEXT,
     mandatory BOOLEAN NOT NULL DEFAULT FALSE,
     expires BOOLEAN NOT NULL DEFAULT FALSE,
-    expiry_type TEXT CHECK (expiry_type IN ('date', 'hours', 'landings', 'date_or_hours')),
-    default_validity_months INTEGER,
     required_for_functions TEXT[] DEFAULT ARRAY[]::TEXT[],
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
-    CONSTRAINT document_types_name_check CHECK (LENGTH(name) > 0),
-    CONSTRAINT document_types_validity_check CHECK (
-        NOT expires OR (expiry_type IS NOT NULL)
-    )
+    CONSTRAINT document_types_name_check CHECK (LENGTH(name) > 0)
 );
 
 -- Index for document types
@@ -50,7 +47,6 @@ SELECT
     dt.description AS document_type_description,
     dt.mandatory AS document_type_mandatory,
     dt.expires AS document_type_expires,
-    dt.expiry_type,
     dt.required_for_functions,
     CASE
         WHEN d.expiry_date IS NOT NULL AND d.expiry_date < CURRENT_DATE THEN 'expired'
@@ -96,8 +92,6 @@ CREATE POLICY "Board can manage document types"
 
 COMMENT ON TABLE public.document_types IS 'Defines types of documents and their validation rules';
 COMMENT ON COLUMN public.document_types.mandatory IS 'Whether this document type is required';
-COMMENT ON COLUMN public.document_types.expires IS 'Whether documents of this type can expire';
-COMMENT ON COLUMN public.document_types.expiry_type IS 'How expiry is determined: by date, flight hours, landings, or date OR hours';
+COMMENT ON COLUMN public.document_types.expires IS 'Whether this document has an expiry date (fixed date only)';
 COMMENT ON COLUMN public.document_types.required_for_functions IS 'Array of function codes that require this document (e.g., pilot, flight_instructor)';
-COMMENT ON COLUMN public.document_types.default_validity_months IS 'Default number of months until document expires';
 COMMENT ON VIEW public.user_documents_with_types IS 'User documents joined with their types and expiry status';

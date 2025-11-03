@@ -58,8 +58,6 @@ export async function POST(request: NextRequest) {
         category: body.category || null,
         mandatory: body.mandatory || false,
         expires: body.expires || false,
-        expiry_type: body.expiry_type || null,
-        default_validity_months: body.default_validity_months || null,
         required_for_functions: body.required_for_functions || [],
       })
       .select()
@@ -115,8 +113,6 @@ export async function PUT(request: NextRequest) {
         category: body.category || null,
         mandatory: body.mandatory || false,
         expires: body.expires || false,
-        expiry_type: body.expiry_type || null,
-        default_validity_months: body.default_validity_months || null,
         required_for_functions: body.required_for_functions || [],
       })
       .eq('id', id)

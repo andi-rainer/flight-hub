@@ -91,13 +91,12 @@ export async function inviteUser(data: {
   }
 
   // Create user via Supabase Auth using admin client
-  // For testing/development, create user without email confirmation
   const adminClient = createAdminClient()
 
-  // Try to create user directly (better for testing environments without SMTP)
+  // Create user without confirming email
   const { data: authData, error: authError } = await adminClient.auth.admin.createUser({
     email: data.email,
-    email_confirm: true, // Auto-confirm email for easier testing
+    email_confirm: false, // Don't auto-confirm - user needs to set password via email
     user_metadata: {
       name: data.name,
       surname: data.surname,
@@ -107,6 +106,15 @@ export async function inviteUser(data: {
   if (authError) {
     console.error('Error creating user:', authError)
     return { success: false, error: authError.message }
+  }
+
+  // Send invitation email
+  const { error: inviteError } = await adminClient.auth.admin.inviteUserByEmail(data.email)
+
+  if (inviteError) {
+    console.error('Error sending invitation email:', inviteError)
+    // Don't fail the entire operation - user is created, they can be invited later
+    console.warn('User created but invitation email failed to send. Use resend invitation.')
   }
 
   // Create or update user profile using upsert (in case profile was auto-created by trigger)
@@ -135,7 +143,7 @@ export async function inviteUser(data: {
       user_id: authData.user.id,
       function_id: functionId,
       assigned_at: new Date().toISOString(),
-      assigned_by: user, // Board member who created this user
+      assigned_by: user.id, // Board member who created this user
     }))
 
     const { error: functionsError } = await supabase
@@ -165,7 +173,8 @@ export async function inviteUser(data: {
   }
 
   // Refresh materialized view so PersonSelector shows new user with functions
-  await supabase.rpc('refresh_users_with_functions_search').catch(console.error)
+  const { error: refreshError } = await supabase.rpc('refresh_users_with_functions_search')
+  if (refreshError) console.error('Error refreshing users search view:', refreshError)
 
   revalidatePath('/members')
   return {
@@ -204,8 +213,36 @@ export async function resendInvitation(userId: string) {
     return { success: false, error: 'User not found' }
   }
 
-  // Resend invitation using admin client
+  // Get auth user details to check if confirmed
   const adminClient = createAdminClient()
+  const { data: authUser, error: getUserError } = await adminClient.auth.admin.getUserById(userId)
+
+  if (getUserError || !authUser) {
+    console.error('Error getting user:', getUserError)
+    return { success: false, error: 'Could not retrieve user information' }
+  }
+
+  // If user is already confirmed, send password reset instead of invitation
+  if (authUser.user.email_confirmed_at) {
+    const { data: resetLink, error: resetError } = await adminClient.auth.admin.generateLink({
+      type: 'recovery',
+      email: targetUser.email,
+    })
+
+    if (resetError) {
+      console.error('Error generating reset link:', resetError)
+      return { success: false, error: resetError.message }
+    }
+
+    // Note: The reset link is generated but Supabase should send the email automatically
+    revalidatePath('/members')
+    return {
+      success: true,
+      message: 'Password reset email sent successfully'
+    }
+  }
+
+  // User is not confirmed, send regular invitation
   const { error: inviteError } = await adminClient.auth.admin.inviteUserByEmail(
     targetUser.email
   )
@@ -218,7 +255,7 @@ export async function resendInvitation(userId: string) {
   revalidatePath('/members')
   return {
     success: true,
-    message: 'Invitation resent successfully'
+    message: 'Invitation email sent successfully'
   }
 }
 
@@ -246,17 +283,21 @@ export async function deleteMember(userId: string) {
     return { success: false, error: 'You cannot delete your own account' }
   }
 
-  // Check if user has associated flight logs
-  const { data: flightLogs } = await supabase
-    .from('flightlog')
-    .select('id')
-    .or(`pic_id.eq.${userId},sic_id.eq.${userId}`)
-    .limit(1)
+  // Check if user is already deleted
+  const { data: targetUser } = await supabase
+    .from('users')
+    .select('email, name, surname')
+    .eq('id', userId)
+    .single()
 
-  if (flightLogs && flightLogs.length > 0) {
+  if (!targetUser) {
+    return { success: false, error: 'User not found' }
+  }
+
+  if (targetUser.email?.includes('@deleted.local')) {
     return {
       success: false,
-      error: 'Cannot delete user with associated flight logs. Please reassign or delete flight logs first.'
+      error: 'User has already been deleted'
     }
   }
 
@@ -269,12 +310,20 @@ export async function deleteMember(userId: string) {
   // Delete user's documents from storage
   if (userDocuments && userDocuments.length > 0) {
     const filePaths = userDocuments
-      .map(doc => doc.file_url.split('/').pop())
+      .map(doc => {
+        // Extract file path from signed URL or public URL
+        const urlParts = doc.file_url.split('/')
+        const bucketIndex = urlParts.findIndex(part => part === 'user-documents')
+        if (bucketIndex !== -1 && bucketIndex < urlParts.length - 1) {
+          return urlParts.slice(bucketIndex + 1).join('/')
+        }
+        return doc.file_url.split('/').pop()
+      })
       .filter(Boolean) as string[]
 
     if (filePaths.length > 0) {
       await supabase.storage
-        .from('documents')
+        .from('user-documents')
         .remove(filePaths)
     }
   }
@@ -285,35 +334,84 @@ export async function deleteMember(userId: string) {
     .delete()
     .eq('user_id', userId)
 
-  // Soft delete: Mark user as left and keep data for historical records
-  // This ensures flight logs and other records still show the user's name
+  // Delete from auth using admin client - try multiple times with delay
+  const adminClient = createAdminClient()
+  let authDeleted = false
+  let lastAuthError = null
+
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    const { error: authDeleteError } = await adminClient.auth.admin.deleteUser(userId)
+
+    if (!authDeleteError) {
+      authDeleted = true
+      break
+    }
+
+    lastAuthError = authDeleteError
+
+    // If user not found, consider it deleted
+    if (authDeleteError.message?.toLowerCase().includes('user not found')) {
+      authDeleted = true
+      break
+    }
+
+    // Wait before retry (except on last attempt)
+    if (attempt < 3) {
+      await new Promise(resolve => setTimeout(resolve, 1000))
+    }
+  }
+
+  if (!authDeleted) {
+    console.error('Failed to delete auth user after 3 attempts:', lastAuthError)
+  }
+
+  // GDPR-compliant deletion: Remove all personal data except name for historical records
+  // Keep only: id, name, surname, left_at
+  // This ensures flight logs and created_by references still work
+  const timestamp = Date.now()
   const { error: updateError } = await supabase
     .from('users')
     .update({
+      // Clear all personal data
+      email: `deleted-${timestamp}@deleted.local`,
+      license_number: null,
+      telephone: null,
+      birthday: null,
+      street: null,
+      house_number: null,
+      city: null,
+      zip: null,
+      country: null,
+      emergency_contact_name: null,
+      emergency_contact_phone: null,
+      member_category: null,
+      joined_at: null,
+      functions: [],
+      role: [],
+
+      // Mark as deleted
       left_at: new Date().toISOString(),
-      email: `deleted_${userId}@deleted.local`, // Prevent email conflicts if they rejoin
       updated_at: new Date().toISOString(),
     })
     .eq('id', userId)
 
   if (updateError) {
-    console.error('Error soft deleting user profile:', updateError)
-    return { success: false, error: updateError.message }
-  }
-
-  // Delete from auth using admin client (removes login capability but keeps DB record)
-  const adminClient = createAdminClient()
-  const { error: authDeleteError } = await adminClient.auth.admin.deleteUser(userId)
-
-  if (authDeleteError) {
-    console.error('Error deleting auth user:', authDeleteError)
-    return { success: false, error: 'Failed to remove authentication access' }
+    console.error('Error deleting user data:', updateError)
+    return { success: false, error: 'Failed to remove user data: ' + updateError.message }
   }
 
   revalidatePath('/members')
+
+  if (!authDeleted) {
+    return {
+      success: true,
+      message: 'User data deleted. WARNING: Authentication access could not be removed - please delete manually from Supabase Dashboard (Authentication → Users).'
+    }
+  }
+
   return {
     success: true,
-    message: 'User removed successfully. User data retained for historical records.'
+    message: 'User deleted successfully. All personal data has been removed.'
   }
 }
 

@@ -28,7 +28,7 @@
 -- =====================================================
 CREATE TYPE reservation_status AS ENUM ('active', 'standby', 'cancelled');
 CREATE TYPE component_type AS ENUM ('engine', 'propeller', 'avionics', 'landing_gear', 'other');
-CREATE TYPE component_status AS ENUM ('installed', 'removed', 'maintenance', 'scrapped');
+CREATE TYPE component_status AS ENUM ('active', 'installed', 'removed', 'maintenance', 'scrapped');
 
 -- =====================================================
 -- CORE TABLES

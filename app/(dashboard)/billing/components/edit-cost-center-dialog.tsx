@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState, useTransition, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
@@ -27,6 +27,16 @@ export function EditCostCenterDialog({ costCenter, open, onOpenChange }: EditCos
   const [name, setName] = useState(costCenter.name)
   const [description, setDescription] = useState(costCenter.description || '')
   const [active, setActive] = useState(costCenter.active)
+
+  // Reset form when cost center changes or dialog opens
+  useEffect(() => {
+    if (open) {
+      setName(costCenter.name)
+      setDescription(costCenter.description || '')
+      setActive(costCenter.active)
+      setError(null)
+    }
+  }, [costCenter.id, open, costCenter.name, costCenter.description, costCenter.active])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
