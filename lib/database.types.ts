@@ -1369,6 +1369,7 @@ export type Database = {
           message: string
           read: boolean
           read_at: string | null
+          title: string
           type: string
           user_id: string
         }
@@ -1381,6 +1382,7 @@ export type Database = {
           message: string
           read?: boolean
           read_at?: string | null
+          title?: string
           type: string
           user_id: string
         }
@@ -1393,6 +1395,7 @@ export type Database = {
           message?: string
           read?: boolean
           read_at?: string | null
+          title?: string
           type?: string
           user_id?: string
         }

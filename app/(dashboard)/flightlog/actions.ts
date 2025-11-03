@@ -1,7 +1,7 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
-import type { FlightlogInsert, FlightlogUpdate, NotificationInsert } from '@/lib/database.types'
+import type { FlightlogInsert, FlightlogUpdate } from '@/lib/database.types'
 
 export type FlightWarning = {
   type: 'location_disconnect' | 'flight_overlap' | 'excessive_ground_time'
@@ -130,24 +130,22 @@ export async function createFlightlog(
       const warningMessages = warnings.map(w => w.message).join('; ')
       const notificationMessage = `Flight entry for ${tailNumber} created with warnings: ${warningMessages}`
 
-      // Create notifications for all board members
-      const notifications: NotificationInsert[] = boardMembers.map(member => ({
-        user_id: member.id,
-        type: 'flight_warning',
-        title: 'Flight Entry Needs Review',
-        message: notificationMessage,
-        link: `/flightlog/${entry.plane_id}`,
-        flightlog_id: data.id,
-        read: false
-      }))
+      // Create notifications for all board members using the RPC function
+      // This bypasses RLS to allow non-board members to create notifications
+      for (const member of boardMembers) {
+        const { error: notificationError } = await supabase.rpc('create_notification', {
+          p_user_id: member.id,
+          p_type: 'flight_warning',
+          p_title: 'Flight Entry Needs Review',
+          p_message: notificationMessage,
+          p_link: `/flightlog/${entry.plane_id}`,
+          p_flightlog_id: data.id
+        })
 
-      const { error: notificationError } = await supabase
-        .from('notifications')
-        .insert(notifications)
-
-      if (notificationError) {
-        console.error('Error creating notifications:', notificationError)
-        // Don't fail the flight creation if notifications fail
+        if (notificationError) {
+          console.error('Error creating notification for board member:', notificationError)
+          // Don't fail the flight creation if notifications fail
+        }
       }
     }
   }
@@ -490,10 +488,13 @@ export async function checkFlightWarnings(
 export async function getBoardMembers() {
   const supabase = await createClient()
 
+  // Filter users where role array overlaps with ['board']
+  // This gets all users who have 'board' in their role array
   const { data, error } = await supabase
     .from('users')
     .select('id, name, surname, email')
-    .contains('role', ['board'])
+    .overlaps('role', ['board'])
+    .not('email', 'like', '%@deleted.local') // Exclude deleted users
 
   if (error) {
     console.error('Error fetching board members:', error)

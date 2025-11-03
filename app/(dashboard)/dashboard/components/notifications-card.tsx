@@ -35,6 +35,8 @@ function getNotificationIcon(type: string) {
       return <FileText className="h-4 w-4" />
     case 'document_approved':
       return <CheckCircle2 className="h-4 w-4" />
+    case 'flight_warning':
+      return <AlertCircle className="h-4 w-4 text-orange-600" />
     case 'general':
       return <Info className="h-4 w-4" />
     default:
