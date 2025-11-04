@@ -95,7 +95,7 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
   // Public routes that don't require authentication
-  const publicRoutes = ['/login', '/auth/callback', '/auth/auth-code-error', '/registration/tandem']
+  const publicRoutes = ['/login', '/forgot-password', '/reset-password', '/auth/callback', '/auth/auth-code-error', '/registration/tandem']
   const isPublicRoute = publicRoutes.some((route) => pathname.startsWith(route))
 
   // Routes that require authentication but bypass dashboard layout checks

@@ -290,8 +290,9 @@ export async function addCostCenterTransaction(data: {
 export async function addCostCenterCredit(data: {
   costCenterId: string
   amount: number
-  description: string
-  created_at?: string
+  description: string,
+  transactionDate: string,
+  created_at: string
 }) {
   const auth = await verifyBoardMember()
   if (!auth.authorized) {

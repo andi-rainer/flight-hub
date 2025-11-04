@@ -19,29 +19,53 @@ export default function LoginPage() {
   const [success, setSuccess] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [isSettingPassword, setIsSettingPassword] = useState(false)
+  const [isPasswordReset, setIsPasswordReset] = useState(false)
   const [isCheckingToken, setIsCheckingToken] = useState(true)
   const router = useRouter()
   const searchParams = useSearchParams()
 
-  // Check for access token on mount (from invite link)
+  // Check for access token on mount (from invite link or password reset)
   useEffect(() => {
     const checkForToken = async () => {
       const supabase = createClient()
 
-      // Check if there's a hash fragment with access_token
+      // First, check for query parameters (from email link before token exchange)
+      const queryParams = new URLSearchParams(window.location.search)
+      const tokenType = queryParams.get('type')
+      const errorParam = queryParams.get('error')
+      const errorDescription = queryParams.get('error_description')
+
+      // Handle errors from Supabase auth
+      if (errorParam) {
+        console.error('Auth error:', errorParam, errorDescription)
+        setError(errorDescription || 'Authentication error occurred')
+        setIsCheckingToken(false)
+        return
+      }
+
+      // Check if there's a hash fragment with access_token (after token exchange)
       const hashParams = new URLSearchParams(window.location.hash.substring(1))
       const accessToken = hashParams.get('access_token')
       const refreshToken = hashParams.get('refresh_token')
-      const type = hashParams.get('type')
+      const type = hashParams.get('type') || tokenType
 
-      if (accessToken && type === 'invite') {
+      console.log('Token check:', { hasAccessToken: !!accessToken, hasRefreshToken: !!refreshToken, type })
+
+      if (accessToken && (type === 'invite' || type === 'recovery')) {
         try {
           // Set the session using the tokens from the URL
           if (refreshToken) {
-            await supabase.auth.setSession({
+            const { error: sessionError } = await supabase.auth.setSession({
               access_token: accessToken,
               refresh_token: refreshToken,
             })
+
+            if (sessionError) {
+              console.error('Error setting session:', sessionError)
+              setError('Failed to set session. Please try requesting a new reset link.')
+              setIsCheckingToken(false)
+              return
+            }
           }
 
           // Get the user's email from the session
@@ -49,18 +73,28 @@ export default function LoginPage() {
 
           if (error) {
             console.error('Error getting user:', error)
-            setError('Failed to load user information')
+            setError('Failed to load user information. Please try requesting a new reset link.')
           } else if (user?.email) {
             setEmail(user.email)
             setIsSettingPassword(true)
+            setIsPasswordReset(type === 'recovery')
           }
 
-          // Clean up the URL hash
+          // Clean up the URL
           window.history.replaceState(null, '', window.location.pathname)
         } catch (err) {
           console.error('Error setting up session:', err)
-          setError('Failed to initialize session')
+          setError('Failed to initialize session. Please try requesting a new reset link.')
         }
+      } else if (type === 'recovery' && !accessToken) {
+        // If we have a recovery type but no access token yet,
+        // the token exchange might still be in progress
+        console.log('Waiting for token exchange...')
+        // Wait a bit and check again
+        setTimeout(() => {
+          window.location.reload()
+        }, 1000)
+        return
       }
 
       setIsCheckingToken(false)
@@ -130,7 +164,7 @@ export default function LoginPage() {
         return
       }
 
-      setSuccess('Password set successfully! Redirecting to dashboard...')
+      setSuccess(isPasswordReset ? 'Password reset successfully! Redirecting to dashboard...' : 'Password set successfully! Redirecting to dashboard...')
 
       // Redirect to dashboard after a short delay
       setTimeout(() => {
@@ -175,9 +209,12 @@ export default function LoginPage() {
           // Password Setup Form
           <Card>
             <CardHeader>
-              <CardTitle>Set Your Password</CardTitle>
+              <CardTitle>{isPasswordReset ? 'Reset Your Password' : 'Set Your Password'}</CardTitle>
               <CardDescription>
-                Welcome to FlightHub! Please set a password for your account.
+                {isPasswordReset
+                  ? 'Enter a new password for your account.'
+                  : 'Welcome to FlightHub! Please set a password for your account.'
+                }
               </CardDescription>
             </CardHeader>
             <form onSubmit={handleSetPassword}>
@@ -246,10 +283,10 @@ export default function LoginPage() {
                   {isLoading ? (
                     <>
                       <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Setting password...
+                      {isPasswordReset ? 'Resetting password...' : 'Setting password...'}
                     </>
                   ) : (
-                    'Set Password & Continue'
+                    isPasswordReset ? 'Reset Password & Continue' : 'Set Password & Continue'
                   )}
                 </Button>
               </CardFooter>
