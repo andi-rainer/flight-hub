@@ -150,12 +150,12 @@ export default async function AircraftsPage({
     getCurrentUser(),
   ])
 
+  const isBoardMember = currentUser?.role?.includes('board') ?? false
+
   // If exactly one aircraft is visible, redirect to it directly
-  if (aircrafts.length === 1) {
+  if (aircrafts.length === 1 && !isBoardMember) {
     redirect(`/aircrafts/${aircrafts[0].id}`)
   }
-
-  const isBoardMember = currentUser?.role?.includes('board') ?? false
 
   return (
     <div className="space-y-6">

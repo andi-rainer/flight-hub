@@ -67,7 +67,7 @@ export function AddComponentDialog({
   const [tboHours, setTboHours] = useState('')
   const [hoursAtInstallation, setHoursAtInstallation] = useState(currentAircraftHours.toString())
   const [componentHoursOffset, setComponentHoursOffset] = useState('0')
-  const [installedAt, setInstalledAt] = useState(format(new Date(), "yyyy-MM-dd'T'HH:mm"))
+  const [installedAt, setInstalledAt] = useState(format(new Date(), "yyyy-MM-dd"))
   const [notes, setNotes] = useState('')
 
   // TBO Presets
@@ -117,7 +117,7 @@ export function AddComponentDialog({
       setTboHours('')
       setHoursAtInstallation(currentAircraftHours.toString())
       setComponentHoursOffset('0')
-      setInstalledAt(format(new Date(), "yyyy-MM-dd'T'HH:mm"))
+      setInstalledAt(format(new Date(), "yyyy-MM-dd"))
       setNotes('')
       setSelectedPreset('')
       setError(null)
@@ -346,10 +346,10 @@ export function AddComponentDialog({
 
           {/* Installation Date */}
           <div className="space-y-2">
-            <Label htmlFor="installedAt">Installation Date & Time *</Label>
+            <Label htmlFor="installedAt">Installation Date *</Label>
             <Input
               id="installedAt"
-              type="datetime-local"
+              type="date"
               value={installedAt}
               onChange={(e) => setInstalledAt(e.target.value)}
               required

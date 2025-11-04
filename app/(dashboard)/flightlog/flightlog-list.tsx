@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -11,12 +12,20 @@ import { Link } from '@/navigation'
 
 export function FlightlogList() {
   const t = useTranslations('flightLog')
+  const router = useRouter()
   const [aircraft, setAircraft] = useState<Array<{ id: string; tail_number: string; type: string }>>([])
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
     loadAircraft()
   }, [])
+
+  // Auto-redirect to single aircraft if only one exists
+  useEffect(() => {
+    if (!isLoading && aircraft.length === 1) {
+      router.push(`/flightlog/${aircraft[0].id}`)
+    }
+  }, [isLoading, aircraft, router])
 
   const loadAircraft = async () => {
     setIsLoading(true)
