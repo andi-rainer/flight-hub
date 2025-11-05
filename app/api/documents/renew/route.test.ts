@@ -154,6 +154,7 @@ describe('/api/documents/renew', () => {
       })
       const userBuilder = createQueryBuilder({ name: 'Test', surname: 'User' })
       const userFunctionsBuilder = createQueryBuilder([{ function_id: 'function-id-1' }])
+      const boardMembersBuilder = createQueryBuilder([{ id: 'board-1' }])
 
       mockSupabase.from
         .mockReturnValueOnce(existingDocBuilder)
@@ -161,8 +162,10 @@ describe('/api/documents/renew', () => {
         .mockReturnValueOnce(updateBuilder)
         .mockReturnValueOnce(userBuilder)
         .mockReturnValueOnce(userFunctionsBuilder)
+        .mockReturnValueOnce(boardMembersBuilder)
 
       mockSupabase.storage.from.mockReturnValue(storageBuilder)
+      mockSupabase.rpc.mockResolvedValue({ data: 'notification-id', error: null })
 
       const formData = createFormData({ expiryDate: newExpiryDate })
       const request = createRequest(formData)
@@ -196,6 +199,7 @@ describe('/api/documents/renew', () => {
       })
       const userBuilder = createQueryBuilder({ name: 'Test', surname: 'User' })
       const userFunctionsBuilder = createQueryBuilder([{ function_id: 'function-id-1' }])
+      const boardMembersBuilder = createQueryBuilder([{ id: 'board-1' }])
 
       mockSupabase.from
         .mockReturnValueOnce(existingDocBuilder)
@@ -203,8 +207,10 @@ describe('/api/documents/renew', () => {
         .mockReturnValueOnce(updateBuilder)
         .mockReturnValueOnce(userBuilder)
         .mockReturnValueOnce(userFunctionsBuilder)
+        .mockReturnValueOnce(boardMembersBuilder)
 
       mockSupabase.storage.from.mockReturnValue(storageBuilder)
+      mockSupabase.rpc.mockResolvedValue({ data: 'notification-id', error: null })
 
       const formData = createFormData()
       const request = createRequest(formData)
@@ -233,6 +239,7 @@ describe('/api/documents/renew', () => {
       const updateBuilder = createQueryBuilder(mockDocument)
       const userBuilder = createQueryBuilder({ name: 'Test', surname: 'User' })
       const userFunctionsBuilder = createQueryBuilder([{ function_id: 'function-id-1' }])
+      const boardMembersBuilder = createQueryBuilder([{ id: 'board-1' }])
 
       mockSupabase.from
         .mockReturnValueOnce(existingDocBuilder)
@@ -240,8 +247,10 @@ describe('/api/documents/renew', () => {
         .mockReturnValueOnce(updateBuilder)
         .mockReturnValueOnce(userBuilder)
         .mockReturnValueOnce(userFunctionsBuilder)
+        .mockReturnValueOnce(boardMembersBuilder)
 
       mockSupabase.storage.from.mockReturnValue(storageBuilder)
+      mockSupabase.rpc.mockResolvedValue({ data: 'notification-id', error: null })
 
       const formData = createFormData()
       const request = createRequest(formData)
@@ -266,11 +275,23 @@ describe('/api/documents/renew', () => {
       const storageBuilder = createStorageBuilder(null, null)
       const updateBuilder = createQueryBuilder(mockDocument)
       const userBuilder = createQueryBuilder({ name: 'Test', surname: 'User' })
-      const userFunctionsBuilder = createQueryBuilder([{ function_id: 'function-id-1' }])
-      const boardMembersBuilder = createQueryBuilder([
-        { id: 'board-1' },
-        { id: 'board-2' },
-      ])
+      const userFunctionsBuilder = {
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockResolvedValue({
+          data: [{ function_id: 'function-id-1' }],
+          error: null,
+        }),
+      }
+      const boardMembersBuilder = {
+        select: jest.fn().mockReturnThis(),
+        overlaps: jest.fn().mockResolvedValue({
+          data: [
+            { id: 'board-1' },
+            { id: 'board-2' },
+          ],
+          error: null,
+        }),
+      }
 
       mockSupabase.from
         .mockReturnValueOnce(existingDocBuilder)

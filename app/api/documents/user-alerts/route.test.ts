@@ -83,30 +83,45 @@ describe('/api/documents/user-alerts', () => {
       })
 
       const profileBuilder = createQueryBuilder(mockProfile)
-      const userFunctionsBuilder = createQueryBuilder([
-        { function_id: 'function-1' },
-      ])
-      const docTypesBuilder = createQueryBuilder([
-        {
-          id: 'doc-type-1',
-          name: 'Required Doc 1',
-          mandatory: true,
-          required_for_functions: ['function-1'],
-        },
-        {
-          id: 'doc-type-2',
-          name: 'Required Doc 2',
-          mandatory: true,
-          required_for_functions: ['function-2'], // Different function
-        },
-        {
-          id: 'doc-type-3',
-          name: 'Optional Doc',
-          mandatory: false,
-          required_for_functions: ['function-1'],
-        },
-      ])
-      const documentsBuilder = createQueryBuilder([])
+      const userFunctionsBuilder = {
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockResolvedValue({
+          data: [{ function_id: 'function-1' }],
+          error: null,
+        }),
+      }
+      const docTypesBuilder = {
+        select: jest.fn().mockResolvedValue({
+          data: [
+            {
+              id: 'doc-type-1',
+              name: 'Required Doc 1',
+              mandatory: true,
+              required_for_functions: ['function-1'],
+            },
+            {
+              id: 'doc-type-2',
+              name: 'Required Doc 2',
+              mandatory: true,
+              required_for_functions: ['function-2'], // Different function
+            },
+            {
+              id: 'doc-type-3',
+              name: 'Optional Doc',
+              mandatory: false,
+              required_for_functions: ['function-1'],
+            },
+          ],
+          error: null,
+        }),
+      }
+      const documentsBuilder = {
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockResolvedValue({
+          data: [],
+          error: null,
+        }),
+      }
 
       mockSupabase.from
         .mockReturnValueOnce(profileBuilder)
@@ -136,27 +151,44 @@ describe('/api/documents/user-alerts', () => {
       })
 
       const profileBuilder = createQueryBuilder(mockProfile)
-      const userFunctionsBuilder = createQueryBuilder([{ function_id: 'function-1' }])
-      const docTypesBuilder = createQueryBuilder([
-        {
-          id: 'doc-type-1',
-          name: 'Missing Doc',
-          mandatory: true,
-          required_for_functions: ['function-1'],
-        },
-      ])
-      const documentsBuilder = createQueryBuilder([
-        {
-          document_type_id: 'doc-type-2',
-          expiry_date: expired.toISOString().split('T')[0],
-          approved: true,
-        },
-        {
-          document_type_id: 'doc-type-3',
-          expiry_date: expiringSoon.toISOString().split('T')[0],
-          approved: true,
-        },
-      ])
+      const userFunctionsBuilder = {
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockResolvedValue({
+          data: [{ function_id: 'function-1' }],
+          error: null,
+        }),
+      }
+      const docTypesBuilder = {
+        select: jest.fn().mockResolvedValue({
+          data: [
+            {
+              id: 'doc-type-1',
+              name: 'Missing Doc',
+              mandatory: true,
+              required_for_functions: ['function-1'],
+            },
+          ],
+          error: null,
+        }),
+      }
+      const documentsBuilder = {
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockResolvedValue({
+          data: [
+            {
+              document_type_id: 'doc-type-2',
+              expiry_date: expired.toISOString().split('T')[0],
+              approved: true,
+            },
+            {
+              document_type_id: 'doc-type-3',
+              expiry_date: expiringSoon.toISOString().split('T')[0],
+              approved: true,
+            },
+          ],
+          error: null,
+        }),
+      }
 
       mockSupabase.from
         .mockReturnValueOnce(profileBuilder)
@@ -217,20 +249,37 @@ describe('/api/documents/user-alerts', () => {
       })
 
       const profileBuilder = createQueryBuilder(mockBoardProfile)
-      const userFunctionsBuilder = createQueryBuilder([])
-      const docTypesBuilder = createQueryBuilder([])
-      const documentsBuilder = createQueryBuilder([
-        {
-          document_type_id: 'doc-type-1',
-          expiry_date: null,
-          approved: false, // Unapproved
-        },
-        {
-          document_type_id: 'doc-type-2',
-          expiry_date: null,
-          approved: false, // Unapproved
-        },
-      ])
+      const userFunctionsBuilder = {
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockResolvedValue({
+          data: [],
+          error: null,
+        }),
+      }
+      const docTypesBuilder = {
+        select: jest.fn().mockResolvedValue({
+          data: [],
+          error: null,
+        }),
+      }
+      const documentsBuilder = {
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockResolvedValue({
+          data: [
+            {
+              document_type_id: 'doc-type-1',
+              expiry_date: null,
+              approved: false, // Unapproved
+            },
+            {
+              document_type_id: 'doc-type-2',
+              expiry_date: null,
+              approved: false, // Unapproved
+            },
+          ],
+          error: null,
+        }),
+      }
 
       mockSupabase.from
         .mockReturnValueOnce(profileBuilder)

@@ -261,13 +261,23 @@ describe('/api/documents/upload', () => {
       const storageBuilder = createStorageBuilder(null, null)
       const insertBuilder = createQueryBuilder(mockDocument)
       const userBuilder = createQueryBuilder({ name: 'Test', surname: 'User' })
-      const userFunctionsBuilder = createQueryBuilder([{ function_id: 'function-id-1' }])
-      const boardMembersBuilder = createQueryBuilder([
-        { id: 'board-1' },
-        { id: 'board-2' },
-      ])
-      const notificationBuilder = createQueryBuilder(null, null)
-
+      const userFunctionsBuilder = {
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockResolvedValue({
+          data: [{ function_id: 'function-id-1' }],
+          error: null,
+        }),
+      }
+      const boardMembersBuilder = {
+        select: jest.fn().mockReturnThis(),
+        overlaps: jest.fn().mockResolvedValue({
+          data: [
+            { id: 'board-1' },
+            { id: 'board-2' },
+          ],
+          error: null,
+        }),
+      }
       mockSupabase.from
         .mockReturnValueOnce(profileBuilder)
         .mockReturnValueOnce(docTypeBuilder)
@@ -275,22 +285,30 @@ describe('/api/documents/upload', () => {
         .mockReturnValueOnce(userBuilder)
         .mockReturnValueOnce(userFunctionsBuilder)
         .mockReturnValueOnce(boardMembersBuilder)
-        .mockReturnValueOnce(notificationBuilder)
 
       mockSupabase.storage.from.mockReturnValue(storageBuilder)
+
+      // Mock RPC for notification creation
+      mockSupabase.rpc.mockResolvedValue({ data: 'notification-id-1', error: null })
 
       const formData = createFormData()
       const request = createRequest(formData)
       await POST(request)
 
-      expect(notificationBuilder.insert).toHaveBeenCalled()
-      const notifications = notificationBuilder.insert.mock.calls[0][0]
-      expect(notifications).toHaveLength(2)
-      expect(notifications[0]).toMatchObject({
-        user_id: 'board-1',
-        type: 'document_uploaded',
-        title: 'New Document Uploaded',
-      })
+      // Should call create_notification RPC twice (once for each board member)
+      expect(mockSupabase.rpc).toHaveBeenCalledTimes(2)
+      expect(mockSupabase.rpc).toHaveBeenCalledWith('create_notification', expect.objectContaining({
+        p_user_id: 'board-1',
+        p_type: 'document_uploaded',
+        p_title: 'New Document Uploaded',
+        p_document_id: mockDocument.id,
+      }))
+      expect(mockSupabase.rpc).toHaveBeenCalledWith('create_notification', expect.objectContaining({
+        p_user_id: 'board-2',
+        p_type: 'document_uploaded',
+        p_title: 'New Document Uploaded',
+        p_document_id: mockDocument.id,
+      }))
     })
 
     it('should auto-approve documents uploaded by board members', async () => {
