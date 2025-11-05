@@ -1,6 +1,7 @@
 import { Suspense } from 'react'
 import { getUserProfile } from '@/lib/supabase/server'
 import { redirect } from '@/navigation'
+import { hasPermission } from '@/lib/permissions'
 import { FlightlogContent } from './flightlog-content'
 import { Loader2 } from 'lucide-react'
 
@@ -15,6 +16,11 @@ export default async function FlightlogAircraftPage({ params }: FlightlogAircraf
 
   if (!userProfile) {
     redirect('/login')
+  }
+
+  // Check permission to view flight log
+  if (!hasPermission(userProfile, 'flight.log.view')) {
+    redirect('/dashboard?error=unauthorized')
   }
 
   // Await params before accessing its properties (Next.js 15 requirement)

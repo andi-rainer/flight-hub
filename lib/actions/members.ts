@@ -2,12 +2,14 @@
 
 import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
+import { requirePermission } from '@/lib/permissions'
 import type { UserUpdate } from '@/lib/database.types'
 import { assignMembership } from './memberships'
 
 /**
  * Server actions for Members page
  * Handles user management, role assignment, invitations, and document approval
+ * All actions require proper permissions via RBAC system
  */
 
 // ============================================================================
@@ -17,20 +19,10 @@ import { assignMembership } from './memberships'
 export async function updateMember(userId: string, data: UserUpdate) {
   const supabase = await createClient()
 
-  // Verify user is board member
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) {
-    return { success: false, error: 'Not authenticated' }
-  }
-
-  const { data: profile } = await supabase
-    .from('users')
-    .select('role')
-    .eq('id', user.id)
-    .single()
-
-  if (!profile?.role?.includes('board')) {
-    return { success: false, error: 'Not authorized - board members only' }
+  // Check permission to edit members
+  const { user, error: permError } = await requirePermission(supabase, 'members.edit')
+  if (permError || !user) {
+    return { success: false, error: permError || 'Not authenticated' }
   }
 
   // Update member
@@ -63,20 +55,10 @@ export async function inviteUser(data: {
 }) {
   const supabase = await createClient()
 
-  // Verify user is board member
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) {
-    return { success: false, error: 'Not authenticated' }
-  }
-
-  const { data: profile } = await supabase
-    .from('users')
-    .select('role')
-    .eq('id', user.id)
-    .single()
-
-  if (!profile?.role?.includes('board')) {
-    return { success: false, error: 'Not authorized - board members only' }
+  // Check permission to create members
+  const { user, error: permError } = await requirePermission(supabase, 'members.create')
+  if (permError || !user) {
+    return { success: false, error: permError || 'Not authenticated' }
   }
 
   // Check if user already exists
@@ -186,20 +168,10 @@ export async function inviteUser(data: {
 export async function resendInvitation(userId: string) {
   const supabase = await createClient()
 
-  // Verify user is board member
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) {
-    return { success: false, error: 'Not authenticated' }
-  }
-
-  const { data: profile } = await supabase
-    .from('users')
-    .select('role')
-    .eq('id', user.id)
-    .single()
-
-  if (!profile?.role?.includes('board')) {
-    return { success: false, error: 'Not authorized - board members only' }
+  // Check permission to edit members (resending invitation is an edit operation)
+  const { user, error: permError } = await requirePermission(supabase, 'members.edit')
+  if (permError || !user) {
+    return { success: false, error: permError || 'Not authenticated' }
   }
 
   // Get the user to resend invite to
@@ -262,20 +234,10 @@ export async function resendInvitation(userId: string) {
 export async function deleteMember(userId: string) {
   const supabase = await createClient()
 
-  // Verify user is board member
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) {
-    return { success: false, error: 'Not authenticated' }
-  }
-
-  const { data: profile } = await supabase
-    .from('users')
-    .select('role')
-    .eq('id', user.id)
-    .single()
-
-  if (!profile?.role?.includes('board')) {
-    return { success: false, error: 'Not authorized - board members only' }
+  // Check permission to delete members
+  const { user, error: permError } = await requirePermission(supabase, 'members.delete')
+  if (permError || !user) {
+    return { success: false, error: permError || 'Not authenticated' }
   }
 
   // Prevent deleting yourself
@@ -422,20 +384,10 @@ export async function deleteMember(userId: string) {
 export async function approveUserDocument(documentId: string) {
   const supabase = await createClient()
 
-  // Verify user is board member
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) {
-    return { success: false, error: 'Not authenticated' }
-  }
-
-  const { data: profile } = await supabase
-    .from('users')
-    .select('role')
-    .eq('id', user.id)
-    .single()
-
-  if (!profile?.role?.includes('board')) {
-    return { success: false, error: 'Not authorized - board members only' }
+  // Check permission to approve documents
+  const { user, error: permError } = await requirePermission(supabase, 'documents.approve')
+  if (permError || !user) {
+    return { success: false, error: permError || 'Not authenticated' }
   }
 
   // Update document approval status
@@ -470,20 +422,10 @@ export async function approveUserDocument(documentId: string) {
 export async function unapproveUserDocument(documentId: string) {
   const supabase = await createClient()
 
-  // Verify user is board member
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) {
-    return { success: false, error: 'Not authenticated' }
-  }
-
-  const { data: profile } = await supabase
-    .from('users')
-    .select('role')
-    .eq('id', user.id)
-    .single()
-
-  if (!profile?.role?.includes('board')) {
-    return { success: false, error: 'Not authorized - board members only' }
+  // Check permission to approve/unapprove documents
+  const { user, error: permError } = await requirePermission(supabase, 'documents.approve')
+  if (permError || !user) {
+    return { success: false, error: permError || 'Not authenticated' }
   }
 
   // Update document approval status
@@ -508,20 +450,10 @@ export async function unapproveUserDocument(documentId: string) {
 export async function deleteUserDocument(documentId: string) {
   const supabase = await createClient()
 
-  // Verify user is board member
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) {
-    return { success: false, error: 'Not authenticated' }
-  }
-
-  const { data: profile } = await supabase
-    .from('users')
-    .select('role')
-    .eq('id', user.id)
-    .single()
-
-  if (!profile?.role?.includes('board')) {
-    return { success: false, error: 'Not authorized - board members only' }
+  // Check permission to delete documents
+  const { user, error: permError } = await requirePermission(supabase, 'documents.delete')
+  if (permError || !user) {
+    return { success: false, error: permError || 'Not authenticated' }
   }
 
   // Get document info for file deletion
@@ -572,20 +504,10 @@ export async function uploadUserDocument(data: {
 }) {
   const supabase = await createClient()
 
-  // Verify user is board member
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) {
-    return { success: false, error: 'Not authenticated' }
-  }
-
-  const { data: profile } = await supabase
-    .from('users')
-    .select('role')
-    .eq('id', user.id)
-    .single()
-
-  if (!profile?.role?.includes('board')) {
-    return { success: false, error: 'Not authorized - board members only' }
+  // Check permission to view all documents (board members can upload for others)
+  const { user, error: permError } = await requirePermission(supabase, 'documents.view.all')
+  if (permError || !user) {
+    return { success: false, error: permError || 'Not authenticated' }
   }
 
   // Upload file to storage

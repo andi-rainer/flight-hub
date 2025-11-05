@@ -1,6 +1,7 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
+import { requirePermission, requireAnyPermission, getCurrentUserWithFunctions, hasPermission } from '@/lib/permissions'
 import type { FlightlogInsert, FlightlogUpdate } from '@/lib/database.types'
 
 export type FlightWarning = {
@@ -54,23 +55,16 @@ export async function createFlightlog(
 ) {
   const supabase = await createClient()
 
-  // Get current user
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) {
-    return { data: null, error: 'Not authenticated' }
+  // Check permission to create flight log
+  const { user, error: permError } = await requirePermission(supabase, 'flight.log.create')
+  if (permError || !user) {
+    return { data: null, error: permError || 'Not authenticated' }
   }
 
-  // Check if user is board member
-  const { data: userProfile } = await supabase
-    .from('users')
-    .select('role')
-    .eq('id', user.id)
-    .single()
+  // Board members can create for anyone, others can only create for themselves
+  const canCreateForOthers = hasPermission(user, 'flight.log.edit.any')
 
-  const isBoardMember = userProfile?.role?.includes('board') || false
-
-  // If not board member, pilot must be current user
-  if (!isBoardMember && entry.pilot_id !== user.id) {
+  if (!canCreateForOthers && entry.pilot_id !== user.id) {
     return { data: null, error: 'You can only create flightlog entries for yourself' }
   }
 
@@ -156,16 +150,16 @@ export async function createFlightlog(
 export async function updateFlightlog(id: string, updates: FlightlogUpdate) {
   const supabase = await createClient()
 
-  // Get current user
-  const { data: { user } } = await supabase.auth.getUser()
+  // Get current user with functions
+  const user = await getCurrentUserWithFunctions(supabase)
   if (!user) {
     return { data: null, error: 'Not authenticated' }
   }
 
-  // Check if entry is locked
+  // Get existing flightlog entry to check permissions
   const { data: existing, error: fetchError } = await supabase
     .from('flightlog')
-    .select('locked, pilot_id')
+    .select('locked, charged, pilot_id, copilot_id')
     .eq('id', id)
     .single()
 
@@ -173,23 +167,10 @@ export async function updateFlightlog(id: string, updates: FlightlogUpdate) {
     return { data: null, error: 'Flightlog entry not found' }
   }
 
-  // Check if user is board member
-  const { data: userProfile } = await supabase
-    .from('users')
-    .select('role')
-    .eq('id', user.id)
-    .single()
-
-  const isBoardMember = userProfile?.role?.includes('board') || false
-
-  // If locked and not board, only allow locked/charged flag updates
-  if (existing.locked && !isBoardMember) {
-    return { data: null, error: 'Cannot modify locked flightlog entry' }
-  }
-
-  // If not board and not owner, deny
-  if (!isBoardMember && existing.pilot_id !== user.id) {
-    return { data: null, error: 'You can only edit your own flightlog entries' }
+  // Use the permission system's canEditFlightLog function
+  const { canEditFlightLog } = await import('@/lib/permissions')
+  if (!canEditFlightLog(user, existing)) {
+    return { data: null, error: 'You do not have permission to edit this flightlog entry' }
   }
 
   // Validate times if they're being updated - Chronological order: Block Off ≤ Takeoff ≤ Landing ≤ Block On

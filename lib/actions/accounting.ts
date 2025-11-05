@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
+import { requireAnyPermission } from '@/lib/permissions'
 
 /**
  * Server actions for Accounting page
@@ -12,22 +13,15 @@ import { revalidatePath } from 'next/cache'
 // AUTHORIZATION HELPER
 // ============================================================================
 
-async function verifyBoardMember() {
+/**
+ * Verify user has accounting permissions (board members or treasurers)
+ */
+async function verifyAccountingAccess() {
   const supabase = await createClient()
 
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) {
-    return { authorized: false, error: 'Not authenticated' }
-  }
-
-  const { data: profile } = await supabase
-    .from('users')
-    .select('role')
-    .eq('id', user.id)
-    .single()
-
-  if (!profile?.role?.includes('board')) {
-    return { authorized: false, error: 'Not authorized - board members only' }
+  const { user, error } = await requireAnyPermission(supabase, ['billing.view.all', 'billing.manage'])
+  if (error || !user) {
+    return { authorized: false, error: error || 'Not authenticated' }
   }
 
   return { authorized: true, supabase, userId: user.id }
@@ -38,7 +32,7 @@ async function verifyBoardMember() {
 // ============================================================================
 
 export async function getUserTransactions(userId: string) {
-  const auth = await verifyBoardMember()
+  const auth = await verifyAccountingAccess()
   if (!auth.authorized) {
     return { success: false, error: auth.error }
   }
@@ -130,7 +124,7 @@ export async function editUserTransaction(
   transactionId: string,
   data: { description?: string; created_at?: string }
 ) {
-  const auth = await verifyBoardMember()
+  const auth = await verifyAccountingAccess()
   if (!auth.authorized) {
     return { success: false, error: auth.error }
   }
@@ -185,7 +179,7 @@ export async function editUserTransaction(
 }
 
 export async function reverseUserTransaction(transactionId: string) {
-  const auth = await verifyBoardMember()
+  const auth = await verifyAccountingAccess()
   if (!auth.authorized) {
     return { success: false, error: auth.error }
   }
@@ -255,7 +249,7 @@ export async function reverseUserTransaction(transactionId: string) {
 // ============================================================================
 
 export async function getCostCenterTransactions(costCenterId: string) {
-  const auth = await verifyBoardMember()
+  const auth = await verifyAccountingAccess()
   if (!auth.authorized) {
     return { success: false, error: auth.error }
   }
@@ -347,7 +341,7 @@ export async function editCostCenterTransaction(
   transactionId: string,
   data: { description?: string; created_at?: string }
 ) {
-  const auth = await verifyBoardMember()
+  const auth = await verifyAccountingAccess()
   if (!auth.authorized) {
     return { success: false, error: auth.error }
   }
@@ -402,7 +396,7 @@ export async function editCostCenterTransaction(
 }
 
 export async function reverseCostCenterTransaction(transactionId: string) {
-  const auth = await verifyBoardMember()
+  const auth = await verifyAccountingAccess()
   if (!auth.authorized) {
     return { success: false, error: auth.error }
   }
@@ -474,7 +468,7 @@ export async function reverseCostCenterTransaction(transactionId: string) {
 // ============================================================================
 
 export async function getUserBalances() {
-  const auth = await verifyBoardMember()
+  const auth = await verifyAccountingAccess()
   if (!auth.authorized) {
     return { success: false, error: auth.error }
   }
@@ -568,7 +562,7 @@ export async function getUserBalances() {
 // ============================================================================
 
 export async function getCostCentersWithTotals() {
-  const auth = await verifyBoardMember()
+  const auth = await verifyAccountingAccess()
   if (!auth.authorized) {
     return { success: false, error: auth.error }
   }

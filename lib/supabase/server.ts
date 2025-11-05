@@ -91,6 +91,8 @@ export async function getUser() {
 /**
  * Gets the current user profile from the database
  * Returns null if no user is authenticated or profile doesn't exist
+ *
+ * NOTE: This function loads the user with their function_codes for permission checks
  */
 export async function getUserProfile() {
   const supabase = await createClient()
@@ -101,8 +103,9 @@ export async function getUserProfile() {
     return null
   }
 
+  // Load from users_with_functions view to get function_codes
   const { data: profile, error: profileError } = await supabase
-    .from('users')
+    .from('users_with_functions')
     .select('*')
     .eq('id', authUser.id)
     .maybeSingle()

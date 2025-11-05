@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
+import { requireBoardMember } from '@/lib/permissions'
 
 export type MaintenanceRecordInsert = {
   plane_id: string
@@ -30,25 +31,7 @@ export type MaintenanceRecordUpdate = {
   hobbs_hours?: number | null
 }
 
-/**
- * Check if the current user is a board member
- */
-async function checkBoardMemberAccess(): Promise<boolean> {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-
-  if (!user) {
-    throw new Error('Unauthorized')
-  }
-
-  const { data: profile } = await supabase
-    .from('users')
-    .select('role')
-    .eq('id', user.id)
-    .single()
-
-  return profile?.role?.includes('board') ?? false
-}
+// Removed checkBoardMemberAccess - using requireBoardMember from permissions system instead
 
 /**
  * Get maintenance history for an aircraft
@@ -85,17 +68,12 @@ export async function getMaintenanceHistory(planeId: string, limit?: number) {
  * Create a new maintenance record (board members only)
  */
 export async function createMaintenanceRecord(data: MaintenanceRecordInsert) {
-  const isBoardMember = await checkBoardMemberAccess()
-
-  if (!isBoardMember) {
-    return { data: null, error: 'Unauthorized: Only board members can create maintenance records' }
-  }
-
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
 
-  if (!user) {
-    return { data: null, error: 'Unauthorized' }
+  // Check board member access
+  const { user, error: permError } = await requireBoardMember(supabase)
+  if (permError || !user) {
+    return { data: null, error: permError || 'Unauthorized: Only board members can create maintenance records' }
   }
 
   // Insert maintenance record
@@ -135,13 +113,13 @@ export async function createMaintenanceRecord(data: MaintenanceRecordInsert) {
  * Update a maintenance record (board members only)
  */
 export async function updateMaintenanceRecord(id: string, planeId: string, data: MaintenanceRecordUpdate) {
-  const isBoardMember = await checkBoardMemberAccess()
-
-  if (!isBoardMember) {
-    return { data: null, error: 'Unauthorized: Only board members can update maintenance records' }
-  }
-
   const supabase = await createClient()
+
+  // Check board member access
+  const { user, error: permError } = await requireBoardMember(supabase)
+  if (permError || !user) {
+    return { data: null, error: permError || 'Unauthorized: Only board members can update maintenance records' }
+  }
 
   const { data: record, error } = await supabase
     .from('maintenance_records')
@@ -176,13 +154,13 @@ export async function updateMaintenanceRecord(id: string, planeId: string, data:
  * Delete a maintenance record (board members only)
  */
 export async function deleteMaintenanceRecord(id: string, planeId: string) {
-  const isBoardMember = await checkBoardMemberAccess()
-
-  if (!isBoardMember) {
-    return { error: 'Unauthorized: Only board members can delete maintenance records' }
-  }
-
   const supabase = await createClient()
+
+  // Check board member access
+  const { user, error: permError } = await requireBoardMember(supabase)
+  if (permError || !user) {
+    return { error: permError || 'Unauthorized: Only board members can delete maintenance records' }
+  }
 
   const { error } = await supabase
     .from('maintenance_records')
@@ -210,13 +188,13 @@ export async function updateMaintenanceSchedule(
   nextDueHours: number | null,
   intervalHours?: number | null
 ) {
-  const isBoardMember = await checkBoardMemberAccess()
-
-  if (!isBoardMember) {
-    return { error: 'Unauthorized: Only board members can update maintenance schedules' }
-  }
-
   const supabase = await createClient()
+
+  // Check board member access
+  const { user, error: permError } = await requireBoardMember(supabase)
+  if (permError || !user) {
+    return { error: permError || 'Unauthorized: Only board members can update maintenance schedules' }
+  }
 
   const updateData: { next_maintenance_hours: number | null; maintenance_interval_hours?: number } = {
     next_maintenance_hours: nextDueHours,

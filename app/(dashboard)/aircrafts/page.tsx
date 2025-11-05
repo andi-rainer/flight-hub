@@ -1,6 +1,7 @@
-import { createClient } from '@/lib/supabase/server'
+import { createClient, getUserProfile } from '@/lib/supabase/server'
 import { getTranslations } from 'next-intl/server'
 import { redirect } from 'next/navigation'
+import { hasPermission } from '@/lib/permissions'
 import { Plane, User } from '@/lib/database.types'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -75,20 +76,7 @@ async function getAircrafts(searchParams: { status?: string; search?: string }):
   return planesWithAvailability
 }
 
-async function getCurrentUser(): Promise<User | null> {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-
-  if (!user) return null
-
-  const { data: profile } = await supabase
-    .from('users')
-    .select('*')
-    .eq('id', user.id)
-    .single()
-
-  return profile
-}
+// Removed - using getUserProfile from lib/supabase/server instead
 
 function getMaintenanceStatusBadge(status?: string, hoursRemaining?: number | null, t?: any) {
   if (!status || status === 'not_scheduled') {
@@ -145,15 +133,25 @@ export default async function AircraftsPage({
   // Await searchParams before using it (Next.js 15)
   const params = await searchParams
 
-  const [aircrafts, currentUser] = await Promise.all([
-    getAircrafts(params),
-    getCurrentUser(),
-  ])
+  const currentUser = await getUserProfile()
 
-  const isBoardMember = currentUser?.role?.includes('board') ?? false
+  if (!currentUser) {
+    redirect('/login')
+  }
 
-  // If exactly one aircraft is visible, redirect to it directly
-  if (aircrafts.length === 1 && !isBoardMember) {
+  // Check permission to view aircraft
+  if (!hasPermission(currentUser, 'aircraft.view')) {
+    redirect('/dashboard?error=unauthorized')
+  }
+
+  const aircrafts = await getAircrafts(params)
+
+  // Check permissions
+  const canCreateAircraft = hasPermission(currentUser, 'aircraft.create')
+  const canEditAircraft = hasPermission(currentUser, 'aircraft.edit')
+
+  // If exactly one aircraft is visible and user can't edit, redirect to it directly
+  if (aircrafts.length === 1 && !canEditAircraft) {
     redirect(`/aircrafts/${aircrafts[0].id}`)
   }
 
@@ -164,7 +162,7 @@ export default async function AircraftsPage({
           <h1 className="text-3xl font-bold tracking-tight">{t('title')}</h1>
           <p className="text-muted-foreground">{t('description')}</p>
         </div>
-        {isBoardMember && <AddAircraftDialog />}
+        {canCreateAircraft && <AddAircraftDialog />}
       </div>
 
       <AircraftFilters />

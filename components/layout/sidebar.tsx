@@ -11,6 +11,7 @@ import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
 import { Badge } from '@/components/ui/badge'
 import { createClient } from '@/lib/supabase/client'
 import type { User } from '@/lib/database.types'
+import { hasPermission, type Permission } from '@/lib/permissions'
 import {
   LayoutDashboard,
   Plane,
@@ -24,6 +25,7 @@ import {
   Calculator,
   ChevronLeft,
   ChevronRight,
+  Shield,
 } from 'lucide-react'
 
 interface NavItem {
@@ -31,6 +33,8 @@ interface NavItem {
   href: string
   icon: React.ComponentType<{ className?: string }>
   badge?: string
+  requiredPermission?: Permission
+  // Legacy support - will be replaced by requiredPermission
   requiresBoard?: boolean
 }
 
@@ -45,49 +49,61 @@ const navItems: NavItem[] = [
     titleKey: 'dashboard',
     href: '/dashboard',
     icon: LayoutDashboard,
+    // Dashboard is accessible to everyone
   },
   {
     titleKey: 'aircrafts',
     href: '/aircrafts',
     icon: Plane,
+    requiredPermission: 'aircraft.view',
   },
   {
     titleKey: 'reservations',
     href: '/reservations',
     icon: Calendar,
+    // Reservations accessible to everyone
   },
   {
     titleKey: 'flightLog',
     href: '/flightlog',
     icon: BookOpen,
+    requiredPermission: 'flight.log.view',
   },
   {
     titleKey: 'members',
     href: '/members',
     icon: Users,
-    requiresBoard: true,
+    requiredPermission: 'members.view.all',
   },
   {
     titleKey: 'billing',
     href: '/billing',
     icon: CreditCard,
-    requiresBoard: true,
+    requiredPermission: 'billing.view.all',
   },
   {
     titleKey: 'accounting',
     href: '/accounting',
     icon: Calculator,
-    requiresBoard: true,
+    requiredPermission: 'billing.view.all',
   },
   {
     titleKey: 'documents',
     href: '/documents',
     icon: FileText,
+    requiredPermission: 'documents.view.own',
   },
   {
     titleKey: 'settings',
     href: '/settings',
     icon: Settings,
+    requiredPermission: 'settings.view',
+  },
+  {
+    titleKey: 'permissions',
+    href: '/permissions',
+    icon: Shield,
+    requiredPermission: 'functions.view', // Board members only
   },
 ]
 
@@ -171,11 +187,19 @@ function SidebarContent({ user, onNavigate, collapsed, onToggle }: { user: User;
     }
   }, [isBoardMember, user.id])
 
-  // Filter nav items based on user role
+  // Filter nav items based on user permissions
   const filteredNavItems = navItems.filter((item) => {
+    // If item has a required permission, check it
+    if (item.requiredPermission) {
+      return hasPermission(user, item.requiredPermission)
+    }
+
+    // Legacy board check (deprecated, use requiredPermission instead)
     if (item.requiresBoard) {
       return isBoardMember
     }
+
+    // No permission required - show to everyone
     return true
   })
 

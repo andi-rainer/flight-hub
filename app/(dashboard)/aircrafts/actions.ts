@@ -2,39 +2,21 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
+import { requirePermission, requireAnyPermission, requireBoardMember } from '@/lib/permissions'
 import type { PlaneInsert, PlaneUpdate } from '@/lib/database.types'
 
 /**
- * Check if the current user is a board member
- */
-async function checkBoardMemberAccess(): Promise<boolean> {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-
-  if (!user) {
-    throw new Error('Unauthorized')
-  }
-
-  const { data: profile } = await supabase
-    .from('users')
-    .select('role')
-    .eq('id', user.id)
-    .single()
-
-  return profile?.role?.includes('board') ?? false
-}
-
-/**
- * Create a new aircraft (board members only)
+ * Create a new aircraft
+ * Requires: aircraft.create permission (board members only)
  */
 export async function createAircraft(data: PlaneInsert) {
-  const isBoardMember = await checkBoardMemberAccess()
-
-  if (!isBoardMember) {
-    return { error: 'Unauthorized: Only board members can create aircraft' }
-  }
-
   const supabase = await createClient()
+
+  // Check permission to create aircraft
+  const { user, error: permError } = await requirePermission(supabase, 'aircraft.create')
+  if (permError || !user) {
+    return { error: permError || 'Unauthorized' }
+  }
 
   const { data: aircraft, error } = await supabase
     .from('planes')
@@ -52,16 +34,17 @@ export async function createAircraft(data: PlaneInsert) {
 }
 
 /**
- * Update an existing aircraft (board members only)
+ * Update an existing aircraft
+ * Requires: aircraft.edit permission (board members or chief pilot)
  */
 export async function updateAircraft(id: string, data: PlaneUpdate) {
-  const isBoardMember = await checkBoardMemberAccess()
-
-  if (!isBoardMember) {
-    return { error: 'Unauthorized: Only board members can update aircraft' }
-  }
-
   const supabase = await createClient()
+
+  // Check permission to edit aircraft
+  const { user, error: permError } = await requirePermission(supabase, 'aircraft.edit')
+  if (permError || !user) {
+    return { error: permError || 'Unauthorized' }
+  }
 
   const { data: aircraft, error } = await supabase
     .from('planes')
@@ -81,20 +64,15 @@ export async function updateAircraft(id: string, data: PlaneUpdate) {
 }
 
 /**
- * Upload a document for an aircraft (board members only)
+ * Upload a document for an aircraft (board members and chief pilot)
  */
 export async function uploadAircraftDocument(formData: FormData) {
-  const isBoardMember = await checkBoardMemberAccess()
-
-  if (!isBoardMember) {
-    return { error: 'Unauthorized: Only board members can upload documents' }
-  }
-
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
 
-  if (!user) {
-    return { error: 'Unauthorized' }
+  // Check permission to upload aircraft documents
+  const { user, error: permError } = await requirePermission(supabase, 'aircraft.documents.upload')
+  if (permError || !user) {
+    return { error: permError || 'Unauthorized' }
   }
 
   const file = formData.get('file') as File
@@ -174,13 +152,13 @@ export async function uploadAircraftDocument(formData: FormData) {
  * Delete an aircraft document (board members only)
  */
 export async function deleteAircraftDocument(documentId: string, planeId: string) {
-  const isBoardMember = await checkBoardMemberAccess()
-
-  if (!isBoardMember) {
-    return { error: 'Unauthorized: Only board members can delete documents' }
-  }
-
   const supabase = await createClient()
+
+  // Check board member access
+  const { user, error: permError } = await requireBoardMember(supabase)
+  if (permError || !user) {
+    return { error: permError || 'Unauthorized: Only board members can delete documents' }
+  }
 
   // Get document to find file URL
   const { data: document } = await supabase
@@ -217,13 +195,13 @@ export async function deleteAircraftDocument(documentId: string, planeId: string
  * Toggle document approval status (board members only)
  */
 export async function toggleDocumentApproval(documentId: string, planeId: string, approved: boolean) {
-  const isBoardMember = await checkBoardMemberAccess()
-
-  if (!isBoardMember) {
-    return { error: 'Unauthorized: Only board members can approve documents' }
-  }
-
   const supabase = await createClient()
+
+  // Check board member access
+  const { user, error: permError } = await requireBoardMember(supabase)
+  if (permError || !user) {
+    return { error: permError || 'Unauthorized: Only board members can approve documents' }
+  }
 
   const { data: document, error } = await supabase
     .from('documents')
@@ -245,13 +223,13 @@ export async function toggleDocumentApproval(documentId: string, planeId: string
  * Update document name (board members only)
  */
 export async function updateDocumentName(documentId: string, planeId: string, name: string) {
-  const isBoardMember = await checkBoardMemberAccess()
-
-  if (!isBoardMember) {
-    return { error: 'Unauthorized: Only board members can update documents' }
-  }
-
   const supabase = await createClient()
+
+  // Check board member access
+  const { user, error: permError } = await requireBoardMember(supabase)
+  if (permError || !user) {
+    return { error: permError || 'Unauthorized: Only board members can update documents' }
+  }
 
   const { data: document, error } = await supabase
     .from('documents')

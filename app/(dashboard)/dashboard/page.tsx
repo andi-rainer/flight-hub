@@ -189,9 +189,9 @@ function getStatusColor(status: 'active' | 'standby' | 'cancelled') {
   }
 }
 
-async function DashboardContent() {
+async function DashboardContent({ errorParam }: { errorParam?: string }) {
   const user = await getUser()
-  
+
   const t = await getTranslations('dashboard')
 
   if (!user) {
@@ -207,6 +207,9 @@ async function DashboardContent() {
       </div>
     )
   }
+
+  // Show unauthorized error if redirected here with error=unauthorized
+  const showUnauthorizedError = errorParam === 'unauthorized'
 
   const supabase = await createClient()
 
@@ -228,6 +231,17 @@ async function DashboardContent() {
           {t('welcome', { name: profile?.name || 'User' })}
         </h1>
       </div>
+
+      {/* Unauthorized Error Alert */}
+      {showUnauthorizedError && (
+        <Alert variant="destructive">
+          <XCircle className="h-4 w-4" />
+          <AlertTitle>Access Denied</AlertTitle>
+          <AlertDescription>
+            You do not have permission to access the requested page. Please contact an administrator if you believe this is an error.
+          </AlertDescription>
+        </Alert>
+      )}
 
       {/* Quick Stats */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -546,10 +560,16 @@ function DashboardLoading() {
   )
 }
 
-export default function DashboardPage() {
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string }>
+}) {
+  const params = await searchParams
+
   return (
     <Suspense fallback={<DashboardLoading />}>
-      <DashboardContent />
+      <DashboardContent errorParam={params.error} />
     </Suspense>
   )
 }
