@@ -133,24 +133,24 @@ export async function POST(request: NextRequest) {
           .overlaps('role', ['board'])
 
         if (boardMembers && boardMembers.length > 0) {
-          // Create notifications for all board members
-          const notifications = boardMembers.map(boardMember => ({
-            user_id: boardMember.id,
-            type: 'document_uploaded',
-            title: 'New Document Uploaded',
-            message: `${uploadingUser?.name || 'A user'} ${uploadingUser?.surname || ''} uploaded a document (${documentType.name}) that needs approval.`,
-            link: `/members`,
-            document_id: document.id,
-            read: false,
-          }))
+          // Create notifications for all board members using RPC function to bypass RLS
+          const notificationMessage = `${uploadingUser?.name || 'A user'} ${uploadingUser?.surname || ''} uploaded a document (${documentType.name}) that needs approval.`
 
-          const { error: notificationError } = await supabase
-            .from('notifications')
-            .insert(notifications)
+          for (const member of boardMembers) {
+            const { error: notificationError } = await supabase.rpc('create_notification', {
+              p_user_id: member.id,
+              p_type: 'document_uploaded',
+              p_title: 'New Document Uploaded',
+              p_message: notificationMessage,
+              p_link: `/members`,
+              p_document_id: document.id,
+              p_flightlog_id: null
+            })
 
-          if (notificationError) {
-            console.error('Error creating notifications:', notificationError)
-            // Don't fail the upload if notification creation fails
+            if (notificationError) {
+              console.error('Error creating notification:', notificationError)
+              // Don't fail the upload if notification creation fails
+            }
           }
         }
       }
