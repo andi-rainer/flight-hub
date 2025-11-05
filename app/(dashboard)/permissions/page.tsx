@@ -203,6 +203,7 @@ function getPermissionDescription(permission: Permission): string {
     'aircraft.edit': 'Edit aircraft information',
     'aircraft.create': 'Add new aircraft',
     'aircraft.delete': 'Delete aircraft',
+    'aircraft.documents.upload': 'Upload documents for aircraft',
 
     // Documents
     'documents.view.own': 'View and upload own documents',
@@ -216,6 +217,8 @@ function getPermissionDescription(permission: Permission): string {
     'settings.edit.own': 'Edit own profile settings',
     'settings.edit.system': 'Edit system settings',
     'settings.membership.manage': 'Manage user memberships',
+    'settings.tandem.manage': 'Manage tandem registration settings',
+    'settings.airport_fees.manage': 'Manage airport fees and aircraft-specific pricing',
   }
 
   return descriptions[permission] || 'No description available'

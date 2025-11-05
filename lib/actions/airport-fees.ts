@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
+import { requirePermission } from '@/lib/permissions'
 import type {
   AirportInsert,
   AirportUpdate,
@@ -12,29 +13,22 @@ import type {
 
 /**
  * Server actions for Airport Fees management with aircraft-specific pricing
- * Handles airports and aircraft-specific fees CRUD operations (board members only)
+ * Handles airports and aircraft-specific fees CRUD operations (board members and treasurers)
  */
 
 // ============================================================================
 // AUTHORIZATION HELPER
 // ============================================================================
 
-async function verifyBoardMember() {
+/**
+ * Verify user has permission to manage airport fees (board members and treasurers)
+ */
+async function verifyAirportFeesAccess() {
   const supabase = await createClient()
 
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) {
-    return { authorized: false, error: 'Not authenticated' }
-  }
-
-  const { data: profile } = await supabase
-    .from('users')
-    .select('role')
-    .eq('id', user.id)
-    .single()
-
-  if (!profile?.role?.includes('board')) {
-    return { authorized: false, error: 'Not authorized - board members only' }
+  const { user, error } = await requirePermission(supabase, 'settings.airport_fees.manage')
+  if (error || !user) {
+    return { authorized: false, error: error || 'Not authenticated' }
   }
 
   return { authorized: true, supabase, userId: user.id }
@@ -71,7 +65,7 @@ export async function getPlanes() {
 // ============================================================================
 
 export async function getAirports() {
-  const auth = await verifyBoardMember()
+  const auth = await verifyAirportFeesAccess()
   if (!auth.authorized) {
     return { success: false, error: auth.error }
   }
@@ -121,7 +115,7 @@ export async function getAirportByICAO(icaoCode: string) {
 }
 
 export async function createAirport(data: AirportInsert) {
-  const auth = await verifyBoardMember()
+  const auth = await verifyAirportFeesAccess()
   if (!auth.authorized) {
     return { success: false, error: auth.error }
   }
@@ -162,7 +156,7 @@ export async function createAirport(data: AirportInsert) {
 }
 
 export async function updateAirport(id: string, data: AirportUpdate) {
-  const auth = await verifyBoardMember()
+  const auth = await verifyAirportFeesAccess()
   if (!auth.authorized) {
     return { success: false, error: auth.error }
   }
@@ -206,7 +200,7 @@ export async function updateAirport(id: string, data: AirportUpdate) {
 }
 
 export async function deleteAirport(id: string) {
-  const auth = await verifyBoardMember()
+  const auth = await verifyAirportFeesAccess()
   if (!auth.authorized) {
     return { success: false, error: auth.error }
   }
@@ -232,7 +226,7 @@ export async function deleteAirport(id: string) {
 // ============================================================================
 
 export async function getAircraftAirportFees(airportId: string) {
-  const auth = await verifyBoardMember()
+  const auth = await verifyAirportFeesAccess()
   if (!auth.authorized) {
     return { success: false, error: auth.error }
   }
@@ -254,7 +248,7 @@ export async function getAircraftAirportFees(airportId: string) {
 }
 
 export async function createAircraftAirportFee(data: AircraftAirportFeeInsert) {
-  const auth = await verifyBoardMember()
+  const auth = await verifyAirportFeesAccess()
   if (!auth.authorized) {
     return { success: false, error: auth.error }
   }
@@ -279,7 +273,7 @@ export async function createAircraftAirportFee(data: AircraftAirportFeeInsert) {
 }
 
 export async function updateAircraftAirportFee(id: string, data: AircraftAirportFeeUpdate) {
-  const auth = await verifyBoardMember()
+  const auth = await verifyAirportFeesAccess()
   if (!auth.authorized) {
     return { success: false, error: auth.error }
   }
@@ -302,7 +296,7 @@ export async function updateAircraftAirportFee(id: string, data: AircraftAirport
 }
 
 export async function deleteAircraftAirportFee(id: string) {
-  const auth = await verifyBoardMember()
+  const auth = await verifyAirportFeesAccess()
   if (!auth.authorized) {
     return { success: false, error: auth.error }
   }

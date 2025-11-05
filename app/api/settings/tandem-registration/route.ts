@@ -1,24 +1,15 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
+import { requirePermission } from '@/lib/permissions'
 
 export async function GET() {
   const supabase = await createClient()
 
-  // Verify user is authenticated and is board member
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) {
-    return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
-  }
-
-  const { data: profile } = await supabase
-    .from('users')
-    .select('role')
-    .eq('id', user.id)
-    .single()
-
-  if (!profile?.role?.includes('board')) {
+  // Verify user has permission to manage tandem registration (board or manifest coordinator)
+  const { user, error: permError } = await requirePermission(supabase, 'settings.tandem.manage')
+  if (permError || !user) {
     return NextResponse.json(
-      { error: 'Not authorized - board members only' },
+      { error: permError || 'Not authorized' },
       { status: 403 }
     )
   }
@@ -51,21 +42,11 @@ export async function GET() {
 export async function POST(request: Request) {
   const supabase = await createClient()
 
-  // Verify user is authenticated and is board member
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) {
-    return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
-  }
-
-  const { data: profile } = await supabase
-    .from('users')
-    .select('role')
-    .eq('id', user.id)
-    .single()
-
-  if (!profile?.role?.includes('board')) {
+  // Verify user has permission to manage tandem registration (board or manifest coordinator)
+  const { user, error: permError } = await requirePermission(supabase, 'settings.tandem.manage')
+  if (permError || !user) {
     return NextResponse.json(
-      { error: 'Not authorized - board members only' },
+      { error: permError || 'Not authorized' },
       { status: 403 }
     )
   }

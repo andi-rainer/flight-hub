@@ -9,16 +9,23 @@ import { AirportFeesSection } from './airport-fees-section'
 import { MembershipTypesSection } from './membership-types-section'
 import { TandemRegistrationSection } from './tandem-registration-section'
 import { createClient } from '@/lib/supabase/client'
+import { hasPermission } from '@/lib/permissions'
 import type { User } from '@/lib/database.types'
 
 interface SettingsTabsProps {
   user: User
-  isBoardMember: boolean
 }
 
-export function SettingsTabs({ user, isBoardMember }: SettingsTabsProps) {
+export function SettingsTabs({ user }: SettingsTabsProps) {
   const t = useTranslations('settings')
   const [userAlertsCount, setUserAlertsCount] = useState(0)
+
+  // Check permissions
+  const isBoardMember = user.role?.includes('board') ?? false
+  const canManageDocumentTypes = hasPermission(user, 'settings.edit.system')
+  const canManageMembershipTypes = hasPermission(user, 'settings.membership.manage')
+  const canManageTandemRegistration = hasPermission(user, 'settings.tandem.manage')
+  const canManageAirportFees = hasPermission(user, 'settings.airport_fees.manage')
 
   // Fetch user document alerts
   const fetchUserAlerts = () => {
@@ -81,35 +88,35 @@ export function SettingsTabs({ user, isBoardMember }: SettingsTabsProps) {
             <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-destructive"></span>
           )}
         </TabsTrigger>
-        {isBoardMember && <TabsTrigger value="document-types">{t('documentTypes')}</TabsTrigger>}
-        {isBoardMember && <TabsTrigger value="membership-types">{t('membershipTypes')}</TabsTrigger>}
-        {isBoardMember && <TabsTrigger value="tandem-registration">{t('tandemRegistration')}</TabsTrigger>}
-        {isBoardMember && <TabsTrigger value="airport-fees">{t('airportFees')}</TabsTrigger>}
+        {canManageDocumentTypes && <TabsTrigger value="document-types">{t('documentTypes')}</TabsTrigger>}
+        {canManageMembershipTypes && <TabsTrigger value="membership-types">{t('membershipTypes')}</TabsTrigger>}
+        {canManageTandemRegistration && <TabsTrigger value="tandem-registration">{t('tandemRegistration')}</TabsTrigger>}
+        {canManageAirportFees && <TabsTrigger value="airport-fees">{t('airportFees')}</TabsTrigger>}
       </TabsList>
 
       <TabsContent value="documents" className="space-y-4">
         <PilotDocumentsSection userId={user.id} isBoardMember={isBoardMember} />
       </TabsContent>
 
-      {isBoardMember && (
+      {canManageDocumentTypes && (
         <TabsContent value="document-types" className="space-y-4">
           <DocumentTypesSection />
         </TabsContent>
       )}
 
-      {isBoardMember && (
+      {canManageMembershipTypes && (
         <TabsContent value="membership-types" className="space-y-4">
           <MembershipTypesSection />
         </TabsContent>
       )}
 
-      {isBoardMember && (
+      {canManageTandemRegistration && (
         <TabsContent value="tandem-registration" className="space-y-4">
           <TandemRegistrationSection />
         </TabsContent>
       )}
 
-      {isBoardMember && (
+      {canManageAirportFees && (
         <TabsContent value="airport-fees" className="space-y-4">
           <AirportFeesSection />
         </TabsContent>

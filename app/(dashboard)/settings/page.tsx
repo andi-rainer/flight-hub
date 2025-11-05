@@ -1,27 +1,11 @@
-import { createClient } from '@/lib/supabase/server'
+import { getUserProfile } from '@/lib/supabase/server'
 import { redirect } from '@/navigation'
 import { getTranslations } from 'next-intl/server'
 import { SettingsTabs } from './components/settings-tabs'
-import type { User } from '@/lib/database.types'
-
-async function getCurrentUser(): Promise<User | null> {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-
-  if (!user) return null
-
-  const { data: profile } = await supabase
-    .from('users')
-    .select('*')
-    .eq('id', user.id)
-    .single()
-
-  return profile
-}
 
 export default async function SettingsPage() {
   const t = await getTranslations('settings')
-  const user = await getCurrentUser()
+  const user = await getUserProfile()
 
   if (!user) {
     redirect('/login')
@@ -40,7 +24,7 @@ export default async function SettingsPage() {
       </div>
 
       {/* Content */}
-      <SettingsTabs user={user} isBoardMember={isBoardMember} />
+      <SettingsTabs user={user} />
     </div>
   )
 }
