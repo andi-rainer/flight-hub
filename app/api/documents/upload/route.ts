@@ -107,14 +107,22 @@ export async function POST(request: NextRequest) {
       // Get the user who is uploading to check their functions
       const { data: uploadingUser } = await supabase
         .from('users')
-        .select('functions, name, surname')
+        .select('name, surname')
         .eq('id', userId)
         .single()
 
+      // Get user's function IDs
+      const { data: userFunctionsData } = await supabase
+        .from('user_functions')
+        .select('function_id')
+        .eq('user_id', userId)
+
+      const userFunctionIds = userFunctionsData?.map(uf => uf.function_id) || []
+
       // Check if document is required (either globally mandatory or required for user's functions)
       const isRequired = documentType.mandatory ||
-        (uploadingUser?.functions && documentType.required_for_functions.some(
-          reqFunc => uploadingUser.functions.includes(reqFunc)
+        (userFunctionIds.length > 0 && documentType.required_for_functions.some(
+          (reqFuncId: string) => userFunctionIds.includes(reqFuncId)
         ))
 
       if (isRequired) {
@@ -122,7 +130,7 @@ export async function POST(request: NextRequest) {
         const { data: boardMembers } = await supabase
           .from('users')
           .select('id')
-          .contains('role', ['board'])
+          .overlaps('role', ['board'])
 
         if (boardMembers && boardMembers.length > 0) {
           // Create notifications for all board members

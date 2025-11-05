@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Update document record with new file URL and reset approval status
-    const { error: updateError } = await supabase
+    const { data: updatedDoc, error: updateError } = await supabase
       .from('documents')
       .update({
         file_url: fileUrl,
@@ -90,12 +90,21 @@ export async function POST(request: NextRequest) {
         uploaded_at: new Date().toISOString(),
       })
       .eq('id', documentId)
+      .select()
+      .single()
 
     if (updateError) {
       console.error('Database error:', updateError)
       // Cleanup uploaded file
       await supabase.storage.from('documents').remove([fileName])
       return NextResponse.json({ error: `Database error: ${updateError.message}` }, { status: 500 })
+    }
+
+    if (!updatedDoc) {
+      console.error('Document update returned no data')
+      // Cleanup uploaded file
+      await supabase.storage.from('documents').remove([fileName])
+      return NextResponse.json({ error: 'Failed to update document record' }, { status: 500 })
     }
 
     // Delete old file from storage
@@ -107,14 +116,22 @@ export async function POST(request: NextRequest) {
     // Create notification for board members
     const { data: uploadingUser } = await supabase
       .from('users')
-      .select('functions, name, surname')
+      .select('name, surname')
       .eq('id', userId)
       .single()
 
+    // Get user's function IDs
+    const { data: userFunctionsData } = await supabase
+      .from('user_functions')
+      .select('function_id')
+      .eq('user_id', userId)
+
+    const userFunctionIds = userFunctionsData?.map(uf => uf.function_id) || []
+
     // Check if document is required (either globally mandatory or required for user's functions)
     const isRequired = documentType.mandatory ||
-      (uploadingUser?.functions && documentType.required_for_functions.some(
-        reqFunc => uploadingUser.functions.includes(reqFunc)
+      (userFunctionIds.length > 0 && documentType.required_for_functions.some(
+        (reqFuncId: string) => userFunctionIds.includes(reqFuncId)
       ))
 
     if (isRequired) {
@@ -122,27 +139,27 @@ export async function POST(request: NextRequest) {
       const { data: boardMembers } = await supabase
         .from('users')
         .select('id')
-        .contains('role', ['board'])
+        .overlaps('role', ['board'])
 
       if (boardMembers && boardMembers.length > 0) {
-        // Create notifications for all board members
-        const notifications = boardMembers.map(boardMember => ({
-          user_id: boardMember.id,
-          type: 'document_uploaded',
-          title: 'Document Renewed',
-          message: `${uploadingUser?.name || 'A user'} ${uploadingUser?.surname || ''} renewed their document (${documentType.name}) and it needs approval.`,
-          link: `/members`,
-          document_id: documentId,
-          read: false,
-        }))
+        // Create notifications for all board members using RPC function to bypass RLS
+        const notificationMessage = `${uploadingUser?.name || 'A user'} ${uploadingUser?.surname || ''} renewed their document (${documentType.name}) and it needs approval.`
 
-        const { error: notificationError } = await supabase
-          .from('notifications')
-          .insert(notifications)
+        for (const member of boardMembers) {
+          const { error: notificationError } = await supabase.rpc('create_notification', {
+            p_user_id: member.id,
+            p_type: 'document_uploaded',
+            p_title: 'Document Renewed',
+            p_message: notificationMessage,
+            p_link: `/members`,
+            p_document_id: documentId,
+            p_flightlog_id: null
+          })
 
-        if (notificationError) {
-          console.error('Error creating notifications:', notificationError)
-          // Don't fail the renewal if notification creation fails
+          if (notificationError) {
+            console.error('Error creating notification:', notificationError)
+            // Don't fail the renewal if notification creation fails
+          }
         }
       }
     }

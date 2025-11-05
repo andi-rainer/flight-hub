@@ -74,7 +74,7 @@ export function PilotDocumentsSection({ userId, isBoardMember = false }: PilotDo
       ])
 
       let allDocumentTypes: DocumentType[] = []
-      let fetchedUserFunctions: string[] = []
+      let fetchedUserFunctionIds: string[] = []
 
       if (typesResponse.ok) {
         const typesData = await typesResponse.json()
@@ -83,8 +83,8 @@ export function PilotDocumentsSection({ userId, isBoardMember = false }: PilotDo
 
       if (userResponse.ok) {
         const userData = await userResponse.json()
-        fetchedUserFunctions = userData.user?.functions || []
-        setUserFunctions(fetchedUserFunctions)
+        fetchedUserFunctionIds = userData.user?.functions || []
+        setUserFunctions(fetchedUserFunctionIds)
       }
 
       // Filter document types to show only relevant ones for the user
@@ -96,8 +96,9 @@ export function PilotDocumentsSection({ userId, isBoardMember = false }: PilotDo
         }
 
         // Show only if required for at least one of the user's assigned functions
-        return docType.required_for_functions.some(reqFunc =>
-          fetchedUserFunctions.includes(reqFunc)
+        // required_for_functions stores function IDs (UUIDs)
+        return docType.required_for_functions.some((reqFuncId: string) =>
+          fetchedUserFunctionIds.includes(reqFuncId)
         )
       })
 

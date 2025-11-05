@@ -10,18 +10,17 @@ import type { ReservationInsert, ReservationUpdate } from '@/lib/database.types'
 async function hasValidDocuments(userId: string): Promise<{ valid: boolean; message?: string }> {
   const supabase = await createClient()
 
-  // Get user's functions
-  const { data: user, error: userError } = await supabase
-    .from('users')
-    .select('functions')
-    .eq('id', userId)
-    .single()
+  // Get user's function IDs
+  const { data: userFunctionsData, error: userError } = await supabase
+    .from('user_functions')
+    .select('function_id')
+    .eq('user_id', userId)
 
-  if (userError || !user) {
+  if (userError) {
     return { valid: false, message: 'Failed to check user functions' }
   }
 
-  const userFunctions = user.functions || []
+  const userFunctionIds = userFunctionsData?.map(uf => uf.function_id) || []
 
   // Get all document types that are mandatory and required for user's functions
   const { data: requiredDocTypes, error: docTypesError } = await supabase
@@ -36,7 +35,10 @@ async function hasValidDocuments(userId: string): Promise<{ valid: boolean; mess
   const mandatoryForUser = requiredDocTypes?.filter(docType => {
     if (!docType.mandatory) return false
     if (!docType.required_for_functions || docType.required_for_functions.length === 0) return false
-    return docType.required_for_functions.some(reqFunc => userFunctions.includes(reqFunc))
+    // required_for_functions stores function IDs (UUIDs)
+    return docType.required_for_functions.some((reqFuncId: string) =>
+      userFunctionIds.includes(reqFuncId)
+    )
   }) || []
 
   if (mandatoryForUser.length === 0) {

@@ -30,7 +30,21 @@ export async function GET(
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
 
-    return NextResponse.json({ user })
+    // Fetch user function IDs
+    const { data: userFunctions } = await supabase
+      .from('user_functions')
+      .select('function_id')
+      .eq('user_id', userId)
+
+    const functionIds = userFunctions?.map(uf => uf.function_id) || []
+
+    // Return user with function IDs
+    return NextResponse.json({
+      user: {
+        ...user,
+        functions: functionIds,
+      }
+    })
   } catch (error) {
     console.error('Error in GET /api/users/[userId]:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

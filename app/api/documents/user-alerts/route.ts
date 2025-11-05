@@ -17,14 +17,22 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const userId = searchParams.get('userId') || user.id
 
-    // Get user's functions
-    const { data: userProfile } = await supabase
+    // Check if requesting user is a board member
+    const { data: profile } = await supabase
       .from('users')
-      .select('functions')
-      .eq('id', userId)
+      .select('role')
+      .eq('id', user.id)
       .single()
 
-    const userFunctions = userProfile?.functions || []
+    const isBoardMember = profile?.role?.includes('board') ?? false
+
+    // Get user's function IDs
+    const { data: userFunctionsData } = await supabase
+      .from('user_functions')
+      .select('function_id')
+      .eq('user_id', userId)
+
+    const userFunctionIds = userFunctionsData?.map(uf => uf.function_id) || []
 
     // Get all mandatory document types required for user's functions
     const { data: requiredDocTypes } = await supabase
@@ -34,7 +42,10 @@ export async function GET(request: NextRequest) {
     const mandatoryForUser = requiredDocTypes?.filter(docType => {
       if (!docType.mandatory) return false
       if (!docType.required_for_functions || docType.required_for_functions.length === 0) return false
-      return docType.required_for_functions.some(reqFunc => userFunctions.includes(reqFunc))
+      // required_for_functions stores function IDs (UUIDs)
+      return docType.required_for_functions.some((reqFuncId: string) =>
+        userFunctionIds.includes(reqFuncId)
+      )
     }) || []
 
     // Get user's documents
@@ -79,8 +90,10 @@ export async function GET(request: NextRequest) {
     alertCount += expiredDocuments.length
 
     // Check for unapproved documents (documents waiting for approval)
+    // Only count this for board members - regular users don't need to be alerted about pending approvals
     const unapprovedDocuments = (userDocuments || []).filter(doc => !doc.approved)
-    alertCount += unapprovedDocuments.length
+    const unapprovedCount = isBoardMember ? unapprovedDocuments.length : 0
+    alertCount += unapprovedCount
 
     return NextResponse.json({
       count: alertCount,
@@ -88,7 +101,7 @@ export async function GET(request: NextRequest) {
         missing: missingDocuments.length,
         expiring: expiringDocuments.length,
         expired: expiredDocuments.length,
-        unapproved: unapprovedDocuments.length
+        unapproved: unapprovedCount
       }
     })
   } catch (error) {
