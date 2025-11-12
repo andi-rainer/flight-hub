@@ -27,11 +27,11 @@ import { getMembershipTypes } from '@/lib/actions/memberships'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { Link } from '@/navigation'
-import type { FunctionMaster, MembershipType } from '@/lib/database.types'
+import type { FunctionWithStats, MembershipType } from '@/lib/database.types'
 import { Checkbox } from '@/components/ui/checkbox'
 
 interface InviteUserDialogProps {
-  functions: FunctionMaster[]
+  functions: FunctionWithStats[]
 }
 
 export function InviteUserDialog({ functions }: InviteUserDialogProps) {
@@ -222,8 +222,8 @@ export function InviteUserDialog({ functions }: InviteUserDialogProps) {
                   <div key={func.id} className="flex items-center space-x-2">
                     <Checkbox
                       id={`func-${func.id}`}
-                      checked={formData.selectedFunctions.includes(func.id)}
-                      onCheckedChange={() => toggleFunction(func.id)}
+                      checked={func.id ? formData.selectedFunctions.includes(func.id) : false}
+                      onCheckedChange={() => func.id && toggleFunction(func.id)}
                     />
                     <label
                       htmlFor={`func-${func.id}`}

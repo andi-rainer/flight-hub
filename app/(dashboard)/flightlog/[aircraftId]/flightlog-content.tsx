@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -21,26 +21,33 @@ import {
 import { FlightlogDialog } from './components/flightlog-dialog'
 import { getFlightlogs, getAllUsers, getActiveAircraftForFlightlog, getOperationTypesForPlane } from '../actions'
 import { createClient } from '@/lib/supabase/client'
-import type { FlightlogWithTimes, OperationType } from '@/lib/database.types'
+import type { FlightlogWithTimes, OperationType, UserProfile } from '@/lib/database.types'
 import { Plus, Filter, Loader2, Lock, ExternalLink, Plane as PlaneIcon, ArrowLeft, Clock, Target, AlertTriangle } from 'lucide-react'
 import { toast } from 'sonner'
 import { format } from 'date-fns'
 import { Link } from '@/navigation'
 import { useTranslations } from 'next-intl'
+import { hasPermission } from '@/lib/permissions'
 
 interface FlightlogContentProps {
   aircraftId: string
-  userId: string
+  userProfile: UserProfile
   isBoardMember: boolean
 }
 
-export function FlightlogContent({ aircraftId, userId, isBoardMember }: FlightlogContentProps) {
+export function FlightlogContent({ aircraftId, userProfile, isBoardMember }: FlightlogContentProps) {
   const t = useTranslations('flightLog')
+  const canCreateFlightlog = hasPermission(userProfile, 'flight.log.create')
 
   const [flightlogs, setFlightlogs] = useState<FlightlogWithTimes[]>([])
   const [filteredFlightlogs, setFilteredFlightlogs] = useState<FlightlogWithTimes[]>([])
   const [aircraft, setAircraft] = useState<{ id: string; tail_number: string; type: string } | null>(null)
-  const [aircraftTotals, setAircraftTotals] = useState<{ total_flight_hours: number; total_landings: number; initial_flight_hours: number; initial_landings: number } | null>(null)
+  const [aircraftTotals, setAircraftTotals] = useState<{
+    total_flight_hours: number | null
+    total_landings: number | null
+    initial_flight_hours: number | null
+    initial_landings: number | null
+  } | null>(null)
   const [users, setUsers] = useState<Array<{ id: string; name: string; surname: string; email: string }>>([])
   const [operationTypes, setOperationTypes] = useState<OperationType[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -49,11 +56,6 @@ export function FlightlogContent({ aircraftId, userId, isBoardMember }: Flightlo
   // Dialog state
   const [dialogOpen, setDialogOpen] = useState(false)
   const [selectedEntry, setSelectedEntry] = useState<FlightlogWithTimes | undefined>()
-
-  // Load data
-  useEffect(() => {
-    loadData()
-  }, [aircraftId])
 
   // Filter flightlogs when pilot filter changes
   useEffect(() => {
@@ -66,7 +68,7 @@ export function FlightlogContent({ aircraftId, userId, isBoardMember }: Flightlo
     setFilteredFlightlogs(filtered)
   }, [selectedPilot, flightlogs, aircraftId])
 
-  const loadData = async (showLoading = true) => {
+  const loadData = useCallback(async (showLoading = true) => {
     if (showLoading) {
       setIsLoading(true)
     }
@@ -126,7 +128,12 @@ export function FlightlogContent({ aircraftId, userId, isBoardMember }: Flightlo
     if (showLoading) {
       setIsLoading(false)
     }
-  }
+  }, [aircraftId, t])
+
+  // Load data on mount and when aircraftId changes
+  useEffect(() => {
+    loadData()
+  }, [loadData])
 
   const handleSelectEntry = (entry: FlightlogWithTimes) => {
     if (entry.charged) {
@@ -135,7 +142,7 @@ export function FlightlogContent({ aircraftId, userId, isBoardMember }: Flightlo
     if (entry.locked && !isBoardMember) {
       return toast.error(t('entryLockedCannotEdit'))
     }
-    else if ((entry.pilot_id !== userId) && (entry.copilot_id !== userId) && !isBoardMember) {
+    else if ((entry.pilot_id !== userProfile.id) && (entry.copilot_id !== userProfile.id) && !isBoardMember) {
       return toast.error(t('onlyPilotsCanEdit'))
     }
     setSelectedEntry(entry)
@@ -183,7 +190,7 @@ export function FlightlogContent({ aircraftId, userId, isBoardMember }: Flightlo
             <h2 className="font-semibold text-lg">{aircraft?.tail_number || t('loading')}</h2>
             <p className="text-xs text-muted-foreground">{aircraft?.type || ''}</p>
           </div>
-          {aircraftTotals && (
+          {aircraftTotals && aircraftTotals.total_flight_hours !== null && aircraftTotals.total_landings !== null && (
             <div className="flex gap-4 ml-auto">
               <div className="flex items-center gap-1.5 text-sm">
                 <Clock className="h-4 w-4 text-muted-foreground" />
@@ -254,16 +261,18 @@ export function FlightlogContent({ aircraftId, userId, isBoardMember }: Flightlo
         </div>
 
         {/* Right side: Create Button */}
-        <Button
-          size="sm"
-          onClick={() => {
-            setSelectedEntry(undefined)
-            setDialogOpen(true)
-          }}
-        >
-          <Plus className="mr-2 h-4 w-4" />
-          {t('newEntry')}
-        </Button>
+        {canCreateFlightlog && (
+          <Button
+            size="sm"
+            onClick={() => {
+              setSelectedEntry(undefined)
+              setDialogOpen(true)
+            }}
+          >
+            <Plus className="mr-2 h-4 w-4" />
+            {t('newEntry')}
+          </Button>
+        )}
       </div>
 
       {/* Table */}
@@ -340,8 +349,12 @@ export function FlightlogContent({ aircraftId, userId, isBoardMember }: Flightlo
                           />
                         )}
                         <div>
-                          <span className="hidden sm:inline">{format(new Date(entry.block_off), 'MMM dd, yyyy')}</span>
-                          <span className="sm:hidden">{format(new Date(entry.block_off), 'MMM dd')}</span>
+                          <span className="hidden sm:inline">
+                            {entry.block_off ? format(new Date(entry.block_off), 'MMM dd, yyyy') : '—'}
+                          </span>
+                          <span className="sm:hidden">
+                            {entry.block_off ? format(new Date(entry.block_off), 'MMM dd') : '—'}
+                          </span>
                         </div>
                       </div>
                     </TableCell>
@@ -360,10 +373,10 @@ export function FlightlogContent({ aircraftId, userId, isBoardMember }: Flightlo
                       <div className="flex items-center gap-2">
                         <div className="flex flex-col">
                           <span className="text-muted-foreground">
-                            {format(new Date(entry.block_off), 'HH:mm')} / {format(new Date(entry.takeoff_time), 'HH:mm')}
+                            {entry.block_off ? format(new Date(entry.block_off), 'HH:mm') : '—'} / {entry.takeoff_time ? format(new Date(entry.takeoff_time), 'HH:mm') : '—'}
                           </span>
                           <span className="text-muted-foreground">
-                            {format(new Date(entry.landing_time), 'HH:mm')} / {format(new Date(entry.block_on), 'HH:mm')}
+                            {entry.landing_time ? format(new Date(entry.landing_time), 'HH:mm') : '—'} / {entry.block_on ? format(new Date(entry.block_on), 'HH:mm') : '—'}
                           </span>
                         </div>
                         <div className="text-xs px-1.5 py-0.5 rounded bg-muted font-medium" title={t('landings')}>
@@ -443,7 +456,7 @@ export function FlightlogContent({ aircraftId, userId, isBoardMember }: Flightlo
       </div>
 
       {/* Flightlog Dialog */}
-      {aircraft && (
+      {aircraft && userProfile.id && (
         <FlightlogDialog
           open={dialogOpen}
           onOpenChange={handleDialogClose}
@@ -452,7 +465,7 @@ export function FlightlogContent({ aircraftId, userId, isBoardMember }: Flightlo
           users={users}
           operationTypes={operationTypes}
           existingEntry={selectedEntry}
-          currentUserId={userId}
+          currentUserId={userProfile.id}
           isBoardMember={isBoardMember}
         />
       )}

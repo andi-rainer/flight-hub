@@ -22,7 +22,7 @@ import { Plus, Pencil, Trash2, Loader2, Shield, Users, AlertCircle } from 'lucid
 import { createFunction, updateFunction, deleteFunction, toggleFunctionActive } from '@/lib/actions/functions'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
-import type { FunctionMaster } from '@/lib/database.types'
+import type { FunctionWithStats } from '@/lib/database.types'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -43,11 +43,6 @@ import {
 } from '@/components/ui/select'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { cn } from '@/lib/utils'
-
-interface FunctionWithStats extends FunctionMaster {
-  user_count?: number
-  category_name?: string
-}
 
 interface FunctionsSectionProps {
   functions: FunctionWithStats[]
@@ -107,7 +102,7 @@ export function FunctionsSection({ functions, categories }: FunctionsSectionProp
 
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!editingFunction) return
+    if (!editingFunction || !editingFunction.id) return
 
     setIsSubmitting(true)
 
@@ -156,8 +151,8 @@ export function FunctionsSection({ functions, categories }: FunctionsSectionProp
   const openEditDialog = (func: FunctionWithStats) => {
     setEditingFunction(func)
     setFormData({
-      name: func.name,
-      name_de: func.name_de || func.name,
+      name: func.name || '',
+      name_de: func.name_de || func.name || '',
       description: func.description || '',
       description_de: func.description_de || '',
       category_id: func.category_id || '',
@@ -252,7 +247,7 @@ export function FunctionsSection({ functions, categories }: FunctionsSectionProp
                               getCategoryBadgeColor(categories.find(c => c.id === func.category_id)?.code || '')
                             )}
                           >
-                            {func.category_name || categories.find(c => c.id === func.category_id)?.name_en}
+                            {func.category_name_en || categories.find(c => c.id === func.category_id)?.name_en}
                           </Badge>
                         )}
                       </TableCell>
@@ -265,8 +260,8 @@ export function FunctionsSection({ functions, categories }: FunctionsSectionProp
                       <TableCell>
                         <div className="flex items-center gap-2">
                           <Switch
-                            checked={func.active}
-                            onCheckedChange={() => handleToggleActive(func.id, func.active)}
+                            checked={func.active ?? false}
+                            onCheckedChange={() => func.id && handleToggleActive(func.id, func.active ?? false)}
                           />
                           <span className="text-sm text-muted-foreground">
                             {func.active ? 'Active' : 'Inactive'}
@@ -513,7 +508,7 @@ export function FunctionsSection({ functions, categories }: FunctionsSectionProp
                               getCategoryBadgeColor(categories.find(c => c.id === func.category_id)?.code || '')
                             )}
                           >
-                            {func.category_name || categories.find(c => c.id === func.category_id)?.name_en}
+                            {func.category_name_en || categories.find(c => c.id === func.category_id)?.name_en}
                           </Badge>
                         )}
                       </TableCell>
@@ -650,7 +645,7 @@ export function FunctionsSection({ functions, categories }: FunctionsSectionProp
                               <AlertDialogFooter>
                                 <AlertDialogCancel>Cancel</AlertDialogCancel>
                                 <AlertDialogAction
-                                  onClick={() => handleDelete(func.id)}
+                                  onClick={() => func.id && handleDelete(func.id)}
                                   className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                                 >
                                   Delete

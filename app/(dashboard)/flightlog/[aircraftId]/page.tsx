@@ -1,7 +1,7 @@
 import { Suspense } from 'react'
 import { getUserProfile } from '@/lib/supabase/server'
 import { redirect } from '@/navigation'
-import { hasPermission } from '@/lib/permissions'
+import { hasPermission, type PermissionUser } from '@/lib/permissions'
 import { FlightlogContent } from './flightlog-content'
 import { Loader2 } from 'lucide-react'
 
@@ -18,8 +18,8 @@ export default async function FlightlogAircraftPage({ params }: FlightlogAircraf
     redirect('/login')
   }
 
-  // Check permission to view flight log
-  if (!hasPermission(userProfile, 'flight.log.view')) {
+  // Check permission to view flight log (userProfile satisfies PermissionUser interface)
+  if (!hasPermission(userProfile as PermissionUser, 'flight.log.view')) {
     redirect('/dashboard?error=unauthorized')
   }
 
@@ -36,7 +36,7 @@ export default async function FlightlogAircraftPage({ params }: FlightlogAircraf
     >
       <FlightlogContent
         aircraftId={aircraftId}
-        userId={userProfile.id}
+        userProfile={userProfile}
         isBoardMember={userProfile.role?.includes('board') || false}
       />
     </Suspense>

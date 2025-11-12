@@ -4,7 +4,7 @@ import { getTranslations } from 'next-intl/server'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { AlertCircle, ArrowLeft, AlertTriangle, CheckCircle, Clock, Wrench } from 'lucide-react'
+import { AlertCircle, ArrowLeft, AlertTriangle, CheckCircle, Clock } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Link } from '@/navigation'
 import { AircraftDetailsTab } from '../components/aircraft-details-tab'
@@ -102,7 +102,7 @@ function getDocumentExpiryStatus(expiryDate: string | null) {
   return 'ok'
 }
 
-function getMaintenanceStatusBadge(status?: string, hoursRemaining?: number | null, t?: any) {
+function getMaintenanceStatusBadge(status?: string, hoursRemaining?: number | null, t?: (key: string) => string) {
   if (!status || status === 'not_scheduled') {
     return (
       <Badge variant="secondary" className="gap-1">

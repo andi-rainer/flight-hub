@@ -11,7 +11,7 @@ const CATEGORIES = ['All', 'Regulations', 'Procedures', 'Forms', 'General']
 export default function DocumentFilters() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const [isPending, startTransition] = useTransition()
+  const [_isPending, startTransition] = useTransition()
 
   const [search, setSearch] = useState(searchParams.get('search') || '')
   const [category, setCategory] = useState(searchParams.get('category') || 'All')

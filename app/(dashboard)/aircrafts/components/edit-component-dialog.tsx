@@ -33,7 +33,7 @@ export function EditComponentDialog({
   const [serialNumber, setSerialNumber] = useState(component.serial_number || '')
   const [manufacturer, setManufacturer] = useState(component.manufacturer || '')
   const [model, setModel] = useState(component.model || '')
-  const [partNumber, setPartNumber] = useState('')
+  const [_partNumber, _setPartNumber] = useState('')
   const [tboHours, setTboHours] = useState(component.tbo_hours?.toString() || '')
   const [currentHours, setCurrentHours] = useState(component.component_current_hours?.toString() || '0')
   const [notes, setNotes] = useState('')

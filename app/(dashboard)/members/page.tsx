@@ -13,7 +13,7 @@ import { EditMemberDialog } from './components/edit-member-dialog'
 import { MemberDocumentsDialog } from './components/member-documents-dialog'
 import { ManageMembershipDialog } from './components/manage-membership-dialog'
 import { FunctionsSection } from './components/functions-section'
-import type { User, FunctionMaster, Document, UserMembership, MembershipType } from '@/lib/database.types'
+import type { User, Document, UserMembership, MembershipType, FunctionWithStats } from '@/lib/database.types'
 
 type UserMembershipWithType = UserMembership & {
   membership_types: MembershipType | null
@@ -226,7 +226,7 @@ async function getMembers(): Promise<UserWithDocuments[]> {
   })
 }
 
-async function getFunctions() {
+async function getFunctions(): Promise<FunctionWithStats[]> {
   const supabase = await createClient()
 
   // Get functions with user counts using the view created in migration
@@ -261,7 +261,7 @@ async function getFunctionCategories() {
 }
 
 
-function getFunctionNames(functionIds: string[], allFunctions: FunctionMaster[]): string {
+function getFunctionNames(functionIds: string[], allFunctions: FunctionWithStats[]): string {
   if (!functionIds || functionIds.length === 0) return '-'
 
   const names = functionIds

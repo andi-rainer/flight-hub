@@ -313,7 +313,7 @@ export function ManageMembershipDialog({ user, activeMembership, trigger }: Mana
                         Payment Status
                       </Label>
                       <Select
-                        value={activeMembership.payment_status}
+                        value={activeMembership.payment_status ?? undefined}
                         onValueChange={(value) => handlePaymentStatusChange(value as 'paid' | 'unpaid' | 'pending')}
                         disabled={isUpdatingPaymentStatus}
                       >

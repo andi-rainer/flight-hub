@@ -49,10 +49,20 @@ Three primary action buttons:
 - Different icons for notification types:
   - `reservation_active`: CheckCircle icon
   - `document_expiring`: AlertCircle icon
+  - `document_uploaded`: FileIcon icon
+  - `flight_review`: PlaneIcon icon
   - `general`: Info icon
 - Timestamp showing relative time (e.g., "2 hours ago")
 - "Mark as read" button for each notification
 - Only shown when there are unread notifications
+- **Real-time updates**: Uses Supabase Realtime for instant notification delivery
+
+### 7. Real-time Features
+The dashboard includes real-time subscriptions for live updates:
+- **Document Changes**: Automatically refreshes when documents are uploaded, approved, or expiring
+- **Notifications**: New notifications appear instantly without page refresh
+- **Account Balance**: Updates when transactions are created
+- Uses Supabase Realtime channels with PostgreSQL triggers
 
 ## Technical Implementation
 
@@ -105,13 +115,19 @@ All data is fetched server-side using Supabase:
 
 ### Client Components
 
-Only one client component is used for interactivity:
+Client components are strategically used for interactivity and real-time features:
 
 **MarkNotificationRead** (`mark-notification-read.tsx`)
 - Handles "mark as read" button clicks
 - Calls Server Action to update database
 - Provides optimistic UI feedback
 - Automatically removes from view after marking
+
+**Real-time Subscription Components** (if implemented)
+- Subscribe to Supabase Realtime channels
+- Listen for document changes and new notifications
+- Automatically refresh relevant dashboard sections
+- Properly clean up subscriptions on unmount
 
 ### Server Actions
 
@@ -160,8 +176,11 @@ Uses `date-fns` library for consistent date formatting:
 1. **Server Components by default**: Minimizes client-side JavaScript
 2. **Streaming with Suspense**: Shows UI incrementally as data loads
 3. **Efficient queries**: Uses Supabase select with specific fields
-4. **Query limits**: Caps results to prevent over-fetching
-5. **Single data fetch function**: Consolidates all queries for efficiency
+4. **Strategic indexes**: 40+ database indexes for fast queries
+5. **Query limits**: Caps results to prevent over-fetching (10-20 records)
+6. **Single data fetch function**: Consolidates all queries for efficiency
+7. **Materialized views**: Pre-calculated data for complex aggregations
+8. **Real-time subscriptions**: Selective updates without polling
 
 ## Security
 
@@ -175,23 +194,27 @@ Uses `date-fns` library for consistent date formatting:
 
 Potential improvements:
 1. Add pagination for transactions and flights
-2. Implement real-time updates using Supabase Realtime
+2. ~~Implement real-time updates using Supabase Realtime~~ (✅ Completed)
 3. Add filters for date ranges
-4. Add charts/graphs for flight statistics
-5. Add export functionality for transactions
-6. Implement notification preferences
+4. Add charts/graphs for flight statistics (e.g., flight hours by month)
+5. Add export functionality for transactions (CSV/PDF)
+6. Implement notification preferences and filtering
 7. Add keyboard shortcuts for quick actions
+8. Add drag-and-drop for quick actions
+9. Add customizable dashboard widgets
+10. Add flight statistics charts (hours, costs, trends)
 
 ## Dependencies
 
-- Next.js 15 (App Router)
+- Next.js 15 (App Router with Turbopack)
 - React 18
-- TypeScript
-- Supabase (@supabase/ssr)
-- shadcn/ui components
-- Tailwind CSS
-- date-fns
+- TypeScript 5.x
+- Supabase (@supabase/ssr) with Realtime
+- shadcn/ui components (Radix UI primitives)
+- Tailwind CSS 4
+- date-fns (date formatting)
 - lucide-react (icons)
+- sonner (toast notifications)
 
 ## Usage
 

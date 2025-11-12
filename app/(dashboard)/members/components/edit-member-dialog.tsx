@@ -18,13 +18,13 @@ import { resendInvitation } from '@/lib/actions/members'
 import { updateMemberProfile } from '@/lib/actions/settings'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
-import type { User, FunctionMaster } from '@/lib/database.types'
+import type { User, FunctionWithStats } from '@/lib/database.types'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Separator } from '@/components/ui/separator'
 
 interface EditMemberDialogProps {
   member: User
-  functions: FunctionMaster[]
+  functions: FunctionWithStats[]
 }
 
 export function EditMemberDialog({ member, functions }: EditMemberDialogProps) {
@@ -294,8 +294,8 @@ export function EditMemberDialog({ member, functions }: EditMemberDialogProps) {
                     <div key={func.id} className="flex items-center space-x-2">
                       <Checkbox
                         id={`edit-func-${func.id}`}
-                        checked={formData.selectedFunctions.includes(func.id)}
-                        onCheckedChange={() => toggleFunction(func.id)}
+                        checked={func.id ? formData.selectedFunctions.includes(func.id) : false}
+                        onCheckedChange={() => func.id && toggleFunction(func.id)}
                       />
                       <label
                         htmlFor={`edit-func-${func.id}`}

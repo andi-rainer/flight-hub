@@ -105,7 +105,7 @@ export function AddCostCenterTransactionDialog({
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-3">
             <Label>Transaction Type</Label>
-            <RadioGroup value={transactionType} onValueChange={(value) => setTransactionType(value as any)}>
+            <RadioGroup value={transactionType} onValueChange={(value) => setTransactionType(value as 'credit' | 'charge' | 'adjustment')}>
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="charge" id="charge-cc" />
                 <Label htmlFor="charge-cc" className="font-normal cursor-pointer flex items-center gap-2">

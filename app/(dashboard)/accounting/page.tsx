@@ -17,8 +17,6 @@ export default async function AccountingPage() {
     redirect('/dashboard?error=unauthorized')
   }
 
-  const isBoardMember = currentUser.role?.includes('board') ?? false
-
   return (
     <div className="space-y-6">
       {/* Header */}

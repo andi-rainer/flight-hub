@@ -9,7 +9,7 @@ import { Search } from 'lucide-react'
 export function AircraftFilters() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const [isPending, startTransition] = useTransition()
+  const [_isPending, startTransition] = useTransition()
 
   const handleStatusChange = (value: string) => {
     const params = new URLSearchParams(searchParams)

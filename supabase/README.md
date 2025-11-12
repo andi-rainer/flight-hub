@@ -6,19 +6,28 @@ This directory contains the complete database schema, migrations, and documentat
 
 - **Project Reference**: `bfzynfnowzkvhvleocny`
 - **Database**: PostgreSQL (via Supabase)
-- **Schema Version**: 1.0.0
-- **Last Updated**: 2025-01-16
+- **Schema Version**: 2.0.0
+- **Last Updated**: November 2025
 
 ## Directory Structure
 
 ```
 supabase/
 ├── migrations/
-│   ├── 20250116000000_initial_schema.sql    # Main schema with all tables, RLS, functions
-│   └── 20250116000001_sample_data.sql       # Sample data for testing
-├── SCHEMA_DOCUMENTATION.md                   # Complete schema documentation
-├── helper_queries.sql                        # Common SQL queries and operations
-└── README.md                                 # This file
+│   ├── 20250202100000_initial_schema.sql              # Core schema with tables, RLS
+│   ├── 20250202100001_document_system.sql             # Document management
+│   ├── 20250202100002_billing_system.sql              # Billing & accounting
+│   ├── 20250202100003_airport_fees.sql                # Airport fee system
+│   ├── 20250202100004_maintenance_system.sql          # Aircraft maintenance
+│   ├── 20250202100005_membership_system.sql           # Membership types
+│   ├── 20250202100006_rbac_system.sql                 # Granular RBAC with functions
+│   ├── 20250202100007_storage_buckets.sql             # Storage bucket setup
+│   ├── 20250202100008_realtime.sql                    # Realtime subscriptions
+│   ├── 20250202100009_sample_data.sql                 # Sample data
+│   └── [10+ additional migrations]                    # Bug fixes, enhancements
+├── SCHEMA_DOCUMENTATION.md                             # Complete schema docs
+├── QUICK_REFERENCE.md                                  # Common SQL queries
+└── README.md                                           # This file
 ```
 
 ## Quick Start
@@ -45,22 +54,28 @@ Should return: "No schema changes found" (if migrations applied successfully)
 
 ## Schema Overview
 
-### Core Tables
+### Core Tables (11 tables)
 
 1. **users** - User profiles extending auth.users
-2. **functions_master** - Club functions/roles with fees
-3. **planes** - Aircraft fleet
-4. **reservations** - Flight bookings
-5. **flightlog** - Actual flight records
-6. **documents** - Document management
-7. **accounts** - Financial transactions
-8. **notifications** - User notifications
+2. **functions_master** - Club functions/roles with fees (System + Custom)
+3. **user_functions** - Junction table for user-function assignments
+4. **function_categories** - Function categorization (Aviation, Skydiving, etc.)
+5. **planes** - Aircraft fleet
+6. **reservations** - Flight bookings
+7. **flightlog** - Actual flight records
+8. **documents** - Unified document management
+9. **accounts** - Financial transaction ledger
+10. **notifications** - User notifications
+11. **cost_centers** - Billing cost centers
 
 ### Views
 
+- **users_with_functions** - Users joined with their function_codes array
 - **active_reservations** - Current/future active reservations
 - **flightlog_with_times** - Flightlog with calculated times
 - **user_balances** - Aggregated account balances
+- **aircraft_maintenance_status** - Aircraft maintenance tracking
+- **component_status** - Aircraft component status tracking
 
 ### Helper Functions
 
@@ -126,6 +141,14 @@ WHERE email = 'user@example.com';
 
 ### Assign Function to User
 ```sql
+-- Using new user_functions junction table
+INSERT INTO public.user_functions (user_id, function_id, assigned_by)
+SELECT
+  (SELECT id FROM public.users WHERE email = 'user@example.com'),
+  (SELECT id FROM public.functions_master WHERE code = 'PILOT'),
+  auth.uid();
+
+-- Legacy method (deprecated)
 UPDATE public.users
 SET functions = array_append(functions, 'President')
 WHERE email = 'user@example.com';
@@ -223,11 +246,13 @@ Supabase doesn't support automatic rollbacks. To revert:
 
 ### Indexes Created
 
-All foreign keys and frequently queried fields have indexes:
+All foreign keys and frequently queried fields have indexes (40+ strategic indexes):
 - All `*_id` fields (foreign keys)
-- Time fields (`start_time`, `end_time`, `block_on`, `expiry_date`)
-- Status fields (`active`, `locked`, `charged`, `read`, `status`)
-- Array fields use GIN indexes (`role`, `functions`, `tags`, `nav_equipment`)
+- Time fields (`start_time`, `end_time`, `block_on`, `expiry_date`, `valid_from`, `valid_until`)
+- Status fields (`active`, `locked`, `charged`, `read`, `status`, `approved`, `blocks_aircraft`)
+- Array fields use GIN indexes (`role`, `functions`, `tags`, `nav_equipment`, `function_codes`)
+- Composite indexes for common query patterns (user_id + created_at)
+- Partial indexes on active records (active = true, read = false)
 
 ### Query Optimization Tips
 
@@ -319,8 +344,20 @@ SELECT * FROM user_balances WHERE balance < 0;
 
 ## Version History
 
-### v1.0.0 (2025-01-16)
-- Initial schema with all 8 tables
+### v2.0.0 (November 2025)
+- Granular RBAC system with function-based permissions
+- user_functions junction table for many-to-many relationships
+- function_categories for organizing functions
+- Billing and accounting system (cost_centers, enhanced accounts)
+- Maintenance tracking system for aircraft
+- Membership types and management
+- Airport fees system
+- Storage bucket setup automation
+- Realtime subscriptions configuration
+- 19+ migration files with comprehensive features
+
+### v1.0.0 (February 2025)
+- Initial schema with core 8 tables
 - Complete RLS policies for all tables
 - Helper functions and views
 - Sample data for testing

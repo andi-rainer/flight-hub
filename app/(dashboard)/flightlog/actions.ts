@@ -1,7 +1,7 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
-import { requirePermission, requireAnyPermission, getCurrentUserWithFunctions, hasPermission } from '@/lib/permissions'
+import { requirePermission, getCurrentUserWithFunctions, hasPermission } from '@/lib/permissions'
 import type { FlightlogInsert, FlightlogUpdate } from '@/lib/database.types'
 
 export type FlightWarning = {
@@ -291,7 +291,7 @@ export async function getAllUsers() {
   )
 
   // Remove role field from response (not needed in UI)
-  const sanitizedUsers = activeUsers.map(({ role, ...user }) => user)
+  const sanitizedUsers = activeUsers.map(({ role: _role, ...user }) => user)
 
   return { data: sanitizedUsers, error: null }
 }
@@ -338,7 +338,7 @@ export async function checkFlightWarnings(
   takeoffTime: string,
   landingTime: string,
   icaoDeparture: string | null,
-  icaoDestination: string | null
+  _icaoDestination: string | null
 ): Promise<{ data: FlightWarningCheckResult | null; error: string | null }> {
   const supabase = await createClient()
 

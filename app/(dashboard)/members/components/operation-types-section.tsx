@@ -87,7 +87,7 @@ export function OperationTypesSection({ aircrafts, operationTypes }: OperationTy
   const resetConfigData = () => {
     if (selectedAircraft) {
       setConfigData({
-        billing_unit: selectedAircraft.billing_unit || 'hour',
+        billing_unit: (selectedAircraft.billing_unit as 'hour' | 'minute') || 'hour',
         default_rate: selectedAircraft.default_rate?.toString() || '150.00',
       })
     }
@@ -190,7 +190,7 @@ export function OperationTypesSection({ aircrafts, operationTypes }: OperationTy
       name: opType.name,
       description: opType.description || '',
       rate: opType.rate.toString(),
-      is_default: opType.is_default,
+      is_default: opType.is_default ?? false,
       color: opType.color || '#3b82f6',
     })
   }

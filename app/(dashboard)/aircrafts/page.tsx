@@ -2,7 +2,7 @@ import { createClient, getUserProfile } from '@/lib/supabase/server'
 import { getTranslations } from 'next-intl/server'
 import { redirect } from 'next/navigation'
 import { hasPermission } from '@/lib/permissions'
-import { Plane, User } from '@/lib/database.types'
+import { Plane } from '@/lib/database.types'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -78,7 +78,7 @@ async function getAircrafts(searchParams: { status?: string; search?: string }):
 
 // Removed - using getUserProfile from lib/supabase/server instead
 
-function getMaintenanceStatusBadge(status?: string, hoursRemaining?: number | null, t?: any) {
+function getMaintenanceStatusBadge(status?: string, hoursRemaining?: number | null, t?: (key: string) => string) {
   if (!status || status === 'not_scheduled') {
     return (
       <Badge variant="secondary" className="gap-1 text-xs">

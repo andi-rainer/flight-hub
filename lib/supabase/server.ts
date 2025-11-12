@@ -1,7 +1,7 @@
 import { createServerClient } from '@supabase/ssr'
 import { createClient as createSupabaseClient } from '@supabase/supabase-js'
 import { cookies } from 'next/headers'
-import type { Database } from '@/lib/database.types'
+import type { Database, UserProfile } from '@/lib/database.types'
 
 /**
  * Creates a Supabase client for use in Server Components, Server Actions, and Route Handlers
@@ -94,7 +94,7 @@ export async function getUser() {
  *
  * NOTE: This function loads the user with their function_codes for permission checks
  */
-export async function getUserProfile() {
+export async function getUserProfile(): Promise<UserProfile | null> {
   const supabase = await createClient()
   const { data: { user: authUser }, error: authError } = await supabase.auth.getUser()
 

@@ -19,9 +19,17 @@ import { Download, Edit2, Trash2, Check, X } from 'lucide-react'
 import { formatDate } from '@/lib/utils/format'
 import { deleteDocument, updateDocumentName } from '../actions'
 import { toast } from 'sonner'
+import type { Document } from '@/lib/database.types'
+
+interface DocumentWithUploader extends Document {
+  uploader?: {
+    name: string
+    surname: string
+  } | null
+}
 
 interface DocumentRowProps {
-  document: any
+  document: DocumentWithUploader
   isBoardMember: boolean
   mobileView?: boolean
 }
@@ -230,7 +238,7 @@ function DeleteDialog({
         <AlertDialogHeader>
           <AlertDialogTitle>Delete Document</AlertDialogTitle>
           <AlertDialogDescription>
-            Are you sure you want to delete "{documentName}"? This action cannot be undone.
+            Are you sure you want to delete &quot;{documentName}&quot;? This action cannot be undone.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

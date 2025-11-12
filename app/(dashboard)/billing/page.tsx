@@ -1,14 +1,14 @@
 import { createClient, getUserProfile } from '@/lib/supabase/server'
 import { redirect } from '@/navigation'
 import { hasPermission } from '@/lib/permissions'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Shield, CreditCard, Users, Building2 } from 'lucide-react'
+import { CreditCard, Users, Building2 } from 'lucide-react'
 import { UnchargedFlightsTable } from './components/uncharged-flights-table'
 import { UserAccountsTable } from './components/user-accounts-table'
 import { CostCentersTable } from './components/cost-centers-table'
-import type { User, UnchargedFlight, UserBalance, CostCenter } from '@/lib/database.types'
+import type { UnchargedFlight, UserBalance, CostCenter } from '@/lib/database.types'
 
 async function getUnchargedFlights(): Promise<UnchargedFlight[]> {
   const supabase = await createClient()
@@ -98,7 +98,7 @@ export default async function BillingPage() {
     redirect('/dashboard?error=unauthorized')
   }
 
-  const isBoardMember = currentUser.role?.includes('board') ?? false
+  const _isBoardMember = currentUser.role?.includes('board') ?? false
 
   const [unchargedFlights, userBalances, costCenters] = await Promise.all([
     getUnchargedFlights(),

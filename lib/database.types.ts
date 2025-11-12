@@ -3287,6 +3287,18 @@ export type Database = {
         Returns: number
       }
       can_reserve_aircraft: { Args: { p_plane_id: string }; Returns: boolean }
+      create_notification: {
+        Args: {
+          p_user_id: string
+          p_type: string
+          p_title: string
+          p_message: string
+          p_link?: string | null
+          p_document_id?: string | null
+          p_flightlog_id?: string | null
+        }
+        Returns: undefined
+      }
       get_recent_selections: {
         Args: { p_context: string; p_limit?: number; p_user_id: string }
         Returns: {
@@ -3489,3 +3501,30 @@ export const Constants = {
     },
   },
 } as const
+
+// Custom type aliases for convenience
+export type User = Database['public']['Tables']['users']['Row']
+export type UserProfile = Database['public']['Views']['users_with_functions']['Row']
+export type Document = Database['public']['Tables']['documents']['Row']
+export type DocumentInsert = Database['public']['Tables']['documents']['Insert']
+export type DocumentUpdate = Database['public']['Tables']['documents']['Update']
+export type FunctionMaster = Database['public']['Tables']['functions_master']['Row']
+export type FunctionMasterInsert = Database['public']['Tables']['functions_master']['Insert']
+export type FunctionMasterUpdate = Database['public']['Tables']['functions_master']['Update']
+export type MembershipType = Database['public']['Tables']['membership_types']['Row']
+export type MembershipTypeInsert = Database['public']['Tables']['membership_types']['Insert']
+export type MembershipTypeUpdate = Database['public']['Tables']['membership_types']['Update']
+export type UserMembership = Database['public']['Tables']['user_memberships']['Row']
+export type UserMembershipInsert = Database['public']['Tables']['user_memberships']['Insert']
+export type UserMembershipUpdate = Database['public']['Tables']['user_memberships']['Update']
+export type OperationType = Database['public']['Tables']['operation_types']['Row']
+export type OperationTypeInsert = Database['public']['Tables']['operation_types']['Insert']
+export type OperationTypeUpdate = Database['public']['Tables']['operation_types']['Update']
+export type Flightlog = Database['public']['Tables']['flightlog']['Row']
+export type FlightlogInsert = Database['public']['Tables']['flightlog']['Insert']
+export type FlightlogUpdate = Database['public']['Tables']['flightlog']['Update']
+export type FlightlogWithTimes = Database['public']['Views']['flightlog_with_times']['Row']
+export type FunctionWithStats = Database['public']['Views']['functions_with_stats']['Row']
+export type Plane = Database['public']['Tables']['planes']['Row']
+export type PlaneInsert = Database['public']['Tables']['planes']['Insert']
+export type PlaneUpdate = Database['public']['Tables']['planes']['Update']

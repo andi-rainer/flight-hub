@@ -1,6 +1,15 @@
-import { SYSTEM_FUNCTIONS, type SystemFunction } from '@/lib/constants/system-functions'
+import { SYSTEM_FUNCTIONS } from '@/lib/constants/system-functions'
 import type { User } from '@/lib/database.types'
 import type { SupabaseClient } from '@supabase/supabase-js'
+import type { Json } from '@/lib/database.types'
+
+// Minimal type for permission checking - compatible with both User and UserProfile
+export interface PermissionUser {
+  id: string | null
+  role?: string[] | null
+  function_codes?: string[] | null
+  functions?: Json | null
+}
 
 /**
  * Permission Matrix
@@ -93,15 +102,15 @@ export type Permission = keyof typeof PERMISSIONS
 /**
  * Check if a user has a specific permission
  */
-export function hasPermission(user: User | null | undefined, permission: Permission): boolean {
+export function hasPermission(user: PermissionUser | null | undefined, permission: Permission): boolean {
   if (!user) return false
 
   // Board members have all permissions
-  if (user.role && (user.role.includes('board') || user.role === 'board')) {
+  if (user.role && user.role.includes('board')) {
     return true
   }
 
-  const allowedFunctions = PERMISSIONS[permission]
+  const allowedFunctions = PERMISSIONS[permission] as readonly string[]
 
   // Permission available to everyone
   if (allowedFunctions.includes('*')) {
@@ -110,7 +119,7 @@ export function hasPermission(user: User | null | undefined, permission: Permiss
 
   // Check if user has required role
   if (allowedFunctions.includes('board')) {
-    if (user.role && (user.role.includes('board') || user.role === 'board')) {
+    if (user.role && user.role.includes('board')) {
       return true
     }
   }
@@ -125,7 +134,7 @@ export function hasPermission(user: User | null | undefined, permission: Permiss
  * Check if user has any of the specified permissions
  */
 export function hasAnyPermission(
-  user: User | null | undefined,
+  user: PermissionUser | null | undefined,
   permissions: Permission[]
 ): boolean {
   return permissions.some(permission => hasPermission(user, permission))
@@ -135,7 +144,7 @@ export function hasAnyPermission(
  * Check if user has all of the specified permissions
  */
 export function hasAllPermissions(
-  user: User | null | undefined,
+  user: PermissionUser | null | undefined,
   permissions: Permission[]
 ): boolean {
   return permissions.every(permission => hasPermission(user, permission))
@@ -148,7 +157,7 @@ export function hasAllPermissions(
  * NOTE: Function codes should be loaded from user_functions table via joins
  * The User type should include a `function_codes` field (TEXT[]) when loaded with functions
  */
-function getUserFunctionCodes(user: User): string[] {
+function getUserFunctionCodes(user: PermissionUser): string[] {
   // Check if function_codes array is available (from users_with_functions view)
   if ('function_codes' in user && Array.isArray(user.function_codes)) {
     return user.function_codes.filter((code): code is string => typeof code === 'string')
@@ -157,11 +166,13 @@ function getUserFunctionCodes(user: User): string[] {
   // Legacy support: If functions are loaded as an array of codes (old format)
   if (Array.isArray(user.functions)) {
     // Check if it's an array of function objects with code property
-    if (user.functions.length > 0 && typeof user.functions[0] === 'object') {
-      return (user.functions as any[]).map(f => f.code).filter(Boolean)
+    if (user.functions.length > 0 && typeof user.functions[0] === 'object' && user.functions[0] !== null) {
+      return (user.functions as Array<{ code?: string }>)
+        .map(f => f.code)
+        .filter((code): code is string => typeof code === 'string')
     }
     // Or array of codes directly
-    return user.functions.filter(f => typeof f === 'string')
+    return user.functions.filter((f): f is string => typeof f === 'string')
   }
 
   return []
@@ -171,7 +182,7 @@ function getUserFunctionCodes(user: User): string[] {
  * Check if user can edit a specific flight log entry
  */
 export function canEditFlightLog(
-  user: User | null | undefined,
+  user: PermissionUser | null | undefined,
   flightLog: { pilot_id: string; copilot_id?: string | null; locked?: boolean; charged?: boolean }
 ): boolean {
   if (!user) return false
@@ -202,7 +213,7 @@ export function canEditFlightLog(
 /**
  * Get all permissions for a user (for debugging/admin UI)
  */
-export function getUserPermissions(user: User | null | undefined): Permission[] {
+export function getUserPermissions(user: PermissionUser | null | undefined): Permission[] {
   if (!user) return []
 
   return (Object.keys(PERMISSIONS) as Permission[]).filter(permission =>
@@ -214,7 +225,7 @@ export function getUserPermissions(user: User | null | undefined): Permission[] 
  * Permission check hook for use in components
  * Returns a function to check permissions
  */
-export function createPermissionChecker(user: User | null | undefined) {
+export function createPermissionChecker(user: PermissionUser | null | undefined) {
   return {
     can: (permission: Permission) => hasPermission(user, permission),
     canAny: (permissions: Permission[]) => hasAnyPermission(user, permissions),

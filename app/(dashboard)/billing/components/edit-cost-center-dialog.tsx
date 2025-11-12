@@ -10,7 +10,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Loader2, AlertCircle, Trash2 } from 'lucide-react'
-import { updateCostCenter, deleteCostCenter, toggleCostCenterActive } from '@/lib/actions/cost-centers'
+import { updateCostCenter, deleteCostCenter } from '@/lib/actions/cost-centers'
 import type { CostCenter } from '@/lib/database.types'
 
 interface EditCostCenterDialogProps {

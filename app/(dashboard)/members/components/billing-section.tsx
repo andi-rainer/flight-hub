@@ -48,7 +48,7 @@ export function BillingSection({ aircrafts }: BillingSectionProps) {
                       type="number"
                       step="0.01"
                       min="0"
-                      defaultValue={aircraft.default_rate}
+                      defaultValue={aircraft.default_rate ?? undefined}
                       className="w-32"
                     />
                   </TableCell>

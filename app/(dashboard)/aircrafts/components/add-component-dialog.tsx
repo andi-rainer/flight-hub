@@ -73,7 +73,7 @@ export function AddComponentDialog({
   // TBO Presets
   const [presets, setPresets] = useState<TBOPreset[]>([])
   const [selectedPreset, setSelectedPreset] = useState<string>('')
-  const [loadingPresets, setLoadingPresets] = useState(false)
+  const [_loadingPresets, setLoadingPresets] = useState(false)
 
   // Load TBO presets when component type changes
   useEffect(() => {

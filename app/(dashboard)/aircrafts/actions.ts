@@ -2,7 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
-import { requirePermission, requireAnyPermission, requireBoardMember } from '@/lib/permissions'
+import { requirePermission, requireBoardMember } from '@/lib/permissions'
 import type { PlaneInsert, PlaneUpdate } from '@/lib/database.types'
 
 /**

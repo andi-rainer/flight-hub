@@ -16,10 +16,25 @@ interface UserAccountDetailsDialogProps {
   onOpenChange: (open: boolean) => void
 }
 
+interface Transaction {
+  id: string
+  created_at: string
+  description: string
+  amount: number
+  reversed?: boolean
+}
+
+interface UserBalance {
+  name: string
+  surname: string
+  email: string
+  balance: number
+}
+
 export function UserAccountDetailsDialog({ userId, open, onOpenChange }: UserAccountDetailsDialogProps) {
   const [loading, setLoading] = useState(true)
-  const [transactions, setTransactions] = useState<any[]>([])
-  const [balance, setBalance] = useState<any>(null)
+  const [transactions, setTransactions] = useState<Transaction[]>([])
+  const [balance, setBalance] = useState<UserBalance | null>(null)
   const [addTransactionOpen, setAddTransactionOpen] = useState(false)
 
   useEffect(() => {
@@ -108,7 +123,7 @@ export function UserAccountDetailsDialog({ userId, open, onOpenChange }: UserAcc
                         </TableCell>
                       </TableRow>
                     ) : (
-                      transactions.map((tx: any) => (
+                      transactions.map((tx) => (
                         <TableRow key={tx.id}>
                           <TableCell className="text-sm">
                             {format(new Date(tx.created_at), 'dd.MM.yyyy HH:mm')}

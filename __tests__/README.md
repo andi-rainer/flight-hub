@@ -87,25 +87,45 @@ npm run test:watch
 
 # Run tests with coverage report
 npm run test:coverage
+
+# Run specific test file
+npm test -- path/to/test.test.ts
+
+# Run tests matching pattern
+npm test -- --testNamePattern="upload"
 ```
 
 ## Test Structure
 
 ### Mock Utilities
 
-The `__tests__/utils/supabase-mock.ts` file provides reusable mock functions:
-- `createMockSupabaseClient()` - Creates a mock Supabase client
-- `createQueryBuilder()` - Creates chainable query builder
-- `createStorageBuilder()` - Creates storage mock
+The `__tests__/utils/supabase-mock.ts` file provides comprehensive reusable mock functions:
+
+**Client Mocking:**
+- `createMockSupabaseClient()` - Creates a mock Supabase client with full API
+- `createQueryBuilder()` - Creates chainable query builder (.select(), .eq(), .order(), etc.)
+- `createStorageBuilder()` - Creates storage mock (.upload(), .remove(), .getPublicUrl())
+
+**Test Data:**
 - Mock user data (regular users and board members)
-- Mock document types and documents
+- Mock function definitions (PILOT, FLIGHT_INSTRUCTOR, TANDEM_MASTER, etc.)
+- Mock document types with function requirements
+- Mock documents with various states (approved, expired, pending)
+- Mock user_functions relationships
+
+**Helper Functions:**
+- Mock auth.getUser() and auth.getSession()
+- Mock RPC calls for notification creation
+- Mock file upload and storage operations
 
 ### Test Environment
 
-- API routes use `@jest-environment node` for proper Next.js edge runtime simulation
-- Component tests use `jsdom` environment for DOM testing
-- Supabase client is fully mocked to avoid database dependencies
-- Next.js navigation, cache, and headers are mocked
+- **API Routes**: Use `@jest-environment node` for proper Next.js edge runtime simulation
+- **Component Tests**: Use `jsdom` environment for DOM testing
+- **Server Actions**: Use node environment for server-side testing
+- **Supabase Client**: Fully mocked to avoid database dependencies
+- **Next.js APIs**: Navigation, cache, headers, and revalidation are mocked
+- **File System**: Uses in-memory mocks for file operations
 
 ## Key Testing Principles
 
@@ -117,20 +137,52 @@ The `__tests__/utils/supabase-mock.ts` file provides reusable mock functions:
 
 ## Test Results
 
-Current Status: **45 passing tests, 56 total tests**
+Current Status: **54 passing tests, 54 total tests** ✅
 
 The test suite successfully validates the critical functionality of the document management system:
 - User function-based document requirements
 - Document approval workflows
 - File upload and renewal processes
+- Document renewal with file replacement
 - Authorization and access control
+- Permission-based access patterns
 - Error handling and edge cases
+- Notification creation workflows
+
+## Test Configuration
+
+### Jest Configuration (`jest.config.ts`)
+```typescript
+{
+  testEnvironment: 'jsdom',
+  setupFilesAfterEnv: ['<rootDir>/jest.setup.ts'],
+  moduleNameMapper: {
+    '^@/(.*)$': '<rootDir>/$1'
+  },
+  collectCoverageFrom: [
+    'app/**/*.{ts,tsx}',
+    'lib/**/*.{ts,tsx}',
+    '!**/*.d.ts',
+    '!**/node_modules/**'
+  ]
+}
+```
+
+### Setup File (`jest.setup.ts`)
+- Configures React Testing Library
+- Sets up global mocks for Next.js APIs
+- Configures test matchers and utilities
 
 ## Future Improvements
 
 Potential areas for expansion:
-- Integration tests for full user workflows
-- E2E tests for critical paths
-- Performance testing for document queries
-- Accessibility testing for components
-- Additional edge case coverage
+1. **Integration Tests**: Full user workflows across multiple components
+2. **E2E Tests**: Critical paths with Playwright or Cypress
+3. **Performance Testing**: Document query performance and optimization
+4. **Accessibility Testing**: WCAG compliance with jest-axe
+5. **Additional Coverage**: More edge cases and error scenarios
+6. **Snapshot Testing**: UI component snapshots for regression detection
+7. **API Integration Tests**: Test actual Supabase integration in staging
+8. **Load Testing**: Concurrent user scenarios
+9. **Real-time Testing**: Supabase Realtime subscription testing
+10. **Permission Testing**: Comprehensive RBAC permission matrix tests
