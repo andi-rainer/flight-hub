@@ -948,6 +948,7 @@ export type Database = {
           locked: boolean
           m_and_b_pdf_url: string | null
           needs_board_review: boolean
+          notes: string | null
           oil: number | null
           operation_type_id: string | null
           passengers: number | null
@@ -973,6 +974,7 @@ export type Database = {
           locked?: boolean
           m_and_b_pdf_url?: string | null
           needs_board_review?: boolean
+          notes?: string | null
           oil?: number | null
           operation_type_id?: string | null
           passengers?: number | null
@@ -998,6 +1000,7 @@ export type Database = {
           locked?: boolean
           m_and_b_pdf_url?: string | null
           needs_board_review?: boolean
+          notes?: string | null
           oil?: number | null
           operation_type_id?: string | null
           passengers?: number | null
@@ -2784,6 +2787,7 @@ export type Database = {
           locked: boolean | null
           m_and_b_pdf_url: string | null
           needs_board_review: boolean | null
+          notes: string | null
           oil: number | null
           operation_type_color: string | null
           operation_type_id: string | null
@@ -2982,6 +2986,7 @@ export type Database = {
           locked: boolean | null
           m_and_b_pdf_url: string | null
           needs_board_review: boolean | null
+          notes: string | null
           oil: number | null
           operation_rate: number | null
           operation_type_color: string | null

@@ -21,6 +21,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
+import { Textarea } from '@/components/ui/textarea'
 import { toast } from 'sonner'
 import { createFlightlog, updateFlightlog, deleteFlightlog, uploadMassAndBalanceDocument, checkFlightWarnings, markFlightlogAsReviewed, getPreviousFlightDestination, type FlightWarning } from '../../actions'
 import type { FlightlogWithTimes, OperationType } from '@/lib/database.types'
@@ -73,6 +74,7 @@ export function FlightlogDialog({
   const [mAndBPdfUrl, setMAndBPdfUrl] = useState('')
   const [mAndBFile, setMAndBFile] = useState<File | null>(null)
   const [isUploadingMB, setIsUploadingMB] = useState(false)
+  const [notes, setNotes] = useState('')
   const [showConfirmation, setShowConfirmation] = useState(false)
   const [flightWarnings, setFlightWarnings] = useState<FlightWarning[]>([])
   const [calculatedDates, setCalculatedDates] = useState<{
@@ -130,6 +132,7 @@ export function FlightlogDialog({
         setIcaoDestination(existingEntry.icao_destination || '')
         setMAndBPdfUrl(existingEntry.m_and_b_pdf_url || '')
         setMAndBFile(null)
+        setNotes(existingEntry.notes || '')
       } else {
         setPilotId(currentUserId)
         setAdditionalCrewId('')
@@ -145,6 +148,7 @@ export function FlightlogDialog({
         setIcaoDestination('')
         setMAndBPdfUrl('')
         setMAndBFile(null)
+        setNotes('')
 
         // Pre-fill ICAO departure with previous flight's destination
         getPreviousFlightDestination(aircraftId).then(result => {
@@ -365,6 +369,7 @@ export function FlightlogDialog({
           icao_departure: icaoDeparture.toUpperCase() || null,
           icao_destination: icaoDestination.toUpperCase() || null,
           m_and_b_pdf_url: mbUrl || null,
+          notes: notes || null,
         })
 
         if (result.error) {
@@ -390,6 +395,7 @@ export function FlightlogDialog({
             icao_departure: icaoDeparture.toUpperCase() || null,
             icao_destination: icaoDestination.toUpperCase() || null,
             m_and_b_pdf_url: mbUrl || null,
+            notes: notes || null,
           },
           flightWarnings.length > 0, // overrideWarnings
           flightWarnings // warnings
@@ -766,6 +772,24 @@ export function FlightlogDialog({
 
             <p className="text-xs text-muted-foreground">
               Upload Mass & Balance calculation (PDF or Image)
+            </p>
+          </div>
+
+          {/* Notes for Treasurer */}
+          <div className="space-y-2">
+            <Label htmlFor="notes">
+              Notes for Treasurer (Optional)
+            </Label>
+            <Textarea
+              id="notes"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              disabled={isPending || (isEditMode && !canEdit)}
+              placeholder="Add any special billing instructions or notes for the treasurer..."
+              rows={3}
+            />
+            <p className="text-xs text-muted-foreground">
+              E.g., &quot;Please split costs with copilot&quot;, &quot;Charter flight for Club XY - special rate&quot;, &quot;Training flight - reduced rate&quot;
             </p>
           </div>
 

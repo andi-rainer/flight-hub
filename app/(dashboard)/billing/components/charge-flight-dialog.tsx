@@ -13,7 +13,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Textarea } from '@/components/ui/textarea'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { format } from 'date-fns'
-import { Loader2, AlertCircle, User, Building2, Check, ChevronsUpDown, X, Plus } from 'lucide-react'
+import { Loader2, AlertCircle, User, Building2, Check, ChevronsUpDown, X, Plus, MessageSquare } from 'lucide-react'
 import { chargeFlightToUser, chargeFlightToCostCenter, splitChargeFlight } from '@/lib/actions/billing'
 import { calculateAirportFeesForFlight } from '@/lib/actions/airport-fees'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -60,6 +60,8 @@ export function ChargeFlightDialog({ flight, costCenters, userBalances, open, on
     fees: Array<{ airport: string; icao_code: string; fee_type: string; amount: number }>
     totalAmount: number
   } | null>(null)
+  const [useCustomRate, setUseCustomRate] = useState(false)
+  const [customRate, setCustomRate] = useState<string>('')
 
   // Generate detailed description with cost breakdown
   const generateDetailedDescription = async () => {
@@ -100,15 +102,20 @@ export function ChargeFlightDialog({ flight, costCenters, userBalances, open, on
     setDescription(desc)
   }
 
-  // Update description when includeAirportFees changes
+  // Update description when includeAirportFees or custom rate changes
   useEffect(() => {
     if (!airportFeesBreakdown) return
 
     const blockOffTime = flight.block_off ? format(new Date(flight.block_off), 'dd.MM.yyyy, HH:mm') : ''
-    const rate = (flight.operation_rate || flight.plane_default_rate || 0).toFixed(2)
+    const rate = getEffectiveRate().toFixed(2)
     const rateUnit = flight.billing_unit === 'minute' ? 'min' : 'hr'
 
     let desc = `Flight ${flight.tail_number} on ${blockOffTime} @ €${rate}/${rateUnit}`
+
+    // Add custom rate note if applicable
+    if (useCustomRate) {
+      desc += ' (Custom Rate)'
+    }
 
     if (includeAirportFees && airportFeesBreakdown.fees.length > 0) {
       const feeBreakdown = airportFeesBreakdown.fees.map(fee =>
@@ -118,11 +125,16 @@ export function ChargeFlightDialog({ flight, costCenters, userBalances, open, on
     }
 
     setDescription(desc)
-  }, [includeAirportFees, airportFeesBreakdown])
+  }, [includeAirportFees, airportFeesBreakdown, useCustomRate, customRate])
 
   // Auto-initialize split targets if there's a copilot and no default cost center
   useEffect(() => {
     if (open) {
+      // Initialize custom rate with current rate
+      const currentRate = (flight.operation_rate || flight.plane_default_rate || 0).toFixed(2)
+      setCustomRate(currentRate)
+      setUseCustomRate(false)
+
       // Generate detailed description
       generateDetailedDescription()
 
@@ -163,6 +175,27 @@ export function ChargeFlightDialog({ flight, costCenters, userBalances, open, on
       currency: 'EUR'
     }).format(amount)
   }
+
+  // Get the effective rate (custom rate if enabled, otherwise operation/default rate)
+  const getEffectiveRate = () => {
+    if (useCustomRate) {
+      return parseFloat(customRate) || 0
+    }
+    return flight.operation_rate || flight.plane_default_rate || 0
+  }
+
+  // Calculate flight amount using effective rate
+  const calculateFlightAmount = () => {
+    const rate = getEffectiveRate()
+    const flightTimeHours = flight.flight_time_hours || 0
+
+    if (flight.billing_unit === 'minute') {
+      return (flightTimeHours * 60) * rate
+    }
+    return flightTimeHours * rate
+  }
+
+  const calculatedFlightAmount = calculateFlightAmount()
 
   const addSplitTarget = () => {
     const newId = (splitTargets.length + 1).toString()
@@ -222,7 +255,8 @@ export function ChargeFlightDialog({ flight, costCenters, userBalances, open, on
     setError(null)
 
     // Calculate total amount based on whether airport fees are included
-    const flightAmount = flight.flight_amount || 0
+    // Use calculated amount with custom rate if provided
+    const flightAmount = calculatedFlightAmount
     const airportFeesAmount = includeAirportFees && airportFeesBreakdown ? airportFeesBreakdown.totalAmount : 0
     const totalAmount = flightAmount + airportFeesAmount
 
@@ -317,6 +351,17 @@ export function ChargeFlightDialog({ flight, costCenters, userBalances, open, on
         </DialogHeader>
 
         <div className="space-y-4 overflow-y-auto pr-2">
+          {/* Flight Notes - Display prominently if present */}
+          {flight.notes && (
+            <Alert className="border-blue-500 bg-blue-50 dark:bg-blue-950">
+              <MessageSquare className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+              <AlertDescription>
+                <div className="font-semibold text-sm mb-1">Note for Treasurer:</div>
+                <div className="text-sm whitespace-pre-wrap">{flight.notes}</div>
+              </AlertDescription>
+            </Alert>
+          )}
+
           {/* Flight Details */}
           <div className="rounded-lg border p-4 space-y-2 bg-muted/50">
             <div className="grid grid-cols-3 gap-4 text-sm">
@@ -376,13 +421,47 @@ export function ChargeFlightDialog({ flight, costCenters, userBalances, open, on
                 </span>
               </div>
             </div>
+
+            {/* Custom Rate Override */}
+            <div className="pt-2 border-t space-y-2">
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="use-custom-rate"
+                  checked={useCustomRate}
+                  onCheckedChange={(checked) => setUseCustomRate(checked as boolean)}
+                />
+                <Label htmlFor="use-custom-rate" className="font-medium cursor-pointer">
+                  Override Rate
+                </Label>
+              </div>
+              {useCustomRate && (
+                <div className="flex items-center gap-2 pl-6">
+                  <Label htmlFor="custom-rate" className="text-sm text-muted-foreground whitespace-nowrap">
+                    Custom Rate:
+                  </Label>
+                  <Input
+                    id="custom-rate"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={customRate}
+                    onChange={(e) => setCustomRate(e.target.value)}
+                    className="h-8 w-32"
+                  />
+                  <span className="text-sm text-muted-foreground">
+                    €/{flight.billing_unit === 'minute' ? 'min' : 'hr'}
+                  </span>
+                </div>
+              )}
+            </div>
+
             <div className="pt-2 border-t space-y-2">
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground text-sm">
-                  Flight: {formatDuration(flight.flight_time_hours)} × € {(flight.operation_rate || flight.plane_default_rate || 0).toFixed(2)}/{flight.billing_unit === 'minute' ? 'min' : 'hr'}
+                  Flight: {formatDuration(flight.flight_time_hours)} × € {getEffectiveRate().toFixed(2)}/{flight.billing_unit === 'minute' ? 'min' : 'hr'}
                 </span>
                 <span className="font-medium">
-                  € {(flight.flight_amount || 0).toFixed(2)}
+                  € {calculatedFlightAmount.toFixed(2)}
                 </span>
               </div>
               {airportFeesBreakdown && airportFeesBreakdown.totalAmount > 0 && (
@@ -417,7 +496,7 @@ export function ChargeFlightDialog({ flight, costCenters, userBalances, open, on
               <div className="flex items-center justify-between pt-2 border-t">
                 <span className="font-semibold">Total Amount:</span>
                 <span className="font-bold text-lg">
-                  € {((flight.flight_amount || 0) + (includeAirportFees && airportFeesBreakdown ? airportFeesBreakdown.totalAmount : 0)).toFixed(2)}
+                  € {(calculatedFlightAmount + (includeAirportFees && airportFeesBreakdown ? airportFeesBreakdown.totalAmount : 0)).toFixed(2)}
                 </span>
               </div>
             </div>
@@ -641,7 +720,7 @@ export function ChargeFlightDialog({ flight, costCenters, userBalances, open, on
                       }
                     </span>
                     <span className="font-medium">
-                      € {(((flight.flight_amount || 0) + (includeAirportFees && airportFeesBreakdown ? airportFeesBreakdown.totalAmount : 0)) * target.percentage / 100).toFixed(2)}
+                      € {((calculatedFlightAmount + (includeAirportFees && airportFeesBreakdown ? airportFeesBreakdown.totalAmount : 0)) * target.percentage / 100).toFixed(2)}
                     </span>
                   </div>
                 </div>

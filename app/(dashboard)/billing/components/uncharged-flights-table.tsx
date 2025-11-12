@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { format } from 'date-fns'
-import { CreditCard, User, Building2, CheckCircle2, Loader2, Info } from 'lucide-react'
+import { CreditCard, User, Building2, CheckCircle2, Loader2, Info, MessageSquare } from 'lucide-react'
 import { ChargeFlightDialog } from './charge-flight-dialog'
 import { batchChargeFlights } from '@/lib/actions/billing'
 import type { UnchargedFlight, CostCenter, UserBalance } from '@/lib/database.types'
@@ -233,12 +233,31 @@ export function UnchargedFlightsTable({ flights, costCenters, userBalances }: Un
                         )}
                       </TableCell>
                       <TableCell className="text-right">
-                        <Button
-                          size="sm"
-                          onClick={() => handleChargeClick(flight)}
-                        >
-                          Charge
-                        </Button>
+                        <div className="flex items-center justify-end gap-2">
+                          {flight.notes && (
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <div className="flex items-center">
+                                    <MessageSquare className="h-4 w-4 text-blue-600 cursor-help" />
+                                  </div>
+                                </TooltipTrigger>
+                                <TooltipContent side="left" className="max-w-sm">
+                                  <div className="space-y-1">
+                                    <div className="font-semibold text-xs">Note for Treasurer:</div>
+                                    <div className="text-sm whitespace-pre-wrap">{flight.notes}</div>
+                                  </div>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          )}
+                          <Button
+                            size="sm"
+                            onClick={() => handleChargeClick(flight)}
+                          >
+                            Charge
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
