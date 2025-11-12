@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { format } from 'date-fns'
-import { CreditCard, User, Building2, CheckCircle2, Loader2, Info, MessageSquare } from 'lucide-react'
+import { CreditCard, User, Building2, CheckCircle2, Loader2, Info, MessageSquare, AlertTriangle } from 'lucide-react'
 import { ChargeFlightDialog } from './charge-flight-dialog'
 import { batchChargeFlights } from '@/lib/actions/billing'
 import type { UnchargedFlight, CostCenter, UserBalance } from '@/lib/database.types'
@@ -40,14 +40,29 @@ export function UnchargedFlightsTable({ flights, costCenters, userBalances }: Un
   }
 
   const handleBatchCharge = () => {
-    if (!confirm(`Are you sure you want to charge all ${flights.length} flights? This will charge flights to their pilots or default cost centers.`)) {
+    // Filter out flights that need board review
+    const chargeableFlights = flights.filter(flight => !flight.needs_board_review)
+    const reviewFlightsCount = flights.length - chargeableFlights.length
+
+    if (chargeableFlights.length === 0) {
+      alert('No flights available to charge. All flights need board review.')
+      return
+    }
+
+    let confirmMessage = `Are you sure you want to charge ${chargeableFlights.length} flight${chargeableFlights.length === 1 ? '' : 's'}?`
+    if (reviewFlightsCount > 0) {
+      confirmMessage += ` (${reviewFlightsCount} flight${reviewFlightsCount === 1 ? '' : 's'} requiring board review will be excluded.)`
+    }
+    confirmMessage += ' Flights will be charged to their pilots or default cost centers.'
+
+    if (!confirm(confirmMessage)) {
       return
     }
 
     setBatchResult(null)
     startTransition(async () => {
       // Build charges array - charge to default cost center if available, otherwise to pilot
-      const charges = flights.map(flight => {
+      const charges = chargeableFlights.map(flight => {
         // Generate simple description for batch (without async fee lookup for performance)
         const blockOffTime = flight.block_off ? format(new Date(flight.block_off), 'dd.MM.yyyy, HH:mm') : ''
         const rate = (flight.operation_rate || flight.plane_default_rate || 0).toFixed(2)
@@ -71,7 +86,11 @@ export function UnchargedFlightsTable({ flights, costCenters, userBalances }: Un
     })
   }
 
+  // Calculate totals for all flights and chargeable flights
   const totalAmount = flights.reduce((sum, flight) => sum + (flight.calculated_amount || 0), 0)
+  const chargeableFlights = flights.filter(flight => !flight.needs_board_review)
+  const chargeableAmount = chargeableFlights.reduce((sum, flight) => sum + (flight.calculated_amount || 0), 0)
+  const reviewFlightsCount = flights.length - chargeableFlights.length
 
   return (
     <>
@@ -100,15 +119,25 @@ export function UnchargedFlightsTable({ flights, costCenters, userBalances }: Un
           <div className="flex items-center justify-between">
             <div>
               <CardTitle>Uncharged Flights</CardTitle>
-              <CardDescription>
-                {flights.length} {flights.length === 1 ? 'flight' : 'flights'} ready to charge • Total: € {totalAmount.toFixed(2)}
+              <CardDescription className="space-y-1">
+                <div>
+                  {flights.length} {flights.length === 1 ? 'flight' : 'flights'} ready to charge • Total: € {totalAmount.toFixed(2)}
+                </div>
+                {reviewFlightsCount > 0 && (
+                  <div className="flex items-center gap-1 text-orange-600">
+                    <AlertTriangle className="h-3 w-3" />
+                    <span>
+                      {reviewFlightsCount} {reviewFlightsCount === 1 ? 'flight needs' : 'flights need'} board review (€ {(totalAmount - chargeableAmount).toFixed(2)})
+                    </span>
+                  </div>
+                )}
               </CardDescription>
             </div>
-            {flights.length > 0 && (
+            {chargeableFlights.length > 0 && (
               <Button onClick={handleBatchCharge} disabled={isPending}>
                 {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 <CheckCircle2 className="mr-2 h-4 w-4" />
-                Charge All {flights.length} Flights
+                Charge All {chargeableFlights.length} {chargeableFlights.length === 1 ? 'Flight' : 'Flights'}
               </Button>
             )}
           </div>
@@ -234,6 +263,23 @@ export function UnchargedFlightsTable({ flights, costCenters, userBalances }: Un
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-2">
+                          {flight.needs_board_review && (
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <div className="flex items-center">
+                                    <AlertTriangle className="h-4 w-4 text-orange-600 cursor-help" />
+                                  </div>
+                                </TooltipTrigger>
+                                <TooltipContent side="left" className="max-w-sm">
+                                  <div className="space-y-1">
+                                    <div className="font-semibold text-xs text-orange-600">Needs Board Review</div>
+                                    <div className="text-sm">This flight requires board review before it can be charged. Please review and approve it first.</div>
+                                  </div>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          )}
                           {flight.notes && (
                             <TooltipProvider>
                               <Tooltip>
@@ -254,6 +300,7 @@ export function UnchargedFlightsTable({ flights, costCenters, userBalances }: Un
                           <Button
                             size="sm"
                             onClick={() => handleChargeClick(flight)}
+                            disabled={flight.needs_board_review || false}
                           >
                             Charge
                           </Button>

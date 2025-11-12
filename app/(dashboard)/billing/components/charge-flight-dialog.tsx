@@ -351,6 +351,17 @@ export function ChargeFlightDialog({ flight, costCenters, userBalances, open, on
         </DialogHeader>
 
         <div className="space-y-4 overflow-y-auto pr-2">
+          {/* Warning if flight needs board review */}
+          {flight.needs_board_review && (
+            <Alert variant="destructive" className="border-red-500 bg-red-50 dark:bg-red-950">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                <div className="font-semibold text-sm mb-1">Flight Needs Board Review</div>
+                <div className="text-sm">This flight requires board review and approval before it can be charged. Please review it in the flight log first.</div>
+              </AlertDescription>
+            </Alert>
+          )}
+
           {/* Flight Notes - Display prominently if present */}
           {flight.notes && (
             <Alert className="border-blue-500 bg-blue-50 dark:bg-blue-950">
@@ -860,7 +871,7 @@ export function ChargeFlightDialog({ flight, costCenters, userBalances, open, on
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isPending}>
             Cancel
           </Button>
-          <Button onClick={handleSubmit} disabled={isPending}>
+          <Button onClick={handleSubmit} disabled={isPending || flight.needs_board_review}>
             {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Charge Flight
           </Button>

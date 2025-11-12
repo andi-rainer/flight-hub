@@ -75,7 +75,7 @@ export async function chargeFlightToUser(data: {
   // Verify flight exists and is not already charged
   const { data: flight, error: flightError } = await auth.supabase
     .from('flightlog')
-    .select('id, charged, locked, pilot_id')
+    .select('id, charged, locked, pilot_id, needs_board_review')
     .eq('id', data.flightlogId)
     .single()
 
@@ -85,6 +85,10 @@ export async function chargeFlightToUser(data: {
 
   if (flight.charged) {
     return { success: false, error: 'Flight has already been charged' }
+  }
+
+  if (flight.needs_board_review) {
+    return { success: false, error: 'Flight requires board review before it can be charged' }
   }
 
   // Create account transaction (debit for user)
@@ -143,7 +147,7 @@ export async function chargeFlightToCostCenter(data: {
   // Verify flight exists and is not already charged
   const { data: flight, error: flightError } = await auth.supabase
     .from('flightlog')
-    .select('id, charged, locked')
+    .select('id, charged, locked, needs_board_review')
     .eq('id', data.flightlogId)
     .single()
 
@@ -153,6 +157,10 @@ export async function chargeFlightToCostCenter(data: {
 
   if (flight.charged) {
     return { success: false, error: 'Flight has already been charged' }
+  }
+
+  if (flight.needs_board_review) {
+    return { success: false, error: 'Flight requires board review before it can be charged' }
   }
 
   // Verify cost center exists and is active
@@ -376,7 +384,7 @@ export async function splitChargeFlight(data: {
   // Verify flight exists and is not already charged
   const { data: flight, error: flightError } = await auth.supabase
     .from('flightlog')
-    .select('id, charged, locked')
+    .select('id, charged, locked, needs_board_review')
     .eq('id', data.flightlogId)
     .single()
 
@@ -386,6 +394,10 @@ export async function splitChargeFlight(data: {
 
   if (flight.charged) {
     return { success: false, error: 'Flight has already been charged' }
+  }
+
+  if (flight.needs_board_review) {
+    return { success: false, error: 'Flight requires board review before it can be charged' }
   }
 
   // Create transactions for each split
