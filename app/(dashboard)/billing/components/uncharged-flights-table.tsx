@@ -9,9 +9,9 @@ import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { format } from 'date-fns'
-import { CreditCard, User, Building2, CheckCircle2, Loader2, Info, MessageSquare, AlertTriangle } from 'lucide-react'
+import { CreditCard, User, Building2, CheckCircle2, Loader2, Info, MessageSquare, AlertTriangle, Split } from 'lucide-react'
 import { ChargeFlightDialog } from './charge-flight-dialog'
-import { batchChargeFlights } from '@/lib/actions/billing'
+import { batchChargeFlights, splitChargeFlight } from '@/lib/actions/billing'
 import type { UnchargedFlight, CostCenter, UserBalance } from '@/lib/database.types'
 
 interface UnchargedFlightsTableProps {
@@ -32,6 +32,14 @@ export function UnchargedFlightsTable({ flights, costCenters, userBalances }: Un
     const h = Math.floor(hours)
     const m = Math.round((hours - h) * 60)
     return `${h}:${m.toString().padStart(2, '0')}`
+  }
+
+  // Helper function to format flight time for descriptions
+  const formatFlightTime = (hours: number | null) => {
+    if (!hours || hours <= 0) return ''
+    const h = Math.floor(hours)
+    const m = Math.round((hours - h) * 60)
+    return `${h}:${m.toString().padStart(2, '0')}h`
   }
 
   const handleChargeClick = (flight: UnchargedFlight) => {
@@ -61,28 +69,94 @@ export function UnchargedFlightsTable({ flights, costCenters, userBalances }: Un
 
     setBatchResult(null)
     startTransition(async () => {
-      // Build charges array - charge to default cost center if available, otherwise to pilot
-      const charges = chargeableFlights.map(flight => {
-        // Generate simple description for batch (without async fee lookup for performance)
+      // Separate flights into split and regular flights
+      const splitFlights = chargeableFlights.filter(f => f.split_cost_with_copilot && f.copilot_id)
+      const regularFlights = chargeableFlights.filter(f => !f.split_cost_with_copilot || !f.copilot_id)
+
+      let successCount = 0
+      let failedCount = 0
+      const errors: string[] = []
+
+      // Process split flights individually
+      for (const flight of splitFlights) {
         const blockOffTime = flight.block_off ? format(new Date(flight.block_off), 'dd.MM.yyyy, HH:mm') : ''
+        const flightTime = formatFlightTime(flight.flight_time_hours)
         const rate = (flight.operation_rate || flight.plane_default_rate || 0).toFixed(2)
         const rateUnit = flight.billing_unit === 'minute' ? 'min' : 'hr'
-        const description = `Flight ${flight.tail_number} on ${blockOffTime} @ €${rate}/${rateUnit}`
 
-        return {
+        const pilotPercentage = flight.pilot_cost_percentage || 50
+        const copilotPercentage = 100 - pilotPercentage
+
+        // Calculate flight amount (without fees - they'll be added in the split charge)
+        const flightAmount = flight.flight_amount || 0
+        const airportFeesAmount = (flight.calculated_amount || 0) - flightAmount
+
+        const pilotDescription = `Flight ${flight.tail_number} on ${blockOffTime}${flightTime ? `, ${flightTime}` : ''} @ €${rate}/${rateUnit} (${pilotPercentage}% split)`
+        const copilotDescription = `Flight ${flight.tail_number} on ${blockOffTime}${flightTime ? `, ${flightTime}` : ''} @ €${rate}/${rateUnit} (${copilotPercentage}% split)`
+
+        const result = await splitChargeFlight({
           flightlogId: flight.id!,
-          targetType: flight.default_cost_center_id ? ('cost_center' as const) : ('user' as const),
-          targetId: flight.default_cost_center_id || flight.pilot_id!,
-          amount: flight.calculated_amount || 0,
-          description,
-        }
-      })
+          splits: [
+            {
+              type: 'user',
+              targetId: flight.pilot_id!,
+              percentage: pilotPercentage,
+              description: pilotDescription
+            },
+            {
+              type: 'user',
+              targetId: flight.copilot_id!,
+              percentage: copilotPercentage,
+              description: copilotDescription
+            }
+          ],
+          flightAmount,
+          airportFeesAmount,
+          airportFeeAllocation: 'split_equally',
+          airportFeeTargetId: null
+        })
 
-      const result = await batchChargeFlights(charges)
-      if (result.success && result.data) {
-        setBatchResult(result.data)
-        router.refresh()
+        if (result.success) {
+          successCount++
+        } else {
+          failedCount++
+          errors.push(result.error || 'Unknown error')
+        }
       }
+
+      // Process regular flights in batch
+      if (regularFlights.length > 0) {
+        const charges = regularFlights.map(flight => {
+          const blockOffTime = flight.block_off ? format(new Date(flight.block_off), 'dd.MM.yyyy, HH:mm') : ''
+          const flightTime = formatFlightTime(flight.flight_time_hours)
+          const rate = (flight.operation_rate || flight.plane_default_rate || 0).toFixed(2)
+          const rateUnit = flight.billing_unit === 'minute' ? 'min' : 'hr'
+          const description = `Flight ${flight.tail_number} on ${blockOffTime}${flightTime ? `, ${flightTime}` : ''} @ €${rate}/${rateUnit}`
+
+          return {
+            flightlogId: flight.id!,
+            targetType: flight.default_cost_center_id ? ('cost_center' as const) : ('user' as const),
+            targetId: flight.default_cost_center_id || flight.pilot_id!,
+            amount: flight.calculated_amount || 0,
+            description,
+          }
+        })
+
+        const result = await batchChargeFlights(charges)
+        if (result.success && result.data) {
+          successCount += result.data.success
+          failedCount += result.data.failed
+          errors.push(...result.data.errors)
+        }
+      }
+
+      // Show combined results
+      setBatchResult({
+        success: successCount,
+        failed: failedCount,
+        errors
+      })
+      router.refresh()
     })
   }
 
@@ -292,6 +366,25 @@ export function UnchargedFlightsTable({ flights, costCenters, userBalances }: Un
                                   <div className="space-y-1">
                                     <div className="font-semibold text-xs">Note for Treasurer:</div>
                                     <div className="text-sm whitespace-pre-wrap">{flight.notes}</div>
+                                  </div>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          )}
+                          {flight.split_cost_with_copilot && flight.copilot_id && (
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <div className="flex items-center">
+                                    <Split className="h-4 w-4 text-green-600 cursor-help" />
+                                  </div>
+                                </TooltipTrigger>
+                                <TooltipContent side="left" className="max-w-sm">
+                                  <div className="space-y-1">
+                                    <div className="font-semibold text-xs text-green-600">Cost Splitting Requested</div>
+                                    <div className="text-sm">
+                                      Pilot requested {flight.pilot_cost_percentage}% / {100 - flight.pilot_cost_percentage}% split with {flight.copilot_name} {flight.copilot_surname}
+                                    </div>
                                   </div>
                                 </TooltipContent>
                               </Tooltip>

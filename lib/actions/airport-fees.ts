@@ -352,41 +352,8 @@ export async function calculateAirportFeesForFlight(
 
   let totalAmount = 0
 
-  // Get fees for departure airport (approach only)
-  if (icaoDeparture) {
-    // First, get the airport ID from the ICAO code
-    const { data: departureAirport } = await supabase
-      .from('airports')
-      .select('id')
-      .eq('icao_code', icaoDeparture.toUpperCase())
-      .single()
-
-    if (departureAirport) {
-      const { data: feeConfig } = await supabase
-        .from('aircraft_airport_fees')
-        .select(`
-          *,
-          airport:airports(*)
-        `)
-        .eq('airport_id', departureAirport.id)
-        .eq('plane_id', planeId)
-        .single()
-
-      if (feeConfig && feeConfig.airport) {
-        if (feeConfig.approach_fee > 0) {
-          fees.push({
-            airport: feeConfig.airport.airport_name,
-            icao_code: feeConfig.airport.icao_code,
-            fee_type: 'Approach',
-            amount: feeConfig.approach_fee
-          })
-          totalAmount += feeConfig.approach_fee
-        }
-      }
-    }
-  }
-
-  // Get fees for destination airport (landing, approach, parking, noise, passenger)
+  // Get fees for destination airport only (approach, landing, parking, noise, passenger)
+  // Departure airport fees are not charged
   if (icaoDestination) {
     // First, get the airport ID from the ICAO code
     const { data: destinationAirport } = await supabase
@@ -419,8 +386,8 @@ export async function calculateAirportFeesForFlight(
         totalAmount += landingAmount
       }
 
-      // Approach fee (only if different from departure)
-      if (feeConfig.approach_fee > 0 && icaoDeparture !== icaoDestination) {
+      // Approach fee
+      if (feeConfig.approach_fee > 0) {
         fees.push({
           airport: feeConfig.airport.airport_name,
           icao_code: feeConfig.airport.icao_code,

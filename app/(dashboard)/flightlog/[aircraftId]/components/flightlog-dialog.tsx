@@ -22,6 +22,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { Textarea } from '@/components/ui/textarea'
+import { Checkbox } from '@/components/ui/checkbox'
 import { toast } from 'sonner'
 import { createFlightlog, updateFlightlog, deleteFlightlog, uploadMassAndBalanceDocument, checkFlightWarnings, markFlightlogAsReviewed, getPreviousFlightDestination, type FlightWarning } from '../../actions'
 import type { FlightlogWithTimes, OperationType } from '@/lib/database.types'
@@ -75,6 +76,9 @@ export function FlightlogDialog({
   const [mAndBFile, setMAndBFile] = useState<File | null>(null)
   const [isUploadingMB, setIsUploadingMB] = useState(false)
   const [notes, setNotes] = useState('')
+  const [splitCostWithCopilot, setSplitCostWithCopilot] = useState(false)
+  const [pilotCostPercentage, setPilotCostPercentage] = useState(50)
+  const [copilotIsInstructor, setCopilotIsInstructor] = useState(false)
   const [showConfirmation, setShowConfirmation] = useState(false)
   const [flightWarnings, setFlightWarnings] = useState<FlightWarning[]>([])
   const [calculatedDates, setCalculatedDates] = useState<{
@@ -133,9 +137,15 @@ export function FlightlogDialog({
         setMAndBPdfUrl(existingEntry.m_and_b_pdf_url || '')
         setMAndBFile(null)
         setNotes(existingEntry.notes || '')
+        setSplitCostWithCopilot(existingEntry.split_cost_with_copilot || false)
+        setPilotCostPercentage(existingEntry.pilot_cost_percentage || 50)
+        setCopilotIsInstructor(existingEntry.copilot_is_instructor || false)
       } else {
         setPilotId(currentUserId)
         setAdditionalCrewId('')
+        setSplitCostWithCopilot(false)
+        setPilotCostPercentage(50)
+        setCopilotIsInstructor(false)
         setOperationTypeId(defaultOpType?.id || '')
         setFlightDate(todayDate)
         setBlockOffTime('')
@@ -376,6 +386,9 @@ export function FlightlogDialog({
         icao_destination: icaoDestination.toUpperCase() || null,
         m_and_b_pdf_url: mbUrl || null,
         notes: notes || null,
+        split_cost_with_copilot: splitCostWithCopilot,
+        pilot_cost_percentage: pilotCostPercentage,
+        copilot_is_instructor: copilotIsInstructor,
       })
 
       if (result.error) {
@@ -400,6 +413,9 @@ export function FlightlogDialog({
           icao_destination: icaoDestination.toUpperCase() || null,
           m_and_b_pdf_url: mbUrl || null,
           notes: notes || null,
+          split_cost_with_copilot: splitCostWithCopilot,
+          pilot_cost_percentage: pilotCostPercentage,
+          copilot_is_instructor: copilotIsInstructor,
         },
         flightWarnings.length > 0, // overrideWarnings
         flightWarnings // warnings
@@ -540,6 +556,76 @@ export function FlightlogDialog({
               E.g., Flight Instructor, Cost Sharing Partner
             </p>
           </div>
+
+          {/* Cost Splitting Options - only visible when copilot is selected */}
+          {additionalCrewId && (
+            <div className="space-y-3 p-4 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-md">
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="split-cost"
+                  checked={splitCostWithCopilot}
+                  onCheckedChange={(checked) => setSplitCostWithCopilot(checked as boolean)}
+                  disabled={isPending || (isEditMode && !canEdit)}
+                />
+                <Label htmlFor="split-cost" className="font-medium cursor-pointer">
+                  Split flight costs with crew member
+                </Label>
+              </div>
+
+              {splitCostWithCopilot && (
+                <div className="space-y-2 pl-6">
+                  <div className="space-y-1">
+                    <Label htmlFor="pilot-percentage" className="text-sm">
+                      Your share: {pilotCostPercentage}% (Crew member: {100 - pilotCostPercentage}%)
+                    </Label>
+                    <div className="flex items-center gap-3">
+                      <Input
+                        id="pilot-percentage"
+                        type="number"
+                        min="0"
+                        max="100"
+                        step="1"
+                        value={pilotCostPercentage}
+                        onChange={(e) => {
+                          const val = parseFloat(e.target.value) || 0
+                          setPilotCostPercentage(Math.min(100, Math.max(0, val)))
+                        }}
+                        className="w-24"
+                        disabled={isPending || (isEditMode && !canEdit)}
+                      />
+                      <span className="text-sm text-muted-foreground">%</span>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setPilotCostPercentage(50)}
+                        disabled={isPending || (isEditMode && !canEdit)}
+                      >
+                        50/50
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Future feature - disabled for now */}
+                  <div className="flex items-center space-x-2 opacity-50">
+                    <Checkbox
+                      id="copilot-instructor"
+                      checked={copilotIsInstructor}
+                      onCheckedChange={(checked) => setCopilotIsInstructor(checked as boolean)}
+                      disabled={true}
+                    />
+                    <Label htmlFor="copilot-instructor" className="text-sm cursor-not-allowed">
+                      Crew member is instructor (Future feature - coming soon)
+                    </Label>
+                  </div>
+                </div>
+              )}
+
+              <p className="text-xs text-muted-foreground">
+                This setting will be used for automatic billing. The treasurer can still adjust it when charging.
+              </p>
+            </div>
+          )}
 
           {/* Operation Type Selection */}
           {operationTypes.length > 0 && (

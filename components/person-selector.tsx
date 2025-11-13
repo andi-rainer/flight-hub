@@ -118,8 +118,9 @@ export function PersonSelector({
         if (!response.ok) throw new Error('Failed to fetch users')
 
         const data = await response.json()
-        setResults(data.results || [])
-        setRecent(data.recent || [])
+        // Filter out any invalid entries without IDs
+        setResults((data.results || []).filter((p: PersonOption) => p && p.id))
+        setRecent((data.recent || []).filter((p: PersonOption) => p && p.id))
       } catch (error) {
         console.error('Error fetching users:', error)
         setResults([])
@@ -162,8 +163,8 @@ export function PersonSelector({
         if (!response.ok) throw new Error('Failed to fetch user')
 
         const data = await response.json()
-        const user = data.results?.find((u: PersonOption) => u.id === value)
-        if (user) {
+        const user = data.results?.find((u: PersonOption) => u && u.id === value)
+        if (user && user.id) {
           setSelectedUser(user)
         }
       } catch (error) {
@@ -174,35 +175,66 @@ export function PersonSelector({
     fetchSelectedUser()
   }, [value, results, recent, context])
 
-  const handleSelect = React.useCallback(
-    (userId: string) => {
-      const user = results.find((u) => u.id === userId) || recent.find((u) => u.id === userId)
+  // Create a lookup map for person ID by their display value
+  const personLookup = React.useMemo(() => {
+    const map = new Map<string, PersonOption>()
 
-      if (value === userId) {
+    // Add recent people (with validation)
+    recent.forEach((person) => {
+      if (!person || !person.id) return
+      const key = `${person.id}||${person.name} ${person.surname} ${person.email}`
+      map.set(key, person)
+    })
+
+    // Add search results (with validation)
+    results.forEach((person) => {
+      if (!person || !person.id) return
+      const key = `${person.id}||${person.name} ${person.surname} ${person.email}`
+      map.set(key, person)
+    })
+
+    return map
+  }, [results, recent])
+
+  // Filter results to exclude people already in recent
+  const filteredResults = React.useMemo(() => {
+    const recentIds = new Set(recent.filter(p => p && p.id).map((p) => p.id))
+    return results.filter((p) => p && p.id && !recentIds.has(p.id))
+  }, [results, recent])
+
+  const handleSelect = React.useCallback(
+    (commandValue: string) => {
+      // Extract person ID from the command value (format: "id||name surname email")
+      const person = personLookup.get(commandValue)
+
+      if (!person) {
+        console.error('Person not found for command value:', commandValue)
+        return
+      }
+
+      if (value === person.id) {
         // Deselect if clicking the same user
         onChange(null)
         setSelectedUser(null)
       } else {
-        onChange(userId, user)
-        setSelectedUser(user || null)
+        onChange(person.id, person)
+        setSelectedUser(person)
 
         // Track selection for recent history
-        if (user) {
-          fetch('/api/users/track-selection', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              selectedUserId: userId,
-              context,
-            }),
-          }).catch((error) => console.error('Error tracking selection:', error))
-        }
+        fetch('/api/users/track-selection', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            selectedUserId: person.id,
+            context,
+          }),
+        }).catch((error) => console.error('Error tracking selection:', error))
       }
 
       setOpen(false)
       setSearch('')
     },
-    [value, onChange, results, recent, context]
+    [value, onChange, personLookup, context]
   )
 
   const displayValue = selectedUser
@@ -266,12 +298,14 @@ export function PersonSelector({
                   {recent.length > 0 && !debouncedSearch && (
                     <>
                       <CommandGroup heading="Recent">
-                        {recent.map((person) => (
-                          <CommandItem
-                            key={person.id}
-                            value={person.id}
-                            onSelect={handleSelect}
-                          >
+                        {recent.filter(p => p && p.id).map((person) => {
+                          const commandValue = `${person.id}||${person.name} ${person.surname} ${person.email}`
+                          return (
+                            <CommandItem
+                              key={`recent-${person.id}`}
+                              value={commandValue}
+                              onSelect={handleSelect}
+                            >
                             <Check
                               className={cn(
                                 'mr-2 h-4 w-4',
@@ -297,20 +331,23 @@ export function PersonSelector({
                             </div>
                             <Clock className="ml-2 h-3 w-3 text-muted-foreground shrink-0" />
                           </CommandItem>
-                        ))}
+                          )
+                        })}
                       </CommandGroup>
                       <CommandSeparator />
                     </>
                   )}
 
-                  {results.length > 0 ? (
+                  {filteredResults.length > 0 ? (
                     <CommandGroup heading={debouncedSearch ? 'Search Results' : 'All'}>
-                      {results.map((person) => (
-                        <CommandItem
-                          key={person.id}
-                          value={person.id}
-                          onSelect={handleSelect}
-                        >
+                      {filteredResults.filter(p => p && p.id).map((person) => {
+                        const commandValue = `${person.id}||${person.name} ${person.surname} ${person.email}`
+                        return (
+                          <CommandItem
+                            key={`result-${person.id}`}
+                            value={commandValue}
+                            onSelect={handleSelect}
+                          >
                           <Check
                             className={cn(
                               'mr-2 h-4 w-4',
@@ -335,7 +372,8 @@ export function PersonSelector({
                             )}
                           </div>
                         </CommandItem>
-                      ))}
+                        )
+                      })}
                     </CommandGroup>
                   ) : (
                     <CommandEmpty>

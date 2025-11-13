@@ -366,9 +366,12 @@ export async function splitChargeFlight(data: {
     type: 'user' | 'cost_center'
     targetId: string
     percentage: number
+    description: string
   }>
-  totalAmount: number
-  description: string
+  flightAmount: number
+  airportFeesAmount: number
+  airportFeeAllocation: 'split_equally' | 'assign_to_target'
+  airportFeeTargetId: string | null
 }) {
   const auth = await verifyBoardMember()
   if (!auth.authorized) {
@@ -403,9 +406,31 @@ export async function splitChargeFlight(data: {
   // Create transactions for each split
   const errors: string[] = []
 
+  // Helper function to calculate amount for a split
+  const calculateSplitAmount = (split: typeof data.splits[0]) => {
+    const flightPortion = (data.flightAmount * split.percentage) / 100
+
+    if (data.airportFeesAmount === 0) {
+      return flightPortion
+    }
+
+    if (data.airportFeeAllocation === 'split_equally') {
+      // Split airport fees by percentage
+      const feesPortion = (data.airportFeesAmount * split.percentage) / 100
+      return flightPortion + feesPortion
+    } else {
+      // Check if this split gets the airport fees
+      // Find the split by matching targetId with airportFeeTargetId
+      const targetSplit = data.splits.find((s, idx) => (idx + 1).toString() === data.airportFeeTargetId)
+      const shouldGetFees = targetSplit?.targetId === split.targetId && targetSplit?.type === split.type
+      return flightPortion + (shouldGetFees ? data.airportFeesAmount : 0)
+    }
+  }
+
   for (const split of data.splits) {
-    const splitAmount = (data.totalAmount * split.percentage) / 100
-    const splitDescription = `${data.description} (${split.percentage.toFixed(1)}% split)`
+    const splitAmount = calculateSplitAmount(split)
+    // Use the individual split description provided from frontend
+    const splitDescription = split.description
 
     if (split.type === 'user') {
       // Create account transaction
