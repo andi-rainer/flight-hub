@@ -6,7 +6,18 @@ import { requireAnyPermission } from '@/lib/permissions'
 
 /**
  * Server actions for Accounting page
- * Handles user account transactions and cost center transactions with edit/reversal capabilities
+ *
+ * IMPORTANT: This file handles MANUAL (non-flight) transactions only.
+ *
+ * For FLIGHT-RELATED transaction reversals, see:
+ * - reverseFlightCharge() in lib/actions/accounts.ts
+ * - reverseCostCenterFlightCharge() in lib/actions/cost-centers.ts
+ *
+ * Those functions handle split charges by reversing ALL related transactions
+ * for a flight atomically, preventing partial reversals of split-charged flights.
+ *
+ * This file's reversal functions will reject flight-related transactions with
+ * a helpful error message directing users to use the correct reversal action.
  */
 
 // ============================================================================
@@ -178,6 +189,16 @@ export async function editUserTransaction(
   return { success: true, message: 'Transaction updated successfully' }
 }
 
+/**
+ * Reverse a user account transaction
+ *
+ * NOTE: This function is for NON-FLIGHT manual transactions only (e.g., deposits, adjustments).
+ * For FLIGHT-RELATED transactions, use reverseFlightCharge() from accounts.ts instead,
+ * which handles split charges by reversing ALL related transactions for the flight.
+ *
+ * This function will fail if the transaction has a flightlog_id - this is intentional
+ * to prevent partial reversal of split-charged flights.
+ */
 export async function reverseUserTransaction(transactionId: string) {
   const auth = await verifyAccountingAccess()
   if (!auth.authorized) {
@@ -205,12 +226,22 @@ export async function reverseUserTransaction(transactionId: string) {
     return { success: false, error: 'Cannot reverse a reversal transaction' }
   }
 
-  // Create the reversal transaction
+  // IMPORTANT: Flight-related transactions should use reverseFlightCharge() instead
+  // This ensures ALL split transactions for the flight are reversed together
+  if (transaction.flightlog_id) {
+    return {
+      success: false,
+      error: 'Flight-related transactions must be reversed using the "Reverse Charge" action, not the undo button. This ensures all split charges are reversed together.'
+    }
+  }
+
+  // Create reversal transaction
+
   const { data: reversalTransaction, error: insertError } = await auth.supabase
     .from('accounts')
     .insert({
       user_id: transaction.user_id,
-      amount: -transaction.amount, // Opposite amount
+      amount: -transaction.amount,
       description: `REVERSAL: ${transaction.description}`,
       created_by: auth.userId,
       reverses_transaction_id: transaction.id,
@@ -223,7 +254,7 @@ export async function reverseUserTransaction(transactionId: string) {
     return { success: false, error: 'Failed to create reversal transaction' }
   }
 
-  // Mark the original transaction as reversed
+  // Mark original transaction as reversed
   const { error: updateError } = await auth.supabase
     .from('accounts')
     .update({
@@ -235,7 +266,6 @@ export async function reverseUserTransaction(transactionId: string) {
 
   if (updateError) {
     console.error('Error marking transaction as reversed:', updateError)
-    // Try to clean up the reversal transaction
     await auth.supabase.from('accounts').delete().eq('id', reversalTransaction.id)
     return { success: false, error: 'Failed to mark transaction as reversed' }
   }
@@ -395,6 +425,16 @@ export async function editCostCenterTransaction(
   return { success: true, message: 'Transaction updated successfully' }
 }
 
+/**
+ * Reverse a cost center transaction
+ *
+ * NOTE: This function is for NON-FLIGHT manual transactions only (e.g., deposits, adjustments).
+ * For FLIGHT-RELATED transactions, use reverseCostCenterFlightCharge() from cost-centers.ts instead,
+ * which handles split charges by reversing ALL related transactions for the flight.
+ *
+ * This function will fail if the transaction has a flightlog_id - this is intentional
+ * to prevent partial reversal of split-charged flights.
+ */
 export async function reverseCostCenterTransaction(transactionId: string) {
   const auth = await verifyAccountingAccess()
   if (!auth.authorized) {
@@ -422,14 +462,23 @@ export async function reverseCostCenterTransaction(transactionId: string) {
     return { success: false, error: 'Cannot reverse a reversal transaction' }
   }
 
-  // For cost center transactions with flightlog_id, we need to handle it specially
-  // We'll create a manual reversal without a flightlog_id since we can't reuse it
+  // IMPORTANT: Flight-related transactions should use reverseCostCenterFlightCharge() instead
+  // This ensures ALL split transactions for the flight are reversed together
+  if (transaction.flightlog_id) {
+    return {
+      success: false,
+      error: 'Flight-related transactions must be reversed using the "Reverse Charge" action, not the undo button. This ensures all split charges are reversed together.'
+    }
+  }
+
+  // Create reversal transaction
+
   const { data: reversalTransaction, error: insertError } = await auth.supabase
     .from('cost_center_transactions')
     .insert({
       cost_center_id: transaction.cost_center_id,
       flightlog_id: transaction.flightlog_id,
-      amount: -transaction.amount, // Opposite amount
+      amount: -transaction.amount,
       description: `REVERSAL: ${transaction.description}`,
       created_by: auth.userId,
       reverses_transaction_id: transaction.id,
@@ -442,7 +491,7 @@ export async function reverseCostCenterTransaction(transactionId: string) {
     return { success: false, error: 'Failed to create reversal transaction' }
   }
 
-  // Mark the original transaction as reversed
+  // Mark original transaction as reversed
   const { error: updateError } = await auth.supabase
     .from('cost_center_transactions')
     .update({
@@ -454,7 +503,6 @@ export async function reverseCostCenterTransaction(transactionId: string) {
 
   if (updateError) {
     console.error('Error marking transaction as reversed:', updateError)
-    // Try to clean up the reversal transaction
     await auth.supabase.from('cost_center_transactions').delete().eq('id', reversalTransaction.id)
     return { success: false, error: 'Failed to mark transaction as reversed' }
   }

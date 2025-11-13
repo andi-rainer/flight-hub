@@ -13,6 +13,8 @@ import {
 } from '@/components/ui/alert-dialog'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Loader2, AlertCircle, Undo2 } from 'lucide-react'
+// IMPORTANT: These functions handle FLIGHT-RELATED reversals for split charges
+// They reverse ALL related transactions (user accounts + cost centers) atomically
 import { reverseFlightCharge } from '@/lib/actions/accounts'
 import { reverseCostCenterFlightCharge } from '@/lib/actions/cost-centers'
 import { toast } from 'sonner'

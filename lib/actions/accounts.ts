@@ -6,7 +6,15 @@ import type { AccountInsert, AccountUpdate } from '@/lib/database.types'
 
 /**
  * Server actions for User Accounts management
- * Handles viewing user balances, transactions, and manual adjustments (board members only)
+ *
+ * Handles:
+ * - Viewing user balances and transactions
+ * - Manual account adjustments (board members only)
+ * - FLIGHT CHARGE REVERSALS (reverseFlightCharge function)
+ *
+ * NOTE: Flight charge reversals in this file handle split charges by reversing
+ * ALL related transactions (user accounts + cost centers) atomically.
+ * See reverseFlightCharge() documentation for details.
  */
 
 // ============================================================================
@@ -289,6 +297,24 @@ export async function addAdjustment(data: {
 // REVERSE FLIGHT CHARGES
 // ============================================================================
 
+/**
+ * Reverse a flight charge (user account transaction)
+ *
+ * This function handles reversing ALL transactions related to a flight, including:
+ * - All user account transactions for the flight
+ * - All cost center transactions for the flight
+ *
+ * This is crucial for split-charged flights where costs are distributed across
+ * multiple accounts (e.g., 50% pilot, 25% Cost Center A, 25% Cost Center B).
+ * Reversing any single transaction will reverse ALL related transactions to
+ * prevent partial reversals and accounting inconsistencies.
+ *
+ * The flight will be marked as uncharged and unlocked, allowing it to be
+ * re-charged with correct amounts or allocations.
+ *
+ * NOTE: This is different from reverseUserTransaction() in accounting.ts,
+ * which only handles manual (non-flight) transactions.
+ */
 export async function reverseFlightCharge(transactionId: string) {
   const auth = await verifyBoardMember()
   if (!auth.authorized) {
@@ -322,59 +348,131 @@ export async function reverseFlightCharge(transactionId: string) {
     return { success: false, error: 'This transaction is not linked to a flight' }
   }
 
-  // Check if already reversed
-  const { data: existingReversal } = await auth.supabase
+  const flightlogId = originalTx.flightlog_id
+
+  // For split charges, we need to reverse ALL transactions for this flight
+  // Find all user account transactions for this flight
+  const { data: allUserTransactions, error: userTxError } = await auth.supabase
     .from('accounts')
-    .select('id')
-    .eq('reverses_transaction_id', transactionId)
-    .single()
+    .select('*')
+    .eq('flightlog_id', flightlogId)
+    .is('reverses_transaction_id', null) // Only original transactions, not reversals
 
-  if (existingReversal) {
-    return { success: false, error: 'This transaction has already been reversed' }
+  // Find all cost center transactions for this flight
+  const { data: allCostCenterTransactions, error: ccTxError } = await auth.supabase
+    .from('cost_center_transactions')
+    .select('*')
+    .eq('flightlog_id', flightlogId)
+    .is('reverses_transaction_id', null) // Only original transactions, not reversals
+
+  if (userTxError || ccTxError) {
+    console.error('Error fetching related transactions:', userTxError || ccTxError)
+    return { success: false, error: 'Failed to fetch related transactions' }
   }
 
-  // Create reverse transaction
-  const reverseAmount = -originalTx.amount
-  const { data: reverseTx, error: reverseError } = await auth.supabase
-    .from('accounts')
-    .insert({
-      user_id: originalTx.user_id,
-      amount: reverseAmount,
-      description: `REVERSAL: ${originalTx.description}`,
-      created_by: auth.userId,
-      reverses_transaction_id: transactionId,
-    })
-    .select()
-    .single()
+  const reversalTimestamp = new Date().toISOString()
+  let reversedCount = 0
 
-  if (reverseError) {
-    console.error('Error creating reverse transaction:', reverseError)
-    return { success: false, error: reverseError.message }
-  }
+  try {
+    // Reverse all user account transactions for this flight
+    for (const tx of allUserTransactions || []) {
+      // Create reverse transaction
+      const { data: reverseTx, error: reverseError } = await auth.supabase
+        .from('accounts')
+        .insert({
+          user_id: tx.user_id,
+          amount: -tx.amount,
+          description: `REVERSAL: ${tx.description}`,
+          created_by: auth.userId,
+          reverses_transaction_id: tx.id,
+        })
+        .select()
+        .single()
 
-  // Unlock and uncharge the flight
-  const { error: unlockError } = await auth.supabase
-    .from('flightlog')
-    .update({
-      charged: false,
-      locked: false,
-      charged_by: null,
-      charged_at: null,
-    })
-    .eq('id', originalTx.flightlog_id)
+      if (reverseError) {
+        throw new Error(`Failed to create reversal for user transaction: ${reverseError.message}`)
+      }
 
-  if (unlockError) {
-    console.error('Error unlocking flight:', unlockError)
-    // Try to delete the reverse transaction since flight unlock failed
-    await auth.supabase.from('accounts').delete().eq('id', reverseTx.id)
-    return { success: false, error: 'Failed to unlock flight: ' + unlockError.message }
-  }
+      // Mark original as reversed
+      const { error: updateError } = await auth.supabase
+        .from('accounts')
+        .update({
+          reversed_at: reversalTimestamp,
+          reversed_by: auth.userId,
+          reversal_transaction_id: reverseTx.id,
+        })
+        .eq('id', tx.id)
 
-  revalidatePath('/accounting')
-  revalidatePath('/billing')
-  return {
-    success: true,
-    data: reverseTx,
-    message: 'Flight charge reversed and flight unlocked for re-charging'
+      if (updateError) {
+        throw new Error(`Failed to mark user transaction as reversed: ${updateError.message}`)
+      }
+
+      reversedCount++
+    }
+
+    // Reverse all cost center transactions for this flight
+    for (const tx of allCostCenterTransactions || []) {
+      // Create reverse transaction
+      const { data: reverseTx, error: reverseError } = await auth.supabase
+        .from('cost_center_transactions')
+        .insert({
+          cost_center_id: tx.cost_center_id,
+          flightlog_id: tx.flightlog_id,
+          amount: -tx.amount,
+          description: `REVERSAL: ${tx.description}`,
+          created_by: auth.userId,
+          reverses_transaction_id: tx.id,
+        })
+        .select()
+        .single()
+
+      if (reverseError) {
+        throw new Error(`Failed to create reversal for cost center transaction: ${reverseError.message}`)
+      }
+
+      // Mark original as reversed
+      const { error: updateError } = await auth.supabase
+        .from('cost_center_transactions')
+        .update({
+          reversed_at: reversalTimestamp,
+          reversed_by: auth.userId,
+          reversal_transaction_id: reverseTx.id,
+        })
+        .eq('id', tx.id)
+
+      if (updateError) {
+        throw new Error(`Failed to mark cost center transaction as reversed: ${updateError.message}`)
+      }
+
+      reversedCount++
+    }
+
+    // Unlock and uncharge the flight
+    const { error: unlockError } = await auth.supabase
+      .from('flightlog')
+      .update({
+        charged: false,
+        locked: false,
+        charged_by: null,
+        charged_at: null,
+      })
+      .eq('id', flightlogId)
+
+    if (unlockError) {
+      throw new Error(`Failed to unlock flight: ${unlockError.message}`)
+    }
+
+    revalidatePath('/accounting')
+    revalidatePath('/billing')
+    return {
+      success: true,
+      message: `Flight charges reversed successfully (${reversedCount} transaction(s)) and flight unlocked for re-charging`
+    }
+  } catch (error) {
+    console.error('Error during flight charge reversal:', error)
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to reverse flight charges'
+    }
   }
 }

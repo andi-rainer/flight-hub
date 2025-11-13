@@ -242,9 +242,35 @@ Update split configuration for an operation type (board only).
 - [ ] Add audit log for split configuration changes
 - [ ] Support conditional splits (e.g., different splits based on aircraft type)
 
+## Reversal Behavior
+
+### Split Charge Reversals
+
+When a split-charged flight is reversed, **ALL** related transactions are reversed together:
+
+**Example**: Flight charged with 50% Pilot, 25% Cost Center A, 25% Cost Center B creates 3 transactions.
+
+**Reversal**: Clicking "Reverse Charge" on ANY of those transactions will:
+1. Create reversal transactions for ALL 3 original transactions
+2. Mark ALL 3 original transactions as reversed
+3. Mark the flight as uncharged and unlocked
+4. Allow the flight to be re-charged
+
+**Implementation Details**:
+- Flight reversals use `reverseFlightCharge()` (accounts.ts) or `reverseCostCenterFlightCharge()` (cost-centers.ts)
+- These functions find ALL transactions with the same `flightlog_id` and reverse them atomically
+- This prevents partial reversals and accounting inconsistencies
+- Manual (non-flight) transactions use separate reversal functions in `accounting.ts`
+
+### UI Buttons
+
+- **"Reverse Charge"** button (for flight transactions): Reverses ALL split transactions together
+- **"Undo"** button (for manual transactions): Only reverses the single clicked transaction
+
 ## Notes
 
 - Existing operation types with `default_cost_center_id` remain backward compatible
 - Operation type splits take precedence over `default_cost_center_id`
 - Splits can be cleared by saving with empty array
 - Airport fees can be split equally or assigned to specific target
+- Reversal of split charges is atomic - all related transactions are reversed together

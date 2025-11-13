@@ -442,6 +442,35 @@ if (permissionChecker.can('flight.log.lock')) { ... }
 - **Reversals**: Reverse transactions with tracking
 - **Flight Charging**: Semi-automatic charging from flightlog
 - **Reports**: User account summaries, transaction history
+- **Operation Type Cost Splitting**: Configure default cost splits for operation types (see OPERATION_TYPE_COST_SPLITTING.md)
+
+#### Transaction Reversal System
+
+**IMPORTANT**: The application has TWO different reversal systems:
+
+**1. Flight Charge Reversals** (for split-charged flights)
+- **Functions**: `reverseFlightCharge()` (accounts.ts), `reverseCostCenterFlightCharge()` (cost-centers.ts)
+- **Purpose**: Reverse ALL transactions for a flight atomically
+- **Behavior**: When reversing a split-charged flight (e.g., 50% pilot, 25% Cost Center A, 25% Cost Center B), clicking "Reverse Charge" on ANY transaction will:
+  - Create reversals for ALL 3 transactions
+  - Mark ALL 3 as reversed
+  - Unlock and uncharge the flight
+- **UI**: "Reverse Charge" button (orange) on flight-related transactions
+- **Why**: Prevents partial reversals that would cause accounting inconsistencies
+
+**2. Manual Transaction Reversals** (for non-flight transactions)
+- **Functions**: `reverseUserTransaction()`, `reverseCostCenterTransaction()` (accounting.ts)
+- **Purpose**: Reverse single manual adjustments (deposits, corrections, etc.)
+- **Behavior**: Only reverses the clicked transaction
+- **UI**: "Undo" button on manual transactions
+- **Protection**: Will reject flight-related transactions with error message
+
+**Key Files**:
+- `/lib/actions/accounts.ts` - User account operations + flight charge reversals
+- `/lib/actions/cost-centers.ts` - Cost center operations + flight charge reversals
+- `/lib/actions/accounting.ts` - Manual transaction operations (non-flight only)
+- `/app/(dashboard)/accounting/components/reverse-charge-dialog.tsx` - Flight reversal UI
+- `/app/(dashboard)/accounting/components/undo-transaction-dialog.tsx` - Manual reversal UI
 
 ### 7. Flight Log (In Progress)
 - **Entry**: Create flight log entries (Pilot/Flight Instructor)

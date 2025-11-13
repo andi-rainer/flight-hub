@@ -13,6 +13,9 @@ import {
 } from '@/components/ui/alert-dialog'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Loader2, AlertCircle } from 'lucide-react'
+// IMPORTANT: These functions handle MANUAL (non-flight) transaction reversals only
+// For flight-related transactions, they will reject with an error message
+// directing users to use the "Reverse Charge" button instead
 import { reverseUserTransaction, reverseCostCenterTransaction } from '@/lib/actions/accounting'
 import { format } from 'date-fns'
 import { toast } from 'sonner'
