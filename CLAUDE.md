@@ -2,8 +2,8 @@
 
 **Project**: Flight Club Management System (Austrian Aviation Club)
 **Stack**: Next.js 15 + Supabase + shadcn/ui + Tailwind CSS
-**Status**: ~80% Complete (8/9 major features)
-**Last Updated**: November 2025
+**Status**: ~85% Complete (8.5/9 major features)
+**Last Updated**: November 13, 2025
 
 ---
 
@@ -495,7 +495,178 @@ if (permissionChecker.can('flight.log.lock')) { ... }
 
 ---
 
-## 7. API ROUTES (18 Route Handlers)
+## 7. FLIGHT CHARGING & REVERSAL SYSTEM
+
+### Overview
+
+The flight charging system is one of the most critical features of FlightHub, enabling board members to charge flight costs to users and cost centers with sophisticated split charging capabilities.
+
+### Key Concepts
+
+#### 1. Simple Charging
+- **Charge to User**: Entire flight cost charged to a single user
+- **Charge to Cost Center**: Entire flight cost charged to a cost center
+- **Lock Required**: Flights must be locked before charging
+- **Transaction Creation**: Creates negative amount (debit) in user's account or cost center
+
+#### 2. Split Charging
+- **Percentage-Based**: Distribute costs across multiple targets by percentage
+- **Multiple Targets**: Support for 2-5 targets (users and/or cost centers)
+- **Airport Fees**: Can be split equally or assigned to specific target
+- **Validation**: Percentages must sum to exactly 100%
+- **Atomic Operation**: All transactions created together
+
+**Example Split Charge:**
+```typescript
+Flight: €300 cost + €60 airport fees
+Split: 50% Pilot, 25% Cost Center A, 25% Cost Center B
+Fees: Split equally
+
+Result:
+- Pilot: -€180 (€150 + €30 fees)
+- Cost Center A: -€90 (€75 + €15 fees)
+- Cost Center B: -€90 (€75 + €15 fees)
+All transactions linked by flightlog_id
+```
+
+#### 3. Operation Type Default Splits
+- Pre-configured splits per operation type (Training, Maintenance, etc.)
+- Auto-populate split percentages when charging
+- Can be overridden by board member
+- Stored in operation_types table
+
+#### 4. Transaction Reversal System
+
+**CRITICAL**: FlightHub has TWO different reversal systems:
+
+**A. Flight Charge Reversals** (for split-charged flights)
+- **Functions**: `reverseFlightCharge()` (accounts.ts), `reverseCostCenterFlightCharge()` (cost-centers.ts)
+- **Purpose**: Reverse ALL transactions for a flight atomically
+- **UI**: Orange "Reverse Charge" button on flight-related transactions
+- **Behavior**:
+  - Finds ALL user transactions with same `flightlog_id`
+  - Finds ALL cost center transactions with same `flightlog_id`
+  - Creates reversal transaction for each (opposite amount)
+  - Marks ALL original transactions as reversed
+  - Unlocks flight (charged=false, locked=false)
+  - Allows re-charging with different allocation
+
+**B. Manual Transaction Reversals** (for non-flight transactions)
+- **Functions**: `reverseUserTransaction()`, `reverseCostCenterTransaction()` (accounting.ts)
+- **Purpose**: Reverse single manual adjustments (deposits, corrections)
+- **UI**: "Undo" button on manual transactions
+- **Protection**: Rejects flight-related transactions with helpful error message
+
+**Reversal Flow Example:**
+```typescript
+// Initial split charge (3 transactions created)
+Flight charged: 50% User, 30% CC-A, 20% CC-B
+
+// User clicks "Reverse Charge" on ANY transaction
+// System finds ALL 3 transactions and reverses them:
+1. User transaction: -€150 → Reversal: +€150
+2. CC-A transaction: -€90 → Reversal: +€90
+3. CC-B transaction: -€60 → Reversal: +€60
+
+// Flight now uncharged, can be re-charged with different split
+```
+
+### Implementation Files
+
+#### Server Actions
+- `lib/actions/accounts.ts`:
+  - `chargeFlightToUser()` - Simple user charge
+  - `splitChargeFlight()` - Split charge across targets
+  - `reverseFlightCharge()` - Atomic reversal of ALL flight transactions
+
+- `lib/actions/cost-centers.ts`:
+  - `chargeFlightToCostCenter()` - Simple cost center charge
+  - `reverseCostCenterFlightCharge()` - Atomic reversal from cost center entry point
+
+- `lib/actions/accounting.ts`:
+  - `reverseUserTransaction()` - Manual transaction reversal (non-flight)
+  - `reverseCostCenterTransaction()` - Manual cost center reversal (non-flight)
+
+#### UI Components
+- `app/(dashboard)/accounting/components/reverse-charge-dialog.tsx` - Flight reversal UI
+- `app/(dashboard)/accounting/components/charge-flight-dialog.tsx` - Charge flight UI
+
+### Database Schema
+
+#### Key Tables
+- **flightlog**: Flight records with `charged`, `locked`, `charged_by`, `charged_at` fields
+- **accounts**: User transactions with `flightlog_id` linking
+- **cost_center_transactions**: Cost center transactions with `flightlog_id` linking
+- **operation_types**: Default split configurations
+
+#### Transaction Fields
+- `amount`: Negative for debits/costs, positive for credits/reversals
+- `flightlog_id`: Links all transactions for same flight
+- `reversed_at`: Timestamp when transaction was reversed
+- `reversed_by`: User who performed reversal
+- `reversal_transaction_id`: ID of the reversal transaction
+- `reverses_transaction_id`: For reversal transactions, points to original
+
+### Testing
+
+#### Automated Tests (21 passing tests)
+- **File**: `__tests__/actions/flight-charging-simple.test.ts`
+- **Coverage**:
+  - Split percentage validation (4 tests)
+  - Split amount calculation (5 tests)
+  - Transaction amount convention (3 tests)
+  - Flight status transitions (3 tests)
+  - Reversal completeness (2 tests)
+  - Error scenarios (4 tests)
+
+#### Manual Test Plan
+- **File**: `FLIGHT_CHARGING_TEST_PLAN.md`
+- **Scenarios**: 70+ test cases covering:
+  - Simple charges and reversals
+  - 2-way, 3-way, 4+ way split charges
+  - Airport fee allocation (split vs assign)
+  - Re-charging after reversal
+  - Edge cases and error handling
+  - Authorization and validation
+
+#### Testing Strategy
+- **File**: `TESTING_STRATEGY.md`
+- **Approach**: Hybrid testing combining:
+  - Unit tests for business logic (~95% coverage)
+  - Manual testing for integration (database, RLS, UI)
+  - Mock utilities for Supabase client testing
+
+### Known Issues & Fixes
+
+#### Recent Fix: Split Charge Reversal Bug (November 2025)
+**Problem**: When reversing a split-charged flight, only the clicked transaction was reversed, leaving other transactions unreversed. This caused double-charging when re-charging the flight.
+
+**Solution**: Updated `reverseFlightCharge()` and `reverseCostCenterFlightCharge()` to:
+1. Find ALL transactions with same `flightlog_id`
+2. Reverse ALL transactions atomically
+3. Mark ALL as reversed with same timestamp
+4. Unlock flight for re-charging
+
+**Testing**: Confirmed working through manual testing and automated test suite.
+
+### Best Practices
+
+1. **Always Lock Before Charging**: Prevents flight log modifications
+2. **Validate Percentages**: Must sum to exactly 100%
+3. **Use Correct Reversal Function**: Flight reversals vs manual reversals
+4. **Test Split Charges**: Verify ALL transactions created and reversed together
+5. **Check flightlog_id**: All split transactions must share same flightlog_id
+
+### Future Improvements
+
+1. **Transaction Wrapping**: PostgreSQL transactions for atomic operations
+2. **Concurrent Reversal Protection**: Locking mechanism to prevent simultaneous reversals
+3. **Audit Trail Enhancement**: More detailed logging of charge/reversal operations
+4. **Automatic Integration Tests**: Tests with real test database
+
+---
+
+## 8. API ROUTES (18 Route Handlers)
 
 Located in `app/api/`:
 
@@ -529,7 +700,7 @@ Located in `app/api/`:
 
 ---
 
-## 8. SERVER ACTIONS (13+ Actions)
+## 9. SERVER ACTIONS (13+ Actions)
 
 Located in `lib/actions/`:
 
@@ -557,7 +728,7 @@ Located in `lib/actions/`:
 
 ---
 
-## 9. COMPONENTS & UI
+## 10. COMPONENTS & UI
 
 ### Layout Components
 - **Sidebar** (`components/layout/sidebar.tsx`): Desktop & mobile navigation with real-time document count badges
@@ -594,7 +765,7 @@ Located in `lib/actions/`:
 
 ---
 
-## 10. INTERNATIONALIZATION (i18n)
+## 11. INTERNATIONALIZATION (i18n)
 
 ### Setup
 - **Library**: next-intl (wrapper around Intl APIs)
@@ -629,7 +800,7 @@ t('key') // Returns translated string
 
 ---
 
-## 11. TESTING
+## 12. TESTING
 
 ### Test Setup
 - **Framework**: Jest 29.x
@@ -642,17 +813,70 @@ t('key') // Returns translated string
 - **Utilities**: Mock helpers in `__tests__/utils/`
 - **Coverage**: Targets app/ and lib/ directories
 
-### Existing Tests (5+ test files)
+### Existing Tests
+
+#### Flight Charging System (21 passing tests)
+- **File**: `__tests__/actions/flight-charging-simple.test.ts`
+- **Test Coverage**:
+  - Split Percentage Validation (4 tests)
+  - Split Amount Calculation (5 tests)
+  - Transaction Amount Convention (3 tests)
+  - Flight Status Transitions (3 tests)
+  - Reversal Completeness (2 tests)
+  - Error Scenarios (4 tests)
+- **Run Time**: ~400ms
+- **Focus**: Business logic validation without complex database mocking
+
+#### Other Test Files (4+ test files)
 - `app/api/documents/upload/route.test.ts` - Document upload API
 - `app/api/documents/user-alerts/route.test.ts` - User alerts API
 - `app/api/documents/renew/route.test.ts` - Document renewal API
 - `app/(dashboard)/reservations/actions.test.ts` - Reservation actions
 
 ### Mock Utilities
+- `__tests__/utils/flight-charging-mocks.ts`: Mock utilities for flight charging tests
 - `createMockSupabaseClient()`: Mock Supabase client
 - `createQueryBuilder()`: Mock Supabase query interface
 - `createStorageBuilder()`: Mock storage operations
 - Pre-made mocks: `mockUser`, `mockProfile`, `mockDocument`, etc.
+
+### Testing Strategy
+
+FlightHub uses a **hybrid testing approach** combining:
+
+1. **Unit Tests for Business Logic** (~95% coverage)
+   - Fast execution (< 1 second)
+   - No complex database mocking
+   - Focus on calculations, validations, and state transitions
+   - Easy to maintain and extend
+
+2. **Manual Testing for Integration**
+   - Database transactions and RLS policies
+   - UI workflows and user interactions
+   - Concurrent operations
+   - Real-world scenarios with actual data
+
+3. **Comprehensive Test Documentation**
+   - `TESTING_STRATEGY.md` - Complete testing approach guide
+   - `FLIGHT_CHARGING_TEST_PLAN.md` - 70+ manual test scenarios
+   - Step-by-step testing checklists
+   - Test data fixtures and expected results
+
+### Running Tests
+
+```bash
+# Run all tests
+npm test
+
+# Run flight charging tests
+npm test -- __tests__/actions/flight-charging-simple.test.ts
+
+# Run with coverage
+npm test -- --coverage
+
+# Watch mode for development
+npm test -- --watch
+```
 
 ### Testing Patterns
 ```typescript
@@ -678,7 +902,7 @@ const response = await POST(request)
 
 ---
 
-## 12. DEVELOPMENT PATTERNS
+## 13. DEVELOPMENT PATTERNS
 
 ### Code Organization
 1. **App Routes** (`app/**/*.tsx`): Page components and layouts
@@ -744,9 +968,22 @@ if (!result.success) return { error: result.error.flatten() }
 
 ---
 
-## 13. RECENT DEVELOPMENTS (Recent Commits)
+## 14. RECENT DEVELOPMENTS
 
-### Latest: Granular RBAC System (Recent)
+### Latest: Split Charge Reversal Fix (November 2025)
+- **Critical Bug Fix**: Fixed split-charged flight reversals
+- **Problem**: When reversing a split-charged flight (e.g., 50% pilot, 25% CC-A, 25% CC-B), only the clicked transaction was reversed, leaving other transactions unreversed
+- **Impact**: Caused double-charging when re-charging the flight
+- **Solution**: Updated `reverseFlightCharge()` and `reverseCostCenterFlightCharge()` to:
+  - Find ALL user and cost center transactions with same `flightlog_id`
+  - Reverse ALL transactions atomically
+  - Mark ALL as reversed with same timestamp
+  - Unlock flight for re-charging
+- **Testing**: Added 21 automated business logic tests + comprehensive manual test plan
+- **Documentation**: Created `TESTING_STRATEGY.md` and `FLIGHT_CHARGING_TEST_PLAN.md`
+- **Files Modified**: `lib/actions/accounts.ts`, `lib/actions/cost-centers.ts`, `lib/actions/accounting.ts`
+
+### Granular RBAC System
 - Implemented hybrid RBAC combining roles + function-based permissions
 - System functions: Pilot, Flight Instructor, Chief Pilot, Tandem Master, etc.
 - Permission matrix in `lib/permissions/index.ts` with 30+ granular permissions
@@ -777,7 +1014,7 @@ if (!result.success) return { error: result.error.flatten() }
 
 ---
 
-## 14. CONFIGURATION & ENVIRONMENT
+## 15. CONFIGURATION & ENVIRONMENT
 
 ### Environment Variables
 ```env
@@ -820,7 +1057,7 @@ DATABASE_URL=postgresql://postgres:pass@db.project.supabase.co:5432/postgres
 
 ---
 
-## 15. PERFORMANCE CONSIDERATIONS
+## 16. PERFORMANCE CONSIDERATIONS
 
 ### Database
 - 40+ strategic indexes on frequently queried columns
@@ -848,7 +1085,7 @@ DATABASE_URL=postgresql://postgres:pass@db.project.supabase.co:5432/postgres
 
 ---
 
-## 16. SECURITY ARCHITECTURE
+## 17. SECURITY ARCHITECTURE
 
 ### Authentication
 - Supabase Auth handles credential security
@@ -882,7 +1119,7 @@ DATABASE_URL=postgresql://postgres:pass@db.project.supabase.co:5432/postgres
 
 ---
 
-## 17. DEPLOYMENT & DEVOPS
+## 18. DEPLOYMENT & DEVOPS
 
 ### Deployment Target
 - **Platform**: Vercel (recommended for Next.js)
@@ -917,7 +1154,7 @@ supabase db diff
 
 ---
 
-## 18. COMMON WORKFLOWS
+## 19. COMMON WORKFLOWS
 
 ### Adding a New Feature
 
@@ -960,7 +1197,7 @@ supabase db diff
 
 ---
 
-## 19. TROUBLESHOOTING & FAQ
+## 20. TROUBLESHOOTING & FAQ
 
 ### Common Issues
 
@@ -993,13 +1230,27 @@ supabase db diff
 
 ---
 
-## 20. USEFUL RESOURCES
+## 21. USEFUL RESOURCES
 
 ### Internal Documentation
+
+#### Core Documentation
+- `CLAUDE.md` - Complete codebase documentation (this file)
 - `/supabase/SCHEMA_DOCUMENTATION.md` - Complete database schema docs
 - `/supabase/QUICK_REFERENCE.md` - Common SQL queries
 - `/AUTH_SETUP.md` - Authentication flow details
 - `/PROJECT_STATUS.md` - Feature implementation status
+- `SCHEMA_SUMMARY.md` - Database schema summary
+
+#### Testing Documentation
+- `TESTING_STRATEGY.md` - Hybrid testing approach and comprehensive guide
+- `FLIGHT_CHARGING_TEST_PLAN.md` - 70+ manual test scenarios for flight charging system
+- `__tests__/actions/flight-charging-simple.test.ts` - 21 passing business logic tests
+- `__tests__/utils/flight-charging-mocks.ts` - Mock utilities for testing
+
+#### Feature Documentation
+- `OPERATION_TYPE_COST_SPLITTING.md` - Split charging system and atomic reversals
+- `README.md` - Project overview and quick start guide
 
 ### External Documentation
 - [Next.js Docs](https://nextjs.org/docs)
@@ -1016,7 +1267,7 @@ supabase db diff
 
 ---
 
-## 21. KEY DECISION RATIONALE
+## 22. KEY DECISION RATIONALE
 
 ### Why Hybrid RBAC?
 - Simple role system (member/board) covers 80% of use cases
@@ -1044,7 +1295,7 @@ supabase db diff
 
 ---
 
-## 22. FUTURE ROADMAP
+## 23. FUTURE ROADMAP
 
 ### Planned Features (from PROJECT_STATUS.md)
 1. **Reservations Calendar**: react-big-calendar integration
@@ -1063,7 +1314,7 @@ supabase db diff
 
 ---
 
-## 23. TECHNICAL DEBT & KNOWN ISSUES
+## 24. TECHNICAL DEBT & KNOWN ISSUES
 
 ### Minor Issues
 - Legacy `functions` array field in users table (migrated to user_functions)

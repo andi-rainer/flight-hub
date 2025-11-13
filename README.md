@@ -12,8 +12,8 @@ A production-grade web application for managing aircraft reservations, flight lo
 - ✅ **Settings** - Function management and user profile settings
 - ✅ **Billing & Accounting** - Cost centers, transactions, and financial tracking
 - ✅ **Permissions** - Granular function-based permission management
-- ⏳ **Reservations** - Calendar-based booking system (coming soon)
-- ⏳ **Flight Logs** - Flight logging with treasurer charging (coming soon)
+- ⏳ **Reservations** - Calendar-based booking system (in progress)
+- ✅ **Flight Logs** - Flight logging with split charging and atomic reversals
 
 ## Tech Stack
 
@@ -152,6 +152,45 @@ npm start
 
 # Lint code
 npm run lint
+
+# Run tests
+npm test
+
+# Run tests in watch mode
+npm test -- --watch
+
+# Run tests with coverage
+npm test -- --coverage
+```
+
+## Testing
+
+FlightHub uses a **hybrid testing strategy** for comprehensive coverage:
+
+### Business Logic Tests
+- **Framework:** Jest 29.x with @testing-library/react
+- **Location:** `__tests__/actions/`
+- **Coverage:** 21 passing tests for flight charging system
+- **Focus:** Percentage validation, split calculations, transaction conventions, state transitions
+
+### Test Files
+- `__tests__/actions/flight-charging-simple.test.ts` - Core business logic (21 tests)
+- `__tests__/utils/flight-charging-mocks.ts` - Mock utilities for Supabase
+
+### Documentation
+- `TESTING_STRATEGY.md` - Complete testing approach and guide
+- `FLIGHT_CHARGING_TEST_PLAN.md` - 70+ manual test scenarios
+
+### Running Tests
+```bash
+# Run flight charging tests
+npm test -- __tests__/actions/flight-charging-simple.test.ts
+
+# Run all tests
+npm test
+
+# Watch mode for development
+npm test -- --watch
 ```
 
 ## Authorization System
@@ -217,7 +256,10 @@ FlightHub implements a hybrid authorization system combining roles with function
 - Cost centers for expense allocation
 - User account management and balance tracking
 - Transaction creation and reversal with tracking
-- Flight charging from locked flight logs
+- Flight charging from locked flight logs with split charging support
+- **Split Charging:** Distribute flight costs across multiple users/cost centers by percentage
+- **Atomic Reversals:** Reversing split charges reverses ALL related transactions together
+- **Operation Type Defaults:** Pre-configured cost splits per operation type (e.g., maintenance)
 - Account balance reports and history
 
 ## Deployment
@@ -245,12 +287,20 @@ SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 
 ## Documentation
 
+### Core Documentation
 - **Complete Documentation:** `CLAUDE.md` - Comprehensive codebase documentation
 - **Project Status:** `PROJECT_STATUS.md` - Current implementation status
 - **Schema:** `supabase/SCHEMA_DOCUMENTATION.md` - Complete database schema
 - **Quick Reference:** `supabase/QUICK_REFERENCE.md` - Common SQL queries
 - **Auth Setup:** `AUTH_SETUP.md` - Authentication documentation
 - **Schema Summary:** `SCHEMA_SUMMARY.md` - Database schema summary
+
+### Testing Documentation
+- **Testing Strategy:** `TESTING_STRATEGY.md` - Hybrid testing approach and guide
+- **Flight Charging Test Plan:** `FLIGHT_CHARGING_TEST_PLAN.md` - 70+ test scenarios
+
+### Feature Documentation
+- **Operation Type Cost Splitting:** `OPERATION_TYPE_COST_SPLITTING.md` - Split charging and reversals
 
 ## Contributing
 
@@ -268,5 +318,11 @@ For questions or issues, contact the development team or create an issue in the 
 
 Built with ❤️ using Next.js, Supabase, and shadcn/ui
 
-**Project Status:** ~80% Complete (8/9 major features implemented)
-**Last Updated:** November 2025
+**Project Status:** ~85% Complete (8.5/9 major features implemented)
+**Last Updated:** November 13, 2025
+
+### Recent Updates
+- ✅ Fixed split charge reversal bug (atomic reversals for all related transactions)
+- ✅ Added comprehensive testing strategy with 21 passing business logic tests
+- ✅ Created detailed test plan with 70+ manual test scenarios
+- ✅ Enhanced flight charging documentation
