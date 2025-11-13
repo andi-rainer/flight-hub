@@ -117,12 +117,12 @@ SELECT
     ot.name AS operation_type_name,
     ot.color AS operation_type_color
 FROM public.flightlog f
-JOIN public.planes p ON f.plane_id = p.id
-JOIN public.users pilot ON f.pilot_id = pilot.id
-LEFT JOIN public.users copilot ON f.copilot_id = copilot.id
-LEFT JOIN public.operation_types ot ON f.operation_type_id = ot.id;
+         JOIN public.planes p ON f.plane_id = p.id
+         JOIN public.users pilot ON f.pilot_id = pilot.id
+         LEFT JOIN public.users copilot ON f.copilot_id = copilot.id
+         LEFT JOIN public.operation_types ot ON f.operation_type_id = ot.id;
 
-COMMENT ON VIEW public.flightlog_with_times IS 'Flightlog entries with calculated times and full details including operation types';
+COMMENT ON VIEW public.flightlog_with_times IS 'Flightlog entries with calculated times and full details including operation types. Updated to include notes field.';
 
 -- =====================================================
 -- 5. UPDATE UNCHARGED FLIGHTS VIEW WITH FEE CALCULATIONS

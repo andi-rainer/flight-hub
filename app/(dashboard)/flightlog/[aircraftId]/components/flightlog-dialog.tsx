@@ -106,13 +106,13 @@ export function FlightlogDialog({
     icaoDestination.length === 4
   )
 
-  // Reset form when dialog opens or props change
+  // Reset form when the dialog opens or props change
   useEffect(() => {
     if (open) {
       // Format today's date
       const todayDate = format(new Date(), "yyyy-MM-dd")
 
-      // Find default operation type
+      // Find the default operation type
       const defaultOpType = operationTypes.find(ot => ot.is_default)
 
       if (existingEntry) {
@@ -237,35 +237,34 @@ export function FlightlogDialog({
     }
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-
+  // Shared validation function
+  const validateAndCalculateDates = async () => {
     if (!pilotId || !flightDate || !blockOffTime || !takeoffTime || !landingTime || !blockOnTime) {
       toast.error('Please fill in all required fields')
-      return
+      return null
     }
 
     // Validate pilot/crew conflict
     if (additionalCrewId && additionalCrewId === pilotId) {
       toast.error('Additional crewmember cannot be the same as pilot')
-      return
+      return null
     }
 
     // Validate ICAO codes (must be exactly 4 characters if provided)
     if (icaoDeparture && icaoDeparture.length !== 4) {
       toast.error('ICAO Departure code must be exactly 4 characters')
-      return
+      return null
     }
     if (icaoDestination && icaoDestination.length !== 4) {
       toast.error('ICAO Destination code must be exactly 4 characters')
-      return
+      return null
     }
 
     // Calculate dates with smart next-day detection
     const dates = calculateDates()
     if (!dates) {
       toast.error('Unable to calculate flight dates')
-      return
+      return null
     }
 
     const { blockOff: blockOffDate, takeoff: takeoffDate, landing: landingDate, blockOn: blockOnDate } = dates
@@ -273,24 +272,24 @@ export function FlightlogDialog({
     // Chronological order: Block Off ≤ Takeoff ≤ Landing ≤ Block On
     if (takeoffDate < blockOffDate) {
       toast.error('Takeoff time must be after or at Block Off time')
-      return
+      return null
     }
 
     if (landingDate <= takeoffDate) {
       toast.error('Landing time must be after takeoff time (minimum 1 minute flight time)')
-      return
+      return null
     }
 
     // Check minimum 1 minute flight time
     const flightTimeMinutes = (landingDate.getTime() - takeoffDate.getTime()) / (1000 * 60)
     if (flightTimeMinutes < 1) {
       toast.error('Flight time must be at least 1 minute')
-      return
+      return null
     }
 
     if (blockOnDate < landingDate) {
       toast.error('Block On time must be after or at landing time')
-      return
+      return null
     }
 
     // Check for warnings (only for new entries, not edits)
@@ -307,7 +306,7 @@ export function FlightlogDialog({
 
       if (warningCheck.error) {
         toast.error(`Warning check failed: ${warningCheck.error}`)
-        return
+        return null
       }
 
       if (warningCheck.data) {
@@ -315,46 +314,77 @@ export function FlightlogDialog({
       }
     }
 
+    return dates
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+
+    const dates = await validateAndCalculateDates()
+    if (!dates) return
+
     // Store calculated dates and show confirmation modal
     setCalculatedDates(dates)
     setShowConfirmation(true)
-    return
   }
 
-  const handleConfirmAndCreate = async () => {
-    if (!calculatedDates) return
+  // Shared function to upload M&B document and update flightlog
+  const performFlightlogUpdate = async (
+    blockOffDate: Date,
+    takeoffDate: Date,
+    landingDate: Date,
+    blockOnDate: Date
+  ) => {
+    let mbUrl: string | null = mAndBPdfUrl
 
-    const { blockOff: blockOffDate, takeoff: takeoffDate, landing: landingDate, blockOn: blockOnDate } = calculatedDates
-
-    setShowConfirmation(false)
-
-    startTransition(async () => {
-      let mbUrl: string | null = mAndBPdfUrl
-
-      // Upload M&B file if a new file is selected
-      if (mAndBFile) {
-        setIsUploadingMB(true)
-        const formData = new FormData()
-        formData.append('file', mAndBFile)
-        formData.append('planeId', aircraftId)
-        if (isEditMode && existingEntry) {
-          formData.append('flightlogId', existingEntry.id!)
-        }
-
-        const uploadResult = await uploadMassAndBalanceDocument(formData)
-        setIsUploadingMB(false)
-
-        if (uploadResult.error) {
-          toast.error(`M&B upload failed: ${uploadResult.error}`)
-          return
-        }
-
-        mbUrl = uploadResult.data?.url || null
-        toast.success('M&B document uploaded successfully')
+    // Upload M&B file if a new file is selected
+    if (mAndBFile) {
+      setIsUploadingMB(true)
+      const formData = new FormData()
+      formData.append('file', mAndBFile)
+      formData.append('planeId', aircraftId)
+      if (isEditMode && existingEntry) {
+        formData.append('flightlogId', existingEntry.id!)
       }
 
-      if (isEditMode && existingEntry) {
-        const result = await updateFlightlog(existingEntry.id!, {
+      const uploadResult = await uploadMassAndBalanceDocument(formData)
+      setIsUploadingMB(false)
+
+      if (uploadResult.error) {
+        toast.error(`M&B upload failed: ${uploadResult.error}`)
+        return { success: false, error: uploadResult.error }
+      }
+
+      mbUrl = uploadResult.data?.url || null
+      toast.success('M&B document uploaded successfully')
+    }
+
+    if (isEditMode && existingEntry) {
+      const result = await updateFlightlog(existingEntry.id!, {
+        plane_id: aircraftId,
+        pilot_id: pilotId,
+        copilot_id: additionalCrewId || null,
+        operation_type_id: operationTypeId || null,
+        block_off: blockOffDate.toISOString(),
+        takeoff_time: takeoffDate.toISOString(),
+        landing_time: landingDate.toISOString(),
+        block_on: blockOnDate.toISOString(),
+        fuel: fuel ? parseFloat(fuel) : null,
+        oil: oil ? parseFloat(oil) : null,
+        landings: landings ? parseInt(landings) : 1,
+        icao_departure: icaoDeparture.toUpperCase() || null,
+        icao_destination: icaoDestination.toUpperCase() || null,
+        m_and_b_pdf_url: mbUrl || null,
+        notes: notes || null,
+      })
+
+      if (result.error) {
+        return { success: false, error: result.error }
+      }
+      return { success: true }
+    } else {
+      const result = await createFlightlog(
+        {
           plane_id: aircraftId,
           pilot_id: pilotId,
           copilot_id: additionalCrewId || null,
@@ -370,48 +400,43 @@ export function FlightlogDialog({
           icao_destination: icaoDestination.toUpperCase() || null,
           m_and_b_pdf_url: mbUrl || null,
           notes: notes || null,
-        })
+        },
+        flightWarnings.length > 0, // overrideWarnings
+        flightWarnings // warnings
+      )
 
-        if (result.error) {
-          toast.error(result.error)
-        } else {
-          toast.success('Flightlog entry updated successfully')
-          onOpenChange(false)
-        }
+      if (result.error) {
+        return { success: false, error: result.error }
+      }
+      return { success: true, hasWarnings: flightWarnings.length > 0 }
+    }
+  }
+
+  const handleConfirmAndCreate = async () => {
+    if (!calculatedDates) return
+
+    const { blockOff: blockOffDate, takeoff: takeoffDate, landing: landingDate, blockOn: blockOnDate } = calculatedDates
+
+    setShowConfirmation(false)
+
+    startTransition(async () => {
+      const result = await performFlightlogUpdate(blockOffDate, takeoffDate, landingDate, blockOnDate)
+
+      if (!result.success) {
+        toast.error(result.error || 'Failed to save flightlog entry')
+        return
+      }
+
+      if (isEditMode) {
+        toast.success('Flightlog entry updated successfully')
       } else {
-        const result = await createFlightlog(
-          {
-            plane_id: aircraftId,
-            pilot_id: pilotId,
-            copilot_id: additionalCrewId || null,
-            operation_type_id: operationTypeId || null,
-            block_off: blockOffDate.toISOString(),
-            takeoff_time: takeoffDate.toISOString(),
-            landing_time: landingDate.toISOString(),
-            block_on: blockOnDate.toISOString(),
-            fuel: fuel ? parseFloat(fuel) : null,
-            oil: oil ? parseFloat(oil) : null,
-            landings: landings ? parseInt(landings) : 1,
-            icao_departure: icaoDeparture.toUpperCase() || null,
-            icao_destination: icaoDestination.toUpperCase() || null,
-            m_and_b_pdf_url: mbUrl || null,
-            notes: notes || null,
-          },
-          flightWarnings.length > 0, // overrideWarnings
-          flightWarnings // warnings
-        )
-
-        if (result.error) {
-          toast.error(result.error)
+        if (result.hasWarnings) {
+          toast.success('Flightlog entry created successfully. Board members have been notified for review.')
         } else {
-          if (flightWarnings.length > 0) {
-            toast.success('Flightlog entry created successfully. Board members have been notified for review.')
-          } else {
-            toast.success('Flightlog entry created successfully')
-          }
-          onOpenChange(false)
+          toast.success('Flightlog entry created successfully')
         }
       }
+      onOpenChange(false)
     })
   }
 
@@ -439,16 +464,32 @@ export function FlightlogDialog({
   const handleMarkAsReviewed = async () => {
     if (!existingEntry) return
 
+    // Validate form using shared validation function
+    const dates = await validateAndCalculateDates()
+    if (!dates) return
+
+    const { blockOff: blockOffDate, takeoff: takeoffDate, landing: landingDate, blockOn: blockOnDate } = dates
+
     setIsMarkingReviewed(true)
 
-    const result = await markFlightlogAsReviewed(existingEntry.id!)
+    // Update the flightlog using shared function
+    const updateResult = await performFlightlogUpdate(blockOffDate, takeoffDate, landingDate, blockOnDate)
+
+    if (!updateResult.success) {
+      toast.error(updateResult.error || 'Failed to update flightlog entry')
+      setIsMarkingReviewed(false)
+      return
+    }
+
+    // Mark as reviewed
+    const reviewResult = await markFlightlogAsReviewed(existingEntry.id!)
 
     setIsMarkingReviewed(false)
 
-    if (result.error) {
-      toast.error(result.error)
+    if (reviewResult.error) {
+      toast.error(reviewResult.error)
     } else {
-      toast.success('Flight entry marked as reviewed')
+      toast.success('Flight entry updated and marked as reviewed')
       onOpenChange(false)
     }
   }
@@ -823,18 +864,18 @@ export function FlightlogDialog({
                   variant="outline"
                   size="sm"
                   onClick={handleMarkAsReviewed}
-                  disabled={isMarkingReviewed || isPending || isDeleting}
+                  disabled={isMarkingReviewed || isPending || isDeleting || isUploadingMB}
                   className="w-full"
                 >
-                  {isMarkingReviewed ? (
+                  {isMarkingReviewed || isUploadingMB ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Marking as Reviewed...
+                      {isUploadingMB ? 'Uploading M&B...' : 'Updating & Marking as Reviewed...'}
                     </>
                   ) : (
                     <>
                       <CheckCircle className="mr-2 h-4 w-4" />
-                      Mark as Reviewed
+                      Update & Mark as Reviewed
                     </>
                   )}
                 </Button>
