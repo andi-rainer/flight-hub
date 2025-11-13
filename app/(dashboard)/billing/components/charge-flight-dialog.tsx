@@ -142,18 +142,11 @@ export function ChargeFlightDialog({ flight, costCenters, userBalances, open, on
     setDescription(desc)
   }, [includeAirportFees, airportFeesBreakdown, useCustomRate, customRate])
 
-  // Auto-initialize split targets if there's a copilot and no default cost center
+  // Auto-initialize split targets based on operation type configuration, pilot request, or copilot presence
   useEffect(() => {
-    if (open) {
-      // Reset to default charge target (pilot or default cost center)
-      if (flight.default_cost_center_id) {
-        setChargeType('cost_center')
-        setSelectedCostCenterId(flight.default_cost_center_id)
-      } else {
-        setChargeType('user')
-        setSelectedUserId(flight.pilot_id || '')
-      }
+    if (!open) return
 
+    const initializeChargeDialog = async () => {
       // Initialize custom rate with current rate
       const currentRate = (flight.operation_rate || flight.plane_default_rate || 0).toFixed(2)
       setCustomRate(currentRate)
@@ -162,18 +155,71 @@ export function ChargeFlightDialog({ flight, costCenters, userBalances, open, on
       // Generate detailed description
       generateDetailedDescription()
 
-      // Check if this flight should have split enabled
-      // Enable split if: pilot requested it OR (copilot exists and no default cost center)
-      const shouldEnableSplit = !!(
-        flight.split_cost_with_copilot ||
-        (flight.copilot_id && !flight.default_cost_center_id && flight.pilot_id)
-      )
+      // Check if operation type has default split configuration
+      let operationTypeSplits: Array<{
+        target_type: 'cost_center' | 'pilot'
+        cost_center_id: string | null
+        cost_center_name?: string
+        percentage: number
+        sort_order: number
+      }> = []
 
-      setIsSplitCost(shouldEnableSplit)
+      if (flight.operation_type_id) {
+        try {
+          const response = await fetch(`/api/operation-types/${flight.operation_type_id}/splits`)
+          if (response.ok) {
+            const data = await response.json()
+            operationTypeSplits = data.splits || []
+          }
+        } catch (error) {
+          console.error('Error fetching operation type splits:', error)
+        }
+      }
 
-      if (shouldEnableSplit && flight.copilot_id) {
-        // Use pilot's requested percentage if they requested split, otherwise default to 50/50
-        const pilotPercentage = flight.split_cost_with_copilot ? (flight.pilot_cost_percentage || 50) : 50
+      // Priority 1: Operation type has default split configuration
+      if (operationTypeSplits.length > 0) {
+        setIsSplitCost(true)
+        const targets: SplitTarget[] = operationTypeSplits.map((split, index) => {
+          const target: SplitTarget = {
+            id: (index + 1).toString(),
+            type: split.target_type === 'pilot' ? 'user' : 'cost_center',
+            targetId: split.target_type === 'pilot' ? (flight.pilot_id || '') : (split.cost_center_id || ''),
+            targetName: split.target_type === 'pilot'
+              ? `${flight.pilot_surname}, ${flight.pilot_name}`
+              : (split.cost_center_name || ''),
+            percentage: split.percentage,
+            description: '',
+            isDescriptionOverridden: false
+          }
+          return target
+        })
+
+        // Generate descriptions for all targets
+        targets.forEach(target => {
+          target.description = generateTargetDescription(target)
+        })
+
+        setSplitTargets(targets)
+        // Default: assign airport fees to first target
+        setAirportFeeTargetId('1')
+        // Set charge type to match first target (for UI consistency)
+        setChargeType(targets[0]?.type === 'cost_center' ? 'cost_center' : 'user')
+        return
+      }
+
+      // Priority 2: Reset to default charge target (pilot or default cost center)
+      if (flight.default_cost_center_id) {
+        setChargeType('cost_center')
+        setSelectedCostCenterId(flight.default_cost_center_id)
+      } else {
+        setChargeType('user')
+        setSelectedUserId(flight.pilot_id || '')
+      }
+
+      // Priority 3: Pilot requested split with copilot
+      if (flight.split_cost_with_copilot && flight.copilot_id) {
+        setIsSplitCost(true)
+        const pilotPercentage = flight.pilot_cost_percentage || 50
         const copilotPercentage = 100 - pilotPercentage
 
         const pilotTarget: SplitTarget = {
@@ -201,15 +247,46 @@ export function ChargeFlightDialog({ flight, costCenters, userBalances, open, on
         copilotTarget.description = generateTargetDescription(copilotTarget)
 
         setSplitTargets([pilotTarget, copilotTarget])
-        // Default: assign airport fees to pilot (PIC is responsible)
+        setAirportFeeTargetId('1')
+      }
+      // Priority 4: Copilot exists but no split requested (suggest split)
+      else if (flight.copilot_id && !flight.default_cost_center_id && flight.pilot_id) {
+        setIsSplitCost(true)
+        const pilotTarget: SplitTarget = {
+          id: '1',
+          type: 'user',
+          targetId: flight.pilot_id,
+          targetName: `${flight.pilot_surname}, ${flight.pilot_name}`,
+          percentage: 50,
+          description: '',
+          isDescriptionOverridden: false
+        }
+
+        const copilotTarget: SplitTarget = {
+          id: '2',
+          type: 'user',
+          targetId: flight.copilot_id,
+          targetName: `${flight.copilot_surname}, ${flight.copilot_name}`,
+          percentage: 50,
+          description: '',
+          isDescriptionOverridden: false
+        }
+
+        pilotTarget.description = generateTargetDescription(pilotTarget)
+        copilotTarget.description = generateTargetDescription(copilotTarget)
+
+        setSplitTargets([pilotTarget, copilotTarget])
         setAirportFeeTargetId('1')
       } else {
-        // Clear split targets for non-copilot flights
+        // No split needed
+        setIsSplitCost(false)
         setSplitTargets([])
         setAirportFeeTargetId('')
       }
     }
-  }, [open, flight.id, flight.copilot_id, flight.pilot_id, flight.default_cost_center_id, flight.split_cost_with_copilot, flight.pilot_cost_percentage])
+
+    initializeChargeDialog()
+  }, [open, flight.id, flight.operation_type_id, flight.copilot_id, flight.pilot_id, flight.default_cost_center_id, flight.split_cost_with_copilot, flight.pilot_cost_percentage])
 
   const selectedUser = userBalances.find(u => u.user_id === selectedUserId)
   const formatCurrency = (amount: number) => {

@@ -69,84 +69,128 @@ export function UnchargedFlightsTable({ flights, costCenters, userBalances }: Un
 
     setBatchResult(null)
     startTransition(async () => {
-      // Separate flights into split and regular flights
-      const splitFlights = chargeableFlights.filter(f => f.split_cost_with_copilot && f.copilot_id)
-      const regularFlights = chargeableFlights.filter(f => !f.split_cost_with_copilot || !f.copilot_id)
-
       let successCount = 0
       let failedCount = 0
       const errors: string[] = []
 
-      // Process split flights individually
-      for (const flight of splitFlights) {
+      // Process each flight - check for operation type splits first
+      for (const flight of chargeableFlights) {
+        // Check if operation type has default split configuration
+        let operationTypeSplits: Array<{
+          target_type: 'cost_center' | 'pilot'
+          cost_center_id: string | null
+          percentage: number
+        }> = []
+
+        if (flight.operation_type_id) {
+          try {
+            const response = await fetch(`/api/operation-types/${flight.operation_type_id}/splits`)
+            if (response.ok) {
+              const data = await response.json()
+              operationTypeSplits = data.splits || []
+            }
+          } catch (error) {
+            console.error('Error fetching operation type splits:', error)
+          }
+        }
+
         const blockOffTime = flight.block_off ? format(new Date(flight.block_off), 'dd.MM.yyyy, HH:mm') : ''
         const flightTime = formatFlightTime(flight.flight_time_hours)
         const rate = (flight.operation_rate || flight.plane_default_rate || 0).toFixed(2)
         const rateUnit = flight.billing_unit === 'minute' ? 'min' : 'hr'
 
-        const pilotPercentage = flight.pilot_cost_percentage || 50
-        const copilotPercentage = 100 - pilotPercentage
+        // Priority 1: Operation type has split configuration
+        if (operationTypeSplits.length > 0) {
+          const flightAmount = flight.flight_amount || 0
+          const airportFeesAmount = (flight.calculated_amount || 0) - flightAmount
 
-        // Calculate flight amount (without fees - they'll be added in the split charge)
-        const flightAmount = flight.flight_amount || 0
-        const airportFeesAmount = (flight.calculated_amount || 0) - flightAmount
+          const splits = operationTypeSplits.map(split => ({
+            type: split.target_type === 'pilot' ? ('user' as const) : ('cost_center' as const),
+            targetId: split.target_type === 'pilot' ? flight.pilot_id! : split.cost_center_id!,
+            percentage: split.percentage,
+            description: `Flight ${flight.tail_number} on ${blockOffTime}${flightTime ? `, ${flightTime}` : ''} @ €${rate}/${rateUnit} (${split.percentage.toFixed(1)}% split)`
+          }))
 
-        const pilotDescription = `Flight ${flight.tail_number} on ${blockOffTime}${flightTime ? `, ${flightTime}` : ''} @ €${rate}/${rateUnit} (${pilotPercentage}% split)`
-        const copilotDescription = `Flight ${flight.tail_number} on ${blockOffTime}${flightTime ? `, ${flightTime}` : ''} @ €${rate}/${rateUnit} (${copilotPercentage}% split)`
-
-        const result = await splitChargeFlight({
-          flightlogId: flight.id!,
-          splits: [
-            {
-              type: 'user',
-              targetId: flight.pilot_id!,
-              percentage: pilotPercentage,
-              description: pilotDescription
-            },
-            {
-              type: 'user',
-              targetId: flight.copilot_id!,
-              percentage: copilotPercentage,
-              description: copilotDescription
-            }
-          ],
-          flightAmount,
-          airportFeesAmount,
-          airportFeeAllocation: 'split_equally',
-          airportFeeTargetId: null
-        })
-
-        if (result.success) {
-          successCount++
-        } else {
-          failedCount++
-          errors.push(result.error || 'Unknown error')
-        }
-      }
-
-      // Process regular flights in batch
-      if (regularFlights.length > 0) {
-        const charges = regularFlights.map(flight => {
-          const blockOffTime = flight.block_off ? format(new Date(flight.block_off), 'dd.MM.yyyy, HH:mm') : ''
-          const flightTime = formatFlightTime(flight.flight_time_hours)
-          const rate = (flight.operation_rate || flight.plane_default_rate || 0).toFixed(2)
-          const rateUnit = flight.billing_unit === 'minute' ? 'min' : 'hr'
-          const description = `Flight ${flight.tail_number} on ${blockOffTime}${flightTime ? `, ${flightTime}` : ''} @ €${rate}/${rateUnit}`
-
-          return {
+          const result = await splitChargeFlight({
             flightlogId: flight.id!,
-            targetType: flight.default_cost_center_id ? ('cost_center' as const) : ('user' as const),
-            targetId: flight.default_cost_center_id || flight.pilot_id!,
-            amount: flight.calculated_amount || 0,
-            description,
-          }
-        })
+            splits,
+            flightAmount,
+            airportFeesAmount,
+            airportFeeAllocation: 'split_equally',
+            airportFeeTargetId: null
+          })
 
-        const result = await batchChargeFlights(charges)
+          if (result.success) {
+            successCount++
+          } else {
+            failedCount++
+            errors.push(result.error || 'Unknown error')
+          }
+          continue
+        }
+
+        // Priority 2: Pilot requested split with copilot
+        if (flight.split_cost_with_copilot && flight.copilot_id) {
+          const pilotPercentage = flight.pilot_cost_percentage || 50
+          const copilotPercentage = 100 - pilotPercentage
+
+          const flightAmount = flight.flight_amount || 0
+          const airportFeesAmount = (flight.calculated_amount || 0) - flightAmount
+
+          const pilotDescription = `Flight ${flight.tail_number} on ${blockOffTime}${flightTime ? `, ${flightTime}` : ''} @ €${rate}/${rateUnit} (${pilotPercentage}% split)`
+          const copilotDescription = `Flight ${flight.tail_number} on ${blockOffTime}${flightTime ? `, ${flightTime}` : ''} @ €${rate}/${rateUnit} (${copilotPercentage}% split)`
+
+          const result = await splitChargeFlight({
+            flightlogId: flight.id!,
+            splits: [
+              {
+                type: 'user',
+                targetId: flight.pilot_id!,
+                percentage: pilotPercentage,
+                description: pilotDescription
+              },
+              {
+                type: 'user',
+                targetId: flight.copilot_id!,
+                percentage: copilotPercentage,
+                description: copilotDescription
+              }
+            ],
+            flightAmount,
+            airportFeesAmount,
+            airportFeeAllocation: 'split_equally',
+            airportFeeTargetId: null
+          })
+
+          if (result.success) {
+            successCount++
+          } else {
+            failedCount++
+            errors.push(result.error || 'Unknown error')
+          }
+          continue
+        }
+
+        // Priority 3: Regular flight - charge to pilot or default cost center
+        const description = `Flight ${flight.tail_number} on ${blockOffTime}${flightTime ? `, ${flightTime}` : ''} @ €${rate}/${rateUnit}`
+
+        const charge = {
+          flightlogId: flight.id!,
+          targetType: flight.default_cost_center_id ? ('cost_center' as const) : ('user' as const),
+          targetId: flight.default_cost_center_id || flight.pilot_id!,
+          amount: flight.calculated_amount || 0,
+          description,
+        }
+
+        // Use batch charge for single flights too (simpler error handling)
+        const result = await batchChargeFlights([charge])
         if (result.success && result.data) {
           successCount += result.data.success
           failedCount += result.data.failed
           errors.push(...result.data.errors)
+        } else {
+          failedCount++
+          errors.push(result.error || 'Unknown error')
         }
       }
 

@@ -1,8 +1,10 @@
 'use client'
 
+import * as React from 'react'
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import {
   Dialog,
@@ -34,7 +36,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { Plus, Pencil, Trash2, Loader2, Settings2, Star } from 'lucide-react'
+import { Plus, Pencil, Trash2, Loader2, Settings2, Star, Split } from 'lucide-react'
 import {
   createOperationType,
   updateOperationType,
@@ -52,11 +54,26 @@ interface AircraftBillingTabProps {
   costCenters: CostCenter[]
 }
 
+interface OperationTypeSplit {
+  id?: string
+  target_type: 'cost_center' | 'pilot'
+  cost_center_id: string | null
+  cost_center_name?: string
+  percentage: number
+  sort_order: number
+}
+
 export function AircraftBillingTab({ aircraft, operationTypes, costCenters }: AircraftBillingTabProps) {
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [editingOperationType, setEditingOperationType] = useState<OperationType | null>(null)
   const [isConfigOpen, setIsConfigOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [splitsDialogOpen, setSplitsDialogOpen] = useState(false)
+  const [selectedOperationType, setSelectedOperationType] = useState<OperationType | null>(null)
+  const [splits, setSplits] = useState<OperationTypeSplit[]>([])
+  const [loading, setLoading] = useState(false)
+  const [splitError, setSplitError] = useState<string | null>(null)
+  const [operationTypeSplits, setOperationTypeSplits] = useState<Record<string, OperationTypeSplit[]>>({})
   const router = useRouter()
 
   const [formData, setFormData] = useState({
@@ -82,7 +99,33 @@ export function AircraftBillingTab({ aircraft, operationTypes, costCenters }: Ai
       color: '#3b82f6',
       default_cost_center_id: undefined,
     })
+    setSplits([])
   }
+
+  // Fetch splits for all operation types on mount
+  React.useEffect(() => {
+    const fetchAllSplits = async () => {
+      const splitsMap: Record<string, OperationTypeSplit[]> = {}
+
+      for (const opType of operationTypes) {
+        try {
+          const response = await fetch(`/api/operation-types/${opType.id}/splits`)
+          if (response.ok) {
+            const data = await response.json()
+            splitsMap[opType.id] = data.splits || []
+          }
+        } catch (err) {
+          console.error(`Error fetching splits for ${opType.id}:`, err)
+        }
+      }
+
+      setOperationTypeSplits(splitsMap)
+    }
+
+    if (operationTypes.length > 0) {
+      fetchAllSplits()
+    }
+  }, [operationTypes])
 
   const resetConfigData = () => {
     setConfigData({
@@ -93,6 +136,22 @@ export function AircraftBillingTab({ aircraft, operationTypes, costCenters }: Ai
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    // Validate splits if any
+    if (splits.length > 0) {
+      const totalPercentage = splits.reduce((sum, split) => sum + split.percentage, 0)
+      if (Math.abs(totalPercentage - 100) > 0.01) {
+        toast.error(`Split percentages must sum to 100% (currently ${totalPercentage.toFixed(1)}%)`)
+        return
+      }
+
+      for (const split of splits) {
+        if (split.target_type === 'cost_center' && !split.cost_center_id) {
+          toast.error('Please select a cost center for all cost center targets')
+          return
+        }
+      }
+    }
 
     setIsSubmitting(true)
 
@@ -106,7 +165,25 @@ export function AircraftBillingTab({ aircraft, operationTypes, costCenters }: Ai
       default_cost_center_id: formData.default_cost_center_id || null,
     })
 
-    if (result.success) {
+    if (result.success && result.data) {
+      // Save splits if any
+      if (splits.length > 0) {
+        try {
+          const response = await fetch(`/api/operation-types/${result.data.id}/splits`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ splits })
+          })
+
+          if (!response.ok) {
+            toast.error('Operation type created but failed to save splits')
+          }
+        } catch (err) {
+          console.error('Error saving splits:', err)
+          toast.error('Operation type created but failed to save splits')
+        }
+      }
+
       toast.success('Operation type created successfully')
       setIsCreateOpen(false)
       resetForm()
@@ -122,6 +199,22 @@ export function AircraftBillingTab({ aircraft, operationTypes, costCenters }: Ai
     e.preventDefault()
     if (!editingOperationType) return
 
+    // Validate splits if any
+    if (splits.length > 0) {
+      const totalPercentage = splits.reduce((sum, split) => sum + split.percentage, 0)
+      if (Math.abs(totalPercentage - 100) > 0.01) {
+        toast.error(`Split percentages must sum to 100% (currently ${totalPercentage.toFixed(1)}%)`)
+        return
+      }
+
+      for (const split of splits) {
+        if (split.target_type === 'cost_center' && !split.cost_center_id) {
+          toast.error('Please select a cost center for all cost center targets')
+          return
+        }
+      }
+    }
+
     setIsSubmitting(true)
 
     const result = await updateOperationType(editingOperationType.id, {
@@ -134,6 +227,22 @@ export function AircraftBillingTab({ aircraft, operationTypes, costCenters }: Ai
     })
 
     if (result.success) {
+      // Save splits
+      try {
+        const response = await fetch(`/api/operation-types/${editingOperationType.id}/splits`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ splits })
+        })
+
+        if (!response.ok) {
+          toast.error('Operation type updated but failed to save splits')
+        }
+      } catch (err) {
+        console.error('Error saving splits:', err)
+        toast.error('Operation type updated but failed to save splits')
+      }
+
       toast.success('Operation type updated successfully')
       setEditingOperationType(null)
       resetForm()
@@ -187,6 +296,8 @@ export function AircraftBillingTab({ aircraft, operationTypes, costCenters }: Ai
       color: opType.color || '#3b82f6',
       default_cost_center_id: opType.default_cost_center_id || undefined,
     })
+    // Load splits for this operation type
+    setSplits(operationTypeSplits[opType.id] || [])
   }
 
   const closeEditDialog = () => {
@@ -198,6 +309,98 @@ export function AircraftBillingTab({ aircraft, operationTypes, costCenters }: Ai
     resetConfigData()
     setIsConfigOpen(true)
   }
+
+  const handleConfigureSplits = async (opType: OperationType) => {
+    setSelectedOperationType(opType)
+    setSplitError(null)
+    setLoading(true)
+
+    try {
+      const response = await fetch(`/api/operation-types/${opType.id}/splits`)
+      if (response.ok) {
+        const data = await response.json()
+        setSplits(data.splits || [])
+      } else {
+        setSplits([])
+      }
+    } catch (err) {
+      console.error('Error fetching splits:', err)
+      setSplits([])
+    } finally {
+      setLoading(false)
+      setSplitsDialogOpen(true)
+    }
+  }
+
+  const addSplit = () => {
+    const newSplit: OperationTypeSplit = {
+      target_type: 'pilot',
+      cost_center_id: null,
+      percentage: 50,
+      sort_order: splits.length
+    }
+    setSplits([...splits, newSplit])
+  }
+
+  const removeSplit = (index: number) => {
+    setSplits(splits.filter((_, i) => i !== index))
+  }
+
+  const updateSplit = (index: number, updates: Partial<OperationTypeSplit>) => {
+    setSplits(splits.map((split, i) => {
+      if (i !== index) return split
+      const updated = { ...split, ...updates }
+      if (updates.target_type === 'pilot') {
+        updated.cost_center_id = null
+      }
+      return updated
+    }))
+  }
+
+  const handleSaveSplits = async () => {
+    const totalPercentage = splits.reduce((sum, split) => sum + split.percentage, 0)
+
+    if (splits.length > 0 && Math.abs(totalPercentage - 100) > 0.01) {
+      setSplitError(`Split percentages must sum to 100% (currently ${totalPercentage.toFixed(1)}%)`)
+      return
+    }
+
+    for (const split of splits) {
+      if (split.target_type === 'cost_center' && !split.cost_center_id) {
+        setSplitError('Please select a cost center for all cost center targets')
+        return
+      }
+    }
+
+    setSplitError(null)
+    setIsSubmitting(true)
+
+    try {
+      const response = await fetch(`/api/operation-types/${selectedOperationType!.id}/splits`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ splits })
+      })
+
+      if (!response.ok) {
+        const data = await response.json()
+        setSplitError(data.error || 'Failed to save splits')
+        setIsSubmitting(false)
+        return
+      }
+
+      toast.success('Cost splitting configuration saved')
+      setSplitsDialogOpen(false)
+      router.refresh()
+    } catch (err) {
+      console.error('Error saving splits:', err)
+      setSplitError('Failed to save splits')
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  const totalPercentage = splits.reduce((sum, split) => sum + split.percentage, 0)
 
   return (
     <div className="space-y-6">
@@ -316,15 +519,15 @@ export function AircraftBillingTab({ aircraft, operationTypes, costCenters }: Ai
                   Add Operation Type
                 </Button>
               </DialogTrigger>
-              <DialogContent>
-                <form onSubmit={handleCreate}>
-                  <DialogHeader>
+              <DialogContent className="max-h-[90vh] flex flex-col p-0">
+                <form onSubmit={handleCreate} className="flex flex-col h-full max-h-[90vh]">
+                  <DialogHeader className="px-6 pt-6 pb-4">
                     <DialogTitle>Create Operation Type</DialogTitle>
                     <DialogDescription>
                       Add a new operation type for {aircraft.tail_number}
                     </DialogDescription>
                   </DialogHeader>
-                  <div className="space-y-4 py-4">
+                  <div className="space-y-4 px-6 overflow-y-auto flex-1">
                     <div className="space-y-2">
                       <Label htmlFor="name">Operation Name</Label>
                       <Input
@@ -418,8 +621,108 @@ export function AircraftBillingTab({ aircraft, operationTypes, costCenters }: Ai
                         If set, flights with this operation type will be charged to the cost center instead of the pilot
                       </p>
                     </div>
+
+                    {/* Cost Splitting Configuration */}
+                    <div className="space-y-3 pt-4 border-t">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-base">Cost Splitting (Optional)</Label>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={addSplit}
+                          disabled={splits.length >= 5}
+                        >
+                          <Plus className="h-4 w-4 mr-1" />
+                          Add Split Target
+                        </Button>
+                      </div>
+
+                      {splits.length === 0 ? (
+                        <p className="text-sm text-muted-foreground">
+                          No cost splitting configured. Add split targets to automatically split costs between pilot and cost centers.
+                        </p>
+                      ) : (
+                        <div className="space-y-2">
+                          {splits.map((split, index) => (
+                            <div key={index} className="flex items-start gap-2 p-3 border rounded-lg">
+                              <div className="flex-1 space-y-3">
+                                <div className="grid grid-cols-2 gap-2">
+                                  <div className="space-y-1">
+                                    <Label className="text-xs">Target</Label>
+                                    <Select
+                                      value={split.target_type}
+                                      onValueChange={(value) => updateSplit(index, { target_type: value as 'cost_center' | 'pilot' })}
+                                    >
+                                      <SelectTrigger className="h-8">
+                                        <SelectValue />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="pilot">Pilot</SelectItem>
+                                        <SelectItem value="cost_center">Cost Center</SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                  </div>
+
+                                  <div className="space-y-1">
+                                    <Label className="text-xs">Percentage</Label>
+                                    <Input
+                                      type="number"
+                                      min="0"
+                                      max="100"
+                                      step="0.1"
+                                      value={split.percentage}
+                                      onChange={(e) => updateSplit(index, { percentage: parseFloat(e.target.value) || 0 })}
+                                      className="h-8"
+                                    />
+                                  </div>
+                                </div>
+
+                                {split.target_type === 'cost_center' && (
+                                  <div className="space-y-1">
+                                    <Label className="text-xs">Cost Center</Label>
+                                    <Select
+                                      value={split.cost_center_id || ''}
+                                      onValueChange={(value) => updateSplit(index, { cost_center_id: value })}
+                                    >
+                                      <SelectTrigger className="h-8">
+                                        <SelectValue placeholder="Select..." />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        {costCenters.map((cc) => (
+                                          <SelectItem key={cc.id} value={cc.id}>
+                                            {cc.name}
+                                          </SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
+                                  </div>
+                                )}
+                              </div>
+
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => removeSplit(index)}
+                                className="mt-5"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          ))}
+
+                          <div className="flex justify-end text-sm pt-2">
+                            <span className="text-muted-foreground">Total:</span>{' '}
+                            <span className={`ml-2 font-medium ${totalPercentage === 100 ? 'text-green-600' : 'text-red-600'}`}>
+                              {totalPercentage.toFixed(1)}% {totalPercentage === 100 && '✓'}
+                            </span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                  <DialogFooter>
+                  <DialogFooter className="px-6 py-4 border-t mt-0">
                     <Button
                       type="button"
                       variant="outline"
@@ -447,6 +750,7 @@ export function AircraftBillingTab({ aircraft, operationTypes, costCenters }: Ai
                   <TableHead>Description</TableHead>
                   <TableHead>Rate</TableHead>
                   <TableHead>Cost Center</TableHead>
+                  <TableHead>Cost Splitting</TableHead>
                   <TableHead>Default</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
@@ -454,49 +758,77 @@ export function AircraftBillingTab({ aircraft, operationTypes, costCenters }: Ai
               <TableBody>
                 {operationTypes.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center text-muted-foreground">
+                    <TableCell colSpan={7} className="text-center text-muted-foreground">
                       No operation types defined for this aircraft
                     </TableCell>
                   </TableRow>
                 ) : (
-                  operationTypes.map((opType) => (
-                    <TableRow key={opType.id}>
-                      <TableCell className="font-medium">
-                        <div className="flex items-center gap-2">
-                          {opType.color && (
-                            <div
-                              className="h-4 w-4 rounded-full border"
-                              style={{ backgroundColor: opType.color }}
-                            />
+                  operationTypes.map((opType) => {
+                    const hasSplits = operationTypeSplits[opType.id]?.length > 0
+                    const splitsSummary = hasSplits
+                      ? operationTypeSplits[opType.id].map(split =>
+                          split.target_type === 'pilot'
+                            ? `Pilot ${split.percentage}%`
+                            : `${costCenters.find(cc => cc.id === split.cost_center_id)?.name || 'Unknown'} ${split.percentage}%`
+                        ).join(', ')
+                      : null
+
+                    return (
+                      <TableRow key={opType.id}>
+                        <TableCell className="font-medium">
+                          <div className="flex items-center gap-2">
+                            {opType.color && (
+                              <div
+                                className="h-4 w-4 rounded-full border"
+                                style={{ backgroundColor: opType.color }}
+                              />
+                            )}
+                            {opType.name}
+                          </div>
+                        </TableCell>
+                        <TableCell className="max-w-xs truncate">
+                          {opType.description || '-'}
+                        </TableCell>
+                        <TableCell>
+                          EUR {opType.rate.toFixed(2)}/{aircraft.billing_unit}
+                        </TableCell>
+                        <TableCell>
+                          {opType.default_cost_center_id ? (
+                            <span className="text-sm">
+                              {costCenters.find(cc => cc.id === opType.default_cost_center_id)?.name || 'Unknown'}
+                            </span>
+                          ) : (
+                            <span className="text-sm text-muted-foreground">Pilot</span>
                           )}
-                          {opType.name}
-                        </div>
-                      </TableCell>
-                      <TableCell className="max-w-xs truncate">
-                        {opType.description || '-'}
-                      </TableCell>
-                      <TableCell>
-                        EUR {opType.rate.toFixed(2)}/{aircraft.billing_unit}
-                      </TableCell>
-                      <TableCell>
-                        {opType.default_cost_center_id ? (
-                          <span className="text-sm">
-                            {costCenters.find(cc => cc.id === opType.default_cost_center_id)?.name || 'Unknown'}
-                          </span>
-                        ) : (
-                          <span className="text-sm text-muted-foreground">Pilot</span>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {opType.is_default && (
-                          <Badge variant="secondary" className="gap-1">
-                            <Star className="h-3 w-3 fill-current" />
-                            Default
-                          </Badge>
-                        )}
-                      </TableCell>
+                        </TableCell>
+                        <TableCell>
+                          {hasSplits ? (
+                            <Badge variant="outline" className="gap-1" title={splitsSummary || ''}>
+                              <Split className="h-3 w-3" />
+                              {operationTypeSplits[opType.id].length} targets
+                            </Badge>
+                          ) : (
+                            <span className="text-sm text-muted-foreground">None</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {opType.is_default && (
+                            <Badge variant="secondary" className="gap-1">
+                              <Star className="h-3 w-3 fill-current" />
+                              Default
+                            </Badge>
+                          )}
+                        </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleConfigureSplits(opType)}
+                            title="Configure cost splitting"
+                          >
+                            <Split className="h-4 w-4" />
+                          </Button>
                           <Dialog
                             open={editingOperationType?.id === opType.id}
                             onOpenChange={(open) => !open && closeEditDialog()}
@@ -510,15 +842,15 @@ export function AircraftBillingTab({ aircraft, operationTypes, costCenters }: Ai
                                 <Pencil className="h-4 w-4" />
                               </Button>
                             </DialogTrigger>
-                            <DialogContent>
-                              <form onSubmit={handleUpdate}>
-                                <DialogHeader>
+                            <DialogContent className="max-h-[90vh] flex flex-col p-0">
+                              <form onSubmit={handleUpdate} className="flex flex-col h-full max-h-[90vh]">
+                                <DialogHeader className="px-6 pt-6 pb-4">
                                   <DialogTitle>Edit Operation Type</DialogTitle>
                                   <DialogDescription>
                                     Update operation type details
                                   </DialogDescription>
                                 </DialogHeader>
-                                <div className="space-y-4 py-4">
+                                <div className="space-y-4 px-6 overflow-y-auto flex-1">
                                   <div className="space-y-2">
                                     <Label htmlFor="edit-name">Operation Name</Label>
                                     <Input
@@ -618,8 +950,108 @@ export function AircraftBillingTab({ aircraft, operationTypes, costCenters }: Ai
                                       If set, flights with this operation type will be charged to the cost center instead of the pilot
                                     </p>
                                   </div>
+
+                                  {/* Cost Splitting Configuration */}
+                                  <div className="space-y-3 pt-4 border-t">
+                                    <div className="flex items-center justify-between">
+                                      <Label className="text-base">Cost Splitting (Optional)</Label>
+                                      <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={addSplit}
+                                        disabled={splits.length >= 5}
+                                      >
+                                        <Plus className="h-4 w-4 mr-1" />
+                                        Add Split Target
+                                      </Button>
+                                    </div>
+
+                                    {splits.length === 0 ? (
+                                      <p className="text-sm text-muted-foreground">
+                                        No cost splitting configured. Add split targets to automatically split costs between pilot and cost centers.
+                                      </p>
+                                    ) : (
+                                      <div className="space-y-2">
+                                        {splits.map((split, index) => (
+                                          <div key={index} className="flex items-start gap-2 p-3 border rounded-lg">
+                                            <div className="flex-1 space-y-3">
+                                              <div className="grid grid-cols-2 gap-2">
+                                                <div className="space-y-1">
+                                                  <Label className="text-xs">Target</Label>
+                                                  <Select
+                                                    value={split.target_type}
+                                                    onValueChange={(value) => updateSplit(index, { target_type: value as 'cost_center' | 'pilot' })}
+                                                  >
+                                                    <SelectTrigger className="h-8">
+                                                      <SelectValue />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                      <SelectItem value="pilot">Pilot</SelectItem>
+                                                      <SelectItem value="cost_center">Cost Center</SelectItem>
+                                                    </SelectContent>
+                                                  </Select>
+                                                </div>
+
+                                                <div className="space-y-1">
+                                                  <Label className="text-xs">Percentage</Label>
+                                                  <Input
+                                                    type="number"
+                                                    min="0"
+                                                    max="100"
+                                                    step="0.1"
+                                                    value={split.percentage}
+                                                    onChange={(e) => updateSplit(index, { percentage: parseFloat(e.target.value) || 0 })}
+                                                    className="h-8"
+                                                  />
+                                                </div>
+                                              </div>
+
+                                              {split.target_type === 'cost_center' && (
+                                                <div className="space-y-1">
+                                                  <Label className="text-xs">Cost Center</Label>
+                                                  <Select
+                                                    value={split.cost_center_id || ''}
+                                                    onValueChange={(value) => updateSplit(index, { cost_center_id: value })}
+                                                  >
+                                                    <SelectTrigger className="h-8">
+                                                      <SelectValue placeholder="Select..." />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                      {costCenters.map((cc) => (
+                                                        <SelectItem key={cc.id} value={cc.id}>
+                                                          {cc.name}
+                                                        </SelectItem>
+                                                      ))}
+                                                    </SelectContent>
+                                                  </Select>
+                                                </div>
+                                              )}
+                                            </div>
+
+                                            <Button
+                                              type="button"
+                                              variant="ghost"
+                                              size="sm"
+                                              onClick={() => removeSplit(index)}
+                                              className="mt-5"
+                                            >
+                                              <Trash2 className="h-4 w-4" />
+                                            </Button>
+                                          </div>
+                                        ))}
+
+                                        <div className="flex justify-end text-sm pt-2">
+                                          <span className="text-muted-foreground">Total:</span>{' '}
+                                          <span className={`ml-2 font-medium ${totalPercentage === 100 ? 'text-green-600' : 'text-red-600'}`}>
+                                            {totalPercentage.toFixed(1)}% {totalPercentage === 100 && '✓'}
+                                          </span>
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
                                 </div>
-                                <DialogFooter>
+                                <DialogFooter className="px-6 py-4 border-t mt-0">
                                   <Button
                                     type="button"
                                     variant="outline"
@@ -665,13 +1097,159 @@ export function AircraftBillingTab({ aircraft, operationTypes, costCenters }: Ai
                         </div>
                       </TableCell>
                     </TableRow>
-                  ))
+                    )
+                  })
                 )}
               </TableBody>
             </Table>
           </div>
         </CardContent>
       </Card>
+
+      {/* Configure Splits Dialog */}
+      <Dialog open={splitsDialogOpen} onOpenChange={setSplitsDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Configure Cost Splitting for {selectedOperationType?.name}</DialogTitle>
+            <DialogDescription>
+              Define how flight costs should be split by default. Percentages must sum to 100%.
+            </DialogDescription>
+          </DialogHeader>
+
+          {loading ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-6 w-6 animate-spin" />
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {splits.length === 0 ? (
+                <Alert>
+                  <AlertDescription>
+                    No splits configured. Click "Add Split Target" to start configuring cost splitting.
+                    Leave empty to use the default cost center or charge directly to the pilot.
+                  </AlertDescription>
+                </Alert>
+              ) : (
+                <div className="space-y-3">
+                  {splits.map((split, index) => (
+                    <div key={index} className="rounded-lg border p-4 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="font-medium text-sm">Target {index + 1}</span>
+                        {splits.length > 1 && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => removeSplit(index)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <Label className="text-xs">Target Type</Label>
+                          <Select
+                            value={split.target_type}
+                            onValueChange={(value) => updateSplit(index, { target_type: value as 'cost_center' | 'pilot' })}
+                          >
+                            <SelectTrigger className="h-9">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="pilot">Pilot</SelectItem>
+                              <SelectItem value="cost_center">Cost Center</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <div>
+                          <Label className="text-xs">Percentage</Label>
+                          <Input
+                            type="number"
+                            min="0"
+                            max="100"
+                            step="0.1"
+                            value={split.percentage}
+                            onChange={(e) => updateSplit(index, { percentage: parseFloat(e.target.value) || 0 })}
+                            className="h-9"
+                          />
+                        </div>
+                      </div>
+
+                      {split.target_type === 'cost_center' && (
+                        <div>
+                          <Label className="text-xs">Cost Center</Label>
+                          <Select
+                            value={split.cost_center_id || ''}
+                            onValueChange={(value) => updateSplit(index, { cost_center_id: value })}
+                          >
+                            <SelectTrigger className="h-9">
+                              <SelectValue placeholder="Select cost center..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {costCenters.map((cc) => (
+                                <SelectItem key={cc.id} value={cc.id}>
+                                  {cc.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      )}
+
+                      {split.target_type === 'pilot' && (
+                        <div className="text-xs text-muted-foreground">
+                          This portion will be charged to the flight's pilot
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div className="flex items-center justify-between pt-2 border-t">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={addSplit}
+                  disabled={splits.length >= 5}
+                >
+                  <Plus className="h-4 w-4 mr-1" />
+                  Add Split Target
+                </Button>
+
+                {splits.length > 0 && (
+                  <div className="text-sm">
+                    <span className="text-muted-foreground">Total:</span>{' '}
+                    <span className={totalPercentage === 100 ? 'text-green-600 font-medium' : 'text-red-600 font-medium'}>
+                      {totalPercentage.toFixed(1)}%
+                    </span>
+                    {totalPercentage === 100 && <span className="text-green-600 ml-1">✓</span>}
+                  </div>
+                )}
+              </div>
+
+              {splitError && (
+                <Alert variant="destructive">
+                  <AlertDescription>{splitError}</AlertDescription>
+                </Alert>
+              )}
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSplitsDialogOpen(false)} disabled={isSubmitting}>
+              Cancel
+            </Button>
+            <Button onClick={handleSaveSplits} disabled={isSubmitting || loading}>
+              {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Save Configuration
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
