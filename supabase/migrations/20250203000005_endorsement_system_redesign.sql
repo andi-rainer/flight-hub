@@ -9,6 +9,7 @@
 -- 2. IR tracking with separate expiry dates per rating
 -- 3. Link endorsements to multiple document types
 -- 4. Visual expiry warnings and status indicators
+-- 5. Configuration field to specify which endorsements support IR
 -- ============================================================================
 
 -- ============================================================================
@@ -31,6 +32,7 @@ CREATE TABLE IF NOT EXISTS endorsements (
   description TEXT,
   is_predefined BOOLEAN NOT NULL DEFAULT false,
   active BOOLEAN NOT NULL DEFAULT true,
+  supports_ir BOOLEAN NOT NULL DEFAULT false, -- Whether this endorsement can have IR privileges
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -39,6 +41,7 @@ COMMENT ON TABLE endorsements IS 'Centrally managed endorsements/ratings that ca
 COMMENT ON COLUMN endorsements.code IS 'Unique code for the endorsement (e.g., SEP, MEP, IR)';
 COMMENT ON COLUMN endorsements.is_predefined IS 'System-defined endorsements cannot be deleted';
 COMMENT ON COLUMN endorsements.active IS 'Inactive endorsements are hidden from selection but preserved for historical data';
+COMMENT ON COLUMN endorsements.supports_ir IS 'Whether this endorsement/rating can have Instrument Rating (IR) privileges';
 
 CREATE INDEX IF NOT EXISTS idx_endorsements_code ON endorsements(code);
 CREATE INDEX IF NOT EXISTS idx_endorsements_active ON endorsements(active) WHERE active = true;
@@ -98,35 +101,33 @@ CREATE INDEX IF NOT EXISTS idx_doc_endorsement_priv_expiry ON document_endorseme
 CREATE INDEX IF NOT EXISTS idx_doc_endorsement_priv_ir_expiry ON document_endorsement_privileges(ir_expiry_date) WHERE has_ir = true;
 
 -- ============================================================================
--- 5. INSERT PREDEFINED ENDORSEMENTS
+-- 5. INSERT PREDEFINED ENDORSEMENTS WITH IR SUPPORT
 -- ============================================================================
 
 -- Aviation Ratings/Endorsements
-INSERT INTO endorsements (code, name, name_de, description, is_predefined) VALUES
-  ('SEP', 'Single Engine Piston', 'Einmotorige Kolbenflugzeuge', 'Single engine piston aircraft class rating', true),
-  ('MEP', 'Multi Engine Piston', 'Mehrmotorige Kolbenflugzeuge', 'Multi engine piston aircraft class rating', true),
-  ('SET', 'Single Engine Turbine', 'Einmotorige Turboprop', 'Single engine turboprop aircraft class rating', true),
-  ('TMG', 'Touring Motor Glider', 'Reisemotorsegler', 'Touring motor glider class rating', true),
-  ('IR', 'Instrument Rating', 'Instrumentenflugberechtigung', 'Instrument rating (standalone)', true),
-  ('FI', 'Flight Instructor', 'Fluglehrer', 'Flight instructor rating', true),
-  ('CRI', 'Class Rating Instructor', 'Klassenlehrer', 'Class rating instructor', true),
-  ('IRI', 'Instrument Rating Instructor', 'Instrumentenfluglehrer', 'Instrument rating instructor', true),
-  ('TRI', 'Type Rating Instructor', 'Musterlehrer', 'Type rating instructor', true),
-  ('SFI', 'Synthetic Flight Instructor', 'Synthetic Flight Instructor', 'Synthetic flight instructor', true),
-  ('FE', 'Flight Examiner', 'Prüfer', 'Flight examiner', true),
-  ('TRE', 'Type Rating Examiner', 'Musterprüfer', 'Type rating examiner', true),
-  ('CRE', 'Class Rating Examiner', 'Klassenprüfer', 'Class rating examiner', true),
-  ('IRE', 'Instrument Rating Examiner', 'Instrumentenflugprüfer', 'Instrument rating examiner', true),
-  ('NIGHT', 'Night Rating', 'Nachtflugberechtigung', 'Night flying privileges', true),
-  ('AEROBATIC', 'Aerobatic', 'Kunstflug', 'Aerobatic privileges', true)
-ON CONFLICT (code) DO NOTHING;
+INSERT INTO endorsements (code, name, name_de, description, is_predefined, supports_ir) VALUES
+  -- Class ratings that can have IR
+  ('SEP', 'Single Engine Piston', 'Einmotorige Kolbenflugzeuge', 'Single engine piston aircraft class rating', true, true),
+  ('MEP', 'Multi Engine Piston', 'Mehrmotorige Kolbenflugzeuge', 'Multi engine piston aircraft class rating', true, true),
+  ('SET', 'Single Engine Turbine', 'Einmotorige Turboprop', 'Single engine turboprop aircraft class rating', true, true),
+  ('TMG', 'Touring Motor Glider', 'Reisemotorsegler', 'Touring motor glider class rating', true, true),
 
--- Skydiving Endorsements
-INSERT INTO endorsements (code, name, name_de, description, is_predefined) VALUES
-  ('AFF_I', 'AFF Instructor', 'AFF Lehrer', 'Accelerated Freefall Instructor', true),
-  ('TANDEM_I', 'Tandem Instructor', 'Tandem Lehrer', 'Tandem skydiving instructor', true),
-  ('COACH', 'Coach', 'Coach', 'Skydiving coach rating', true),
-  ('VIDEOGRAPHER', 'Videographer', 'Videograf', 'Skydiving videographer rating', true)
+  -- Standalone IR (doesn't have "IR for IR")
+  ('IR', 'Instrument Rating', 'Instrumentenflugberechtigung', 'Instrument rating (standalone)', true, false),
+
+  -- Instructor ratings (no IR)
+  ('FI', 'Flight Instructor', 'Fluglehrer', 'Flight instructor rating', true, false),
+  ('CRI', 'Class Rating Instructor', 'Klassenlehrer', 'Class rating instructor', true, false),
+  ('IRI', 'Instrument Rating Instructor', 'Instrumentenfluglehrer', 'Instrument rating instructor', true, false),
+
+  -- Examiner ratings (no IR)
+  ('FE', 'Flight Examiner', 'Prüfer', 'Flight examiner', true, false),
+  ('CRE', 'Class Rating Examiner', 'Klassenprüfer', 'Class rating examiner', true, false),
+  ('IRE', 'Instrument Rating Examiner', 'Instrumentenflugprüfer', 'Instrument rating examiner', true, false),
+
+  -- Other privileges (no IR)
+  ('NIGHT', 'Night Rating', 'Nachtflugberechtigung', 'Night flying privileges', true, false),
+  ('AEROBATIC', 'Aerobatic', 'Kunstflug', 'Aerobatic privileges', true, false)
 ON CONFLICT (code) DO NOTHING;
 
 -- ============================================================================
