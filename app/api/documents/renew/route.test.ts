@@ -145,7 +145,7 @@ describe('/api/documents/renew', () => {
       })
 
       const existingDocBuilder = createQueryBuilder(mockDocument)
-      const docTypeBuilder = createQueryBuilder(mockDocumentType)
+      const docDefBuilder = createQueryBuilder(mockDocumentType)
       const storageBuilder = createStorageBuilder(null, null)
       const updateBuilder = createQueryBuilder({
         ...mockDocument,
@@ -153,12 +153,12 @@ describe('/api/documents/renew', () => {
         expiry_date: newExpiryDate,
       })
       const userBuilder = createQueryBuilder({ name: 'Test', surname: 'User' })
-      const userFunctionsBuilder = createQueryBuilder([{ function_id: 'function-id-1' }])
+      const userFunctionsBuilder = createQueryBuilder([{ functions_master: { code: 'PILOT' } }])
       const boardMembersBuilder = createQueryBuilder([{ id: 'board-1' }])
 
       mockSupabase.from
         .mockReturnValueOnce(existingDocBuilder)
-        .mockReturnValueOnce(docTypeBuilder)
+        .mockReturnValueOnce(docDefBuilder)
         .mockReturnValueOnce(updateBuilder)
         .mockReturnValueOnce(userBuilder)
         .mockReturnValueOnce(userFunctionsBuilder)
@@ -189,7 +189,7 @@ describe('/api/documents/renew', () => {
         ...mockDocument,
         approved: true, // Was approved
       })
-      const docTypeBuilder = createQueryBuilder(mockDocumentType)
+      const docDefBuilder = createQueryBuilder(mockDocumentType)
       const storageBuilder = createStorageBuilder(null, null)
       const updateBuilder = createQueryBuilder({
         ...mockDocument,
@@ -198,12 +198,12 @@ describe('/api/documents/renew', () => {
         approved_at: null,
       })
       const userBuilder = createQueryBuilder({ name: 'Test', surname: 'User' })
-      const userFunctionsBuilder = createQueryBuilder([{ function_id: 'function-id-1' }])
+      const userFunctionsBuilder = createQueryBuilder([{ functions_master: { code: 'PILOT' } }])
       const boardMembersBuilder = createQueryBuilder([{ id: 'board-1' }])
 
       mockSupabase.from
         .mockReturnValueOnce(existingDocBuilder)
-        .mockReturnValueOnce(docTypeBuilder)
+        .mockReturnValueOnce(docDefBuilder)
         .mockReturnValueOnce(updateBuilder)
         .mockReturnValueOnce(userBuilder)
         .mockReturnValueOnce(userFunctionsBuilder)
@@ -234,16 +234,16 @@ describe('/api/documents/renew', () => {
         ...mockDocument,
         file_url: oldFileUrl,
       })
-      const docTypeBuilder = createQueryBuilder(mockDocumentType)
+      const docDefBuilder = createQueryBuilder(mockDocumentType)
       const storageBuilder = createStorageBuilder(null, null)
       const updateBuilder = createQueryBuilder(mockDocument)
       const userBuilder = createQueryBuilder({ name: 'Test', surname: 'User' })
-      const userFunctionsBuilder = createQueryBuilder([{ function_id: 'function-id-1' }])
+      const userFunctionsBuilder = createQueryBuilder([{ functions_master: { code: 'PILOT' } }])
       const boardMembersBuilder = createQueryBuilder([{ id: 'board-1' }])
 
       mockSupabase.from
         .mockReturnValueOnce(existingDocBuilder)
-        .mockReturnValueOnce(docTypeBuilder)
+        .mockReturnValueOnce(docDefBuilder)
         .mockReturnValueOnce(updateBuilder)
         .mockReturnValueOnce(userBuilder)
         .mockReturnValueOnce(userFunctionsBuilder)
@@ -268,7 +268,7 @@ describe('/api/documents/renew', () => {
       })
 
       const existingDocBuilder = createQueryBuilder(mockDocument)
-      const docTypeBuilder = createQueryBuilder({
+      const docDefBuilder = createQueryBuilder({
         ...mockDocumentType,
         mandatory: true,
       })
@@ -278,7 +278,7 @@ describe('/api/documents/renew', () => {
       const userFunctionsBuilder = {
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockResolvedValue({
-          data: [{ function_id: 'function-id-1' }],
+          data: [{ functions_master: { code: 'PILOT' } }],
           error: null,
         }),
       }
@@ -295,7 +295,7 @@ describe('/api/documents/renew', () => {
 
       mockSupabase.from
         .mockReturnValueOnce(existingDocBuilder)
-        .mockReturnValueOnce(docTypeBuilder)
+        .mockReturnValueOnce(docDefBuilder)
         .mockReturnValueOnce(updateBuilder)
         .mockReturnValueOnce(userBuilder)
         .mockReturnValueOnce(userFunctionsBuilder)
@@ -317,19 +317,22 @@ describe('/api/documents/renew', () => {
     })
 
     it('should cleanup uploaded file on update failure', async () => {
+      // Suppress expected console.error
+      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation()
+
       mockSupabase.auth.getUser.mockResolvedValue({
         data: { user: mockUser },
         error: null,
       })
 
       const existingDocBuilder = createQueryBuilder(mockDocument)
-      const docTypeBuilder = createQueryBuilder(mockDocumentType)
+      const docDefBuilder = createQueryBuilder(mockDocumentType)
       const storageBuilder = createStorageBuilder(null, null)
       const updateBuilder = createQueryBuilder(null, { message: 'Update failed' })
 
       mockSupabase.from
         .mockReturnValueOnce(existingDocBuilder)
-        .mockReturnValueOnce(docTypeBuilder)
+        .mockReturnValueOnce(docDefBuilder)
         .mockReturnValueOnce(updateBuilder)
 
       mockSupabase.storage.from.mockReturnValue(storageBuilder)
@@ -340,22 +343,27 @@ describe('/api/documents/renew', () => {
 
       expect(response.status).toBe(500)
       expect(storageBuilder.remove).toHaveBeenCalled() // New file should be cleaned up
+
+      consoleErrorSpy.mockRestore()
     })
 
     it('should cleanup uploaded file if update returns no data', async () => {
+      // Suppress expected console.error
+      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation()
+
       mockSupabase.auth.getUser.mockResolvedValue({
         data: { user: mockUser },
         error: null,
       })
 
       const existingDocBuilder = createQueryBuilder(mockDocument)
-      const docTypeBuilder = createQueryBuilder(mockDocumentType)
+      const docDefBuilder = createQueryBuilder(mockDocumentType)
       const storageBuilder = createStorageBuilder(null, null)
       const updateBuilder = createQueryBuilder(null, null) // No data returned
 
       mockSupabase.from
         .mockReturnValueOnce(existingDocBuilder)
-        .mockReturnValueOnce(docTypeBuilder)
+        .mockReturnValueOnce(docDefBuilder)
         .mockReturnValueOnce(updateBuilder)
 
       mockSupabase.storage.from.mockReturnValue(storageBuilder)
@@ -366,9 +374,14 @@ describe('/api/documents/renew', () => {
 
       expect(response.status).toBe(500)
       expect(storageBuilder.remove).toHaveBeenCalled()
+
+      consoleErrorSpy.mockRestore()
     })
 
     it('should handle internal errors gracefully', async () => {
+      // Suppress expected console.error
+      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation()
+
       mockSupabase.auth.getUser.mockRejectedValue(new Error('Internal error'))
 
       const formData = createFormData()
@@ -378,6 +391,8 @@ describe('/api/documents/renew', () => {
 
       expect(response.status).toBe(500)
       expect(data).toEqual({ error: 'Internal server error' })
+
+      consoleErrorSpy.mockRestore()
     })
 
     it('should NOT create notifications when document is not required', async () => {
@@ -387,7 +402,7 @@ describe('/api/documents/renew', () => {
       })
 
       const existingDocBuilder = createQueryBuilder(mockDocument)
-      const docTypeBuilder = createQueryBuilder({
+      const docDefBuilder = createQueryBuilder({
         ...mockDocumentType,
         mandatory: false,
         required_for_functions: [],
@@ -395,11 +410,11 @@ describe('/api/documents/renew', () => {
       const storageBuilder = createStorageBuilder(null, null)
       const updateBuilder = createQueryBuilder(mockDocument)
       const userBuilder = createQueryBuilder({ name: 'Test', surname: 'User' })
-      const userFunctionsBuilder = createQueryBuilder([{ function_id: 'function-1' }])
+      const userFunctionsBuilder = createQueryBuilder([{ functions_master: { code: 'PILOT' } }])
 
       mockSupabase.from
         .mockReturnValueOnce(existingDocBuilder)
-        .mockReturnValueOnce(docTypeBuilder)
+        .mockReturnValueOnce(docDefBuilder)
         .mockReturnValueOnce(updateBuilder)
         .mockReturnValueOnce(userBuilder)
         .mockReturnValueOnce(userFunctionsBuilder)

@@ -34,7 +34,7 @@ describe('/api/documents/upload', () => {
     const formData = new FormData()
     const file = new File(['test content'], 'test.pdf', { type: 'application/pdf' })
     formData.append('file', overrides.file || file)
-    formData.append('documentTypeId', overrides.documentTypeId || 'doc-type-1')
+    formData.append('documentTypeId', overrides.documentTypeId || 'doc-def-1') // Now documentDefinitionId
     formData.append('userId', overrides.userId || 'test-user-id')
     if (overrides.expiryDate) {
       formData.append('expiryDate', overrides.expiryDate)
@@ -113,16 +113,16 @@ describe('/api/documents/upload', () => {
       })
 
       const profileBuilder = createQueryBuilder(mockProfile)
-      const docTypeBuilder = createQueryBuilder(mockDocumentType)
+      const docDefBuilder = createQueryBuilder(mockDocumentType)
       const storageBuilder = createStorageBuilder(null, null)
       const insertBuilder = createQueryBuilder(mockDocument)
       const userBuilder = createQueryBuilder({ name: 'Test', surname: 'User' })
-      const userFunctionsBuilder = createQueryBuilder([{ function_id: 'function-1' }])
+      const userFunctionsBuilder = createQueryBuilder([{ functions_master: { code: 'PILOT' } }])
       const boardMembersBuilder = createQueryBuilder([])
 
       mockSupabase.from
         .mockReturnValueOnce(profileBuilder)
-        .mockReturnValueOnce(docTypeBuilder)
+        .mockReturnValueOnce(docDefBuilder)
         .mockReturnValueOnce(insertBuilder)
         .mockReturnValueOnce(userBuilder)
         .mockReturnValueOnce(userFunctionsBuilder)
@@ -146,16 +146,16 @@ describe('/api/documents/upload', () => {
       })
 
       const profileBuilder = createQueryBuilder(mockProfile)
-      const docTypeBuilder = createQueryBuilder(mockDocumentType)
+      const docDefBuilder = createQueryBuilder(mockDocumentType)
       const storageBuilder = createStorageBuilder(null, null)
       const insertBuilder = createQueryBuilder(mockDocument)
       const userBuilder = createQueryBuilder({ name: 'Test', surname: 'User' })
-      const userFunctionsBuilder = createQueryBuilder([{ function_id: 'function-1' }])
+      const userFunctionsBuilder = createQueryBuilder([{ functions_master: { code: 'PILOT' } }])
       const boardMembersBuilder = createQueryBuilder([])
 
       mockSupabase.from
         .mockReturnValueOnce(profileBuilder)
-        .mockReturnValueOnce(docTypeBuilder)
+        .mockReturnValueOnce(docDefBuilder)
         .mockReturnValueOnce(insertBuilder)
         .mockReturnValueOnce(userBuilder)
         .mockReturnValueOnce(userFunctionsBuilder)
@@ -180,16 +180,16 @@ describe('/api/documents/upload', () => {
       })
 
       const profileBuilder = createQueryBuilder(mockProfile)
-      const docTypeBuilder = createQueryBuilder(mockDocumentType)
+      const docDefBuilder = createQueryBuilder(mockDocumentType)
       const storageBuilder = createStorageBuilder(null, null)
       const insertBuilder = createQueryBuilder(mockDocument)
       const userBuilder = createQueryBuilder({ name: 'Test', surname: 'User' })
-      const userFunctionsBuilder = createQueryBuilder([{ function_id: 'function-1' }])
+      const userFunctionsBuilder = createQueryBuilder([{ functions_master: { code: 'PILOT' } }])
       const boardMembersBuilder = createQueryBuilder([])
 
       mockSupabase.from
         .mockReturnValueOnce(profileBuilder)
-        .mockReturnValueOnce(docTypeBuilder)
+        .mockReturnValueOnce(docDefBuilder)
         .mockReturnValueOnce(insertBuilder)
         .mockReturnValueOnce(userBuilder)
         .mockReturnValueOnce(userFunctionsBuilder)
@@ -213,16 +213,16 @@ describe('/api/documents/upload', () => {
       })
 
       const profileBuilder = createQueryBuilder(mockProfile)
-      const docTypeBuilder = createQueryBuilder(mockDocumentType)
+      const docDefBuilder = createQueryBuilder(mockDocumentType)
       const storageBuilder = createStorageBuilder(null, null)
       const insertBuilder = createQueryBuilder(mockDocument)
       const userBuilder = createQueryBuilder({ name: 'Test', surname: 'User' })
-      const userFunctionsBuilder = createQueryBuilder([{ function_id: 'function-1' }])
+      const userFunctionsBuilder = createQueryBuilder([{ functions_master: { code: 'PILOT' } }])
       const boardMembersBuilder = createQueryBuilder([])
 
       mockSupabase.from
         .mockReturnValueOnce(profileBuilder)
-        .mockReturnValueOnce(docTypeBuilder)
+        .mockReturnValueOnce(docDefBuilder)
         .mockReturnValueOnce(insertBuilder)
         .mockReturnValueOnce(userBuilder)
         .mockReturnValueOnce(userFunctionsBuilder)
@@ -243,7 +243,7 @@ describe('/api/documents/upload', () => {
         user_id: 'test-user-id',
         plane_id: null,
         blocks_aircraft: false,
-        document_type_id: 'doc-type-1',
+        document_definition_id: 'doc-def-1',
       })
     })
 
@@ -254,7 +254,7 @@ describe('/api/documents/upload', () => {
       })
 
       const profileBuilder = createQueryBuilder(mockProfile) // Regular user
-      const docTypeBuilder = createQueryBuilder({
+      const docDefBuilder = createQueryBuilder({
         ...mockDocumentType,
         mandatory: true,
       })
@@ -264,7 +264,7 @@ describe('/api/documents/upload', () => {
       const userFunctionsBuilder = {
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockResolvedValue({
-          data: [{ function_id: 'function-id-1' }],
+          data: [{ functions_master: { code: 'PILOT' } }],
           error: null,
         }),
       }
@@ -280,7 +280,7 @@ describe('/api/documents/upload', () => {
       }
       mockSupabase.from
         .mockReturnValueOnce(profileBuilder)
-        .mockReturnValueOnce(docTypeBuilder)
+        .mockReturnValueOnce(docDefBuilder)
         .mockReturnValueOnce(insertBuilder)
         .mockReturnValueOnce(userBuilder)
         .mockReturnValueOnce(userFunctionsBuilder)
@@ -318,7 +318,7 @@ describe('/api/documents/upload', () => {
       })
 
       const profileBuilder = createQueryBuilder(mockBoardProfile)
-      const docTypeBuilder = createQueryBuilder(mockDocumentType)
+      const docDefBuilder = createQueryBuilder(mockDocumentType)
       const storageBuilder = createStorageBuilder(null, null)
       const insertBuilder = createQueryBuilder({
         ...mockDocument,
@@ -328,7 +328,7 @@ describe('/api/documents/upload', () => {
 
       mockSupabase.from
         .mockReturnValueOnce(profileBuilder)
-        .mockReturnValueOnce(docTypeBuilder)
+        .mockReturnValueOnce(docDefBuilder)
         .mockReturnValueOnce(insertBuilder)
 
       mockSupabase.storage.from.mockReturnValue(storageBuilder)
@@ -345,19 +345,22 @@ describe('/api/documents/upload', () => {
     })
 
     it('should cleanup uploaded file on database error', async () => {
+      // Suppress expected console.error
+      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation()
+
       mockSupabase.auth.getUser.mockResolvedValue({
         data: { user: mockUser },
         error: null,
       })
 
       const profileBuilder = createQueryBuilder(mockProfile)
-      const docTypeBuilder = createQueryBuilder(mockDocumentType)
+      const docDefBuilder = createQueryBuilder(mockDocumentType)
       const storageBuilder = createStorageBuilder(null, null)
       const insertBuilder = createQueryBuilder(null, { message: 'Database error' })
 
       mockSupabase.from
         .mockReturnValueOnce(profileBuilder)
-        .mockReturnValueOnce(docTypeBuilder)
+        .mockReturnValueOnce(docDefBuilder)
         .mockReturnValueOnce(insertBuilder)
 
       mockSupabase.storage.from.mockReturnValue(storageBuilder)
@@ -368,21 +371,26 @@ describe('/api/documents/upload', () => {
 
       expect(response.status).toBe(500)
       expect(storageBuilder.remove).toHaveBeenCalled() // File should be cleaned up
+
+      consoleErrorSpy.mockRestore()
     })
 
     it('should return 500 on upload error', async () => {
+      // Suppress expected console.error
+      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation()
+
       mockSupabase.auth.getUser.mockResolvedValue({
         data: { user: mockUser },
         error: null,
       })
 
       const profileBuilder = createQueryBuilder(mockProfile)
-      const docTypeBuilder = createQueryBuilder(mockDocumentType)
+      const docDefBuilder = createQueryBuilder(mockDocumentType)
       const storageBuilder = createStorageBuilder(null, { message: 'Upload failed' })
 
       mockSupabase.from
         .mockReturnValueOnce(profileBuilder)
-        .mockReturnValueOnce(docTypeBuilder)
+        .mockReturnValueOnce(docDefBuilder)
 
       mockSupabase.storage.from.mockReturnValue(storageBuilder)
 
@@ -393,6 +401,8 @@ describe('/api/documents/upload', () => {
 
       expect(response.status).toBe(500)
       expect(data.error).toContain('Upload failed')
+
+      consoleErrorSpy.mockRestore()
     })
 
     it('should NOT create notifications when document is not required', async () => {
@@ -402,7 +412,7 @@ describe('/api/documents/upload', () => {
       })
 
       const profileBuilder = createQueryBuilder(mockProfile)
-      const docTypeBuilder = createQueryBuilder({
+      const docDefBuilder = createQueryBuilder({
         ...mockDocumentType,
         mandatory: false, // Not mandatory
         required_for_functions: [], // Not required for any function
@@ -410,11 +420,11 @@ describe('/api/documents/upload', () => {
       const storageBuilder = createStorageBuilder(null, null)
       const insertBuilder = createQueryBuilder(mockDocument)
       const userBuilder = createQueryBuilder({ name: 'Test', surname: 'User' })
-      const userFunctionsBuilder = createQueryBuilder([{ function_id: 'function-1' }])
+      const userFunctionsBuilder = createQueryBuilder([{ functions_master: { code: 'PILOT' } }])
 
       mockSupabase.from
         .mockReturnValueOnce(profileBuilder)
-        .mockReturnValueOnce(docTypeBuilder)
+        .mockReturnValueOnce(docDefBuilder)
         .mockReturnValueOnce(insertBuilder)
         .mockReturnValueOnce(userBuilder)
         .mockReturnValueOnce(userFunctionsBuilder)

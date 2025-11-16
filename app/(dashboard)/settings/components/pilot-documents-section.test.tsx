@@ -31,27 +31,36 @@ describe('PilotDocumentsSection', () => {
     mockFetch.mockReset()
   })
 
-  const mockDocumentTypes = [
+  const mockDocumentDefinitions = [
     {
-      id: 'doc-type-1',
+      id: 'doc-def-1',
       name: 'Pilot License',
-      category: 'license',
+      description: 'Pilot license document',
       mandatory: true,
-      required_for_functions: ['function-1'],
+      expires: true,
+      has_subcategories: false,
+      has_endorsements: false,
+      required_for_functions: ['PILOT'],
     },
     {
-      id: 'doc-type-2',
+      id: 'doc-def-2',
       name: 'Medical Certificate',
-      category: 'medical',
+      description: 'Medical certificate',
       mandatory: true,
-      required_for_functions: ['function-1'],
+      expires: true,
+      has_subcategories: false,
+      has_endorsements: false,
+      required_for_functions: ['PILOT'],
     },
     {
-      id: 'doc-type-3',
+      id: 'doc-def-3',
       name: 'Optional Document',
-      category: 'other',
+      description: 'Optional document',
       mandatory: false,
-      required_for_functions: ['function-2'], // Different function
+      expires: false,
+      has_subcategories: false,
+      has_endorsements: false,
+      required_for_functions: ['FLIGHT_INSTRUCTOR'], // Different function
     },
   ]
 
@@ -59,7 +68,7 @@ describe('PilotDocumentsSection', () => {
     {
       id: 'doc-1',
       name: 'Pilot License',
-      document_type_id: 'doc-type-1',
+      document_definition_id: 'doc-def-1',
       expiry_date: '2025-12-31',
       approved: true,
       uploaded_at: '2024-01-01T00:00:00Z',
@@ -70,7 +79,7 @@ describe('PilotDocumentsSection', () => {
   const mockUserData = {
     user: {
       id: 'test-user-id',
-      functions: ['function-1'], // User has function-1
+      functions: ['PILOT'], // User has PILOT function
     },
   }
 
@@ -82,12 +91,16 @@ describe('PilotDocumentsSection', () => {
       }) // documents/user
       .mockResolvedValueOnce({
         ok: true,
-        json: async () => ({ documentTypes: mockDocumentTypes }),
-      }) // documents/types
+        json: async () => ({ definitions: mockDocumentDefinitions }),
+      }) // documents/definitions
       .mockResolvedValueOnce({
         ok: true,
         json: async () => mockUserData,
       }) // users/:userId
+      .mockResolvedValue({
+        ok: true,
+        json: async () => ({ privileges: [] }),
+      }) // endorsements endpoint (for document-privileges-display)
   }
 
   it('should filter document types by user functions', async () => {
@@ -99,9 +112,9 @@ describe('PilotDocumentsSection', () => {
       expect(screen.queryByText('Loading')).not.toBeInTheDocument()
     })
 
-    // Should only show doc-type-1 and doc-type-2 (required for function-1)
-    // doc-type-3 should not be shown (required for function-2)
-    expect(mockFetch).toHaveBeenCalledWith('/api/documents/types')
+    // Should only show doc-def-1 and doc-def-2 (required for PILOT)
+    // doc-def-3 should not be shown (required for FLIGHT_INSTRUCTOR)
+    expect(mockFetch).toHaveBeenCalledWith('/api/documents/definitions')
     expect(mockFetch).toHaveBeenCalledWith('/api/users/test-user-id')
   })
 
@@ -128,7 +141,7 @@ describe('PilotDocumentsSection', () => {
             {
               id: 'doc-2',
               name: 'Medical Certificate',
-              document_type_id: 'doc-type-2',
+              document_definition_id: 'doc-def-2',
               expiry_date: '2025-12-31',
               approved: true,
               uploaded_at: '2024-01-01T00:00:00Z',
@@ -139,11 +152,15 @@ describe('PilotDocumentsSection', () => {
       })
       .mockResolvedValueOnce({
         ok: true,
-        json: async () => ({ documentTypes: mockDocumentTypes }),
+        json: async () => ({ definitions: mockDocumentDefinitions }),
       })
       .mockResolvedValueOnce({
         ok: true,
         json: async () => mockUserData,
+      })
+      .mockResolvedValue({
+        ok: true,
+        json: async () => ({ privileges: [] }),
       })
 
     render(<PilotDocumentsSection userId="test-user-id" />)
@@ -190,7 +207,7 @@ describe('PilotDocumentsSection', () => {
             {
               id: 'doc-1',
               name: 'Valid Document',
-              document_type_id: 'doc-type-1',
+              document_definition_id: 'doc-def-1',
               expiry_date: '2026-12-31',
               approved: true,
               uploaded_at: '2024-01-01T00:00:00Z',
@@ -198,7 +215,7 @@ describe('PilotDocumentsSection', () => {
             {
               id: 'doc-2',
               name: 'Expiring Soon',
-              document_type_id: 'doc-type-2',
+              document_definition_id: 'doc-def-2',
               expiry_date: expiringSoon.toISOString().split('T')[0],
               approved: true,
               uploaded_at: '2024-01-01T00:00:00Z',
@@ -206,7 +223,7 @@ describe('PilotDocumentsSection', () => {
             {
               id: 'doc-3',
               name: 'Expired Document',
-              document_type_id: 'doc-type-3',
+              document_definition_id: 'doc-def-3',
               expiry_date: expired.toISOString().split('T')[0],
               approved: true,
               uploaded_at: '2024-01-01T00:00:00Z',
@@ -214,7 +231,7 @@ describe('PilotDocumentsSection', () => {
             {
               id: 'doc-4',
               name: 'Pending Approval',
-              document_type_id: 'doc-type-4',
+              document_definition_id: 'doc-def-1',
               expiry_date: '2026-12-31',
               approved: false,
               uploaded_at: '2024-01-01T00:00:00Z',
@@ -224,11 +241,15 @@ describe('PilotDocumentsSection', () => {
       })
       .mockResolvedValueOnce({
         ok: true,
-        json: async () => ({ documentTypes: mockDocumentTypes }),
+        json: async () => ({ definitions: mockDocumentDefinitions }),
       })
       .mockResolvedValueOnce({
         ok: true,
         json: async () => mockUserData,
+      })
+      .mockResolvedValue({
+        ok: true,
+        json: async () => ({ privileges: [] }),
       })
 
     render(<PilotDocumentsSection userId="test-user-id" />)
@@ -263,6 +284,9 @@ describe('PilotDocumentsSection', () => {
   it('should handle fetch errors gracefully', async () => {
     const { toast } = require('sonner')
 
+    // Suppress expected console.error
+    const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation()
+
     mockFetch.mockRejectedValue(new Error('Network error'))
 
     render(<PilotDocumentsSection userId="test-user-id" />)
@@ -270,6 +294,8 @@ describe('PilotDocumentsSection', () => {
     await waitFor(() => {
       expect(toast.error).toHaveBeenCalledWith('Failed to load documents')
     })
+
+    consoleErrorSpy.mockRestore()
   })
 
   it('should only show document types relevant to user functions', async () => {
@@ -287,11 +313,15 @@ describe('PilotDocumentsSection', () => {
       })
       .mockResolvedValueOnce({
         ok: true,
-        json: async () => ({ documentTypes: mockDocumentTypes }),
+        json: async () => ({ definitions: mockDocumentDefinitions }),
       })
       .mockResolvedValueOnce({
         ok: true,
         json: async () => userWithNoFunctions,
+      })
+      .mockResolvedValue({
+        ok: true,
+        json: async () => ({ privileges: [] }),
       })
 
     render(<PilotDocumentsSection userId="test-user-id" />)

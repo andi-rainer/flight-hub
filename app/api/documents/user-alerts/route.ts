@@ -56,11 +56,13 @@ export async function GET(request: NextRequest) {
       .select('id, name, mandatory, required_for_functions')
 
     const mandatoryForUser = requiredDocDefs?.filter(docDef => {
-      // Include if globally mandatory
-      if (docDef.mandatory) return true
+      // Include if globally mandatory (no specific function requirement)
+      if (docDef.mandatory && (!docDef.required_for_functions || docDef.required_for_functions.length === 0)) {
+        return true
+      }
 
-      // Include if required for any of the user's functions
-      if (docDef.required_for_functions && docDef.required_for_functions.length > 0) {
+      // Include if mandatory AND required for any of the user's functions
+      if (docDef.mandatory && docDef.required_for_functions && docDef.required_for_functions.length > 0) {
         // required_for_functions stores function codes (strings)
         return docDef.required_for_functions.some((reqFuncCode: string) =>
           userFunctionCodes.includes(reqFuncCode)

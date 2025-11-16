@@ -134,15 +134,7 @@ export async function POST(request: NextRequest) {
         .eq('id', userId)
         .single()
 
-      // Get user's function IDs
-      const { data: userFunctionsData } = await supabase
-        .from('user_functions')
-        .select('function_id')
-        .eq('user_id', userId)
-
-      const userFunctionIds = userFunctionsData?.map(uf => uf.function_id) || []
-
-      // Get function codes for comparison with required_for_functions (which stores codes, not IDs)
+      // Get user's function codes for comparison with required_for_functions
       const { data: userFunctionsWithCodes } = await supabase
         .from('user_functions')
         .select('functions_master(code)')
