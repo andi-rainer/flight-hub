@@ -144,7 +144,7 @@ function SidebarContent({ user, onNavigate, collapsed, onToggle }: { user: User;
     fetchUserAlerts()
   }, [isBoardMember, user.id])
 
-  // Real-time subscription for documents and privileges table changes
+  // Real-time subscription for documents and endorsements table changes
   useEffect(() => {
     const supabase = createClient()
 
@@ -170,11 +170,11 @@ function SidebarContent({ user, onNavigate, collapsed, onToggle }: { user: User;
         {
           event: '*', // Listen to INSERT, UPDATE, DELETE
           schema: 'public',
-          table: 'document_privileges',
+          table: 'document_endorsements',
         },
         (payload) => {
-          console.log('Real-time privilege change detected:', payload)
-          // Refetch user alerts when privileges change
+          console.log('Real-time endorsement change detected:', payload)
+          // Refetch user alerts when endorsements change
           fetchUserAlerts()
         }
       )

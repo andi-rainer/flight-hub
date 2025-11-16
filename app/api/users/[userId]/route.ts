@@ -30,19 +30,19 @@ export async function GET(
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
 
-    // Fetch user function IDs
+    // Fetch user function codes (not IDs) for permission checking
     const { data: userFunctions } = await supabase
       .from('user_functions')
-      .select('function_id')
+      .select('functions_master(code)')
       .eq('user_id', userId)
 
-    const functionIds = userFunctions?.map(uf => uf.function_id) || []
+    const functionCodes = userFunctions?.map(uf => (uf as any).functions_master?.code).filter(Boolean) || []
 
-    // Return user with function IDs
+    // Return user with function codes
     return NextResponse.json({
       user: {
         ...user,
-        functions: functionIds,
+        functions: functionCodes,
       }
     })
   } catch (error) {
