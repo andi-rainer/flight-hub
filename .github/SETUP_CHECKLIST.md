@@ -4,9 +4,9 @@ Complete these steps to enable automated deployments.
 
 ## Prerequisites
 
-- [ ] Docker Desktop installed and running
-- [ ] Supabase CLI installed (`brew install supabase/tap/supabase`)
-- [ ] Vercel CLI installed (`npm i -g vercel`)
+- [x] Docker Desktop installed and running
+- [x] Supabase CLI installed (`brew install supabase/tap/supabase`)
+- [x] Vercel CLI installed (`npm i -g vercel`)
 
 ## 1. Get Supabase Credentials
 
