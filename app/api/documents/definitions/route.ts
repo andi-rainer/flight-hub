@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 
+// Get all document definitions
 export async function GET() {
   try {
     const supabase = await createClient()
@@ -10,43 +11,50 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { data: documentDefinitions, error } = await supabase
+    const { data: definitions, error } = await supabase
       .from('document_definitions')
       .select(`
         *,
-        function_categories (
+        document_subcategories (
           id,
-          name_en,
-          name_de
+          name,
+          code,
+          description,
+          sort_order,
+          active
         ),
         definition_endorsements (
           endorsement_id,
           endorsements (
             id,
             code,
-            name
+            name,
+            name_de,
+            description,
+            active,
+            supports_ir
           )
         )
       `)
-      .order('name', { ascending: true })
+      .order('sort_order', { ascending: true })
 
     if (error) {
       console.error('Error fetching document definitions:', error)
       return NextResponse.json({ error: 'Failed to fetch document definitions' }, { status: 500 })
     }
 
-    return NextResponse.json({ documentDefinitions })
+    return NextResponse.json({ definitions })
   } catch (error) {
-    console.error('Error in GET /api/documents/types:', error)
+    console.error('Error in GET /api/documents/definitions:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
 
+// Create new document definition
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient()
 
-    // Check authentication and board member status
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -65,14 +73,18 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json()
 
-    const { data: documentDefinition, error } = await supabase
+    const { data: definition, error } = await supabase
       .from('document_definitions')
       .insert({
         name: body.name,
         description: body.description || null,
-        category_id: body.category_id || null,
+        icon: body.icon || null,
+        sort_order: body.sort_order || 0,
+        active: body.active !== undefined ? body.active : true,
         mandatory: body.mandatory || false,
         expires: body.expires || false,
+        has_subcategories: body.has_subcategories || false,
+        has_endorsements: body.has_endorsements || false,
         required_for_functions: body.required_for_functions || [],
       })
       .select()
@@ -83,18 +95,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to create document definition' }, { status: 500 })
     }
 
-    return NextResponse.json({ documentDefinition })
+    return NextResponse.json({ definition })
   } catch (error) {
-    console.error('Error in POST /api/documents/types:', error)
+    console.error('Error in POST /api/documents/definitions:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
 
+// Update document definition
 export async function PUT(request: NextRequest) {
   try {
     const supabase = await createClient()
 
-    // Check authentication and board member status
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -115,19 +127,23 @@ export async function PUT(request: NextRequest) {
     const id = searchParams.get('id')
 
     if (!id) {
-      return NextResponse.json({ error: 'Document type ID is required' }, { status: 400 })
+      return NextResponse.json({ error: 'Definition ID is required' }, { status: 400 })
     }
 
     const body = await request.json()
 
-    const { data: documentDefinition, error} = await supabase
+    const { data: definition, error } = await supabase
       .from('document_definitions')
       .update({
         name: body.name,
         description: body.description || null,
-        category_id: body.category_id || null,
+        icon: body.icon || null,
+        sort_order: body.sort_order || 0,
+        active: body.active !== undefined ? body.active : true,
         mandatory: body.mandatory || false,
         expires: body.expires || false,
+        has_subcategories: body.has_subcategories || false,
+        has_endorsements: body.has_endorsements || false,
         required_for_functions: body.required_for_functions || [],
       })
       .eq('id', id)
@@ -139,18 +155,18 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to update document definition' }, { status: 500 })
     }
 
-    return NextResponse.json({ documentDefinition })
+    return NextResponse.json({ definition })
   } catch (error) {
-    console.error('Error in PUT /api/documents/types:', error)
+    console.error('Error in PUT /api/documents/definitions:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
 
+// Delete document definition
 export async function DELETE(request: NextRequest) {
   try {
     const supabase = await createClient()
 
-    // Check authentication and board member status
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -171,7 +187,7 @@ export async function DELETE(request: NextRequest) {
     const id = searchParams.get('id')
 
     if (!id) {
-      return NextResponse.json({ error: 'Document definition ID is required' }, { status: 400 })
+      return NextResponse.json({ error: 'Definition ID is required' }, { status: 400 })
     }
 
     const { error } = await supabase.from('document_definitions').delete().eq('id', id)
@@ -183,7 +199,7 @@ export async function DELETE(request: NextRequest) {
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error('Error in DELETE /api/documents/types:', error)
+    console.error('Error in DELETE /api/documents/definitions:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

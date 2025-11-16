@@ -28,7 +28,22 @@ import {
 import { ExternalLink, AlertCircle, FileText, Loader2, Plus, Calendar, AlertTriangle, RefreshCw } from 'lucide-react'
 import { toast } from 'sonner'
 import { format } from 'date-fns'
-import type { Document, DocumentType } from '@/lib/database.types'
+import type { Document } from '@/lib/database.types'
+import { EndorsementSelector, type EndorsementSelection } from '@/components/endorsement-selector'
+import { DocumentPrivilegesDisplay } from './document-privileges-display'
+
+interface DocumentDefinition {
+  id: string
+  name: string
+  description: string | null
+  mandatory: boolean
+  expires: boolean
+  has_subcategories: boolean
+  has_endorsements: boolean
+  required_for_functions: string[]
+  document_subcategories?: any[]
+  definition_endorsements?: any[]
+}
 
 interface PilotDocumentsSectionProps {
   userId: string
@@ -38,7 +53,7 @@ interface PilotDocumentsSectionProps {
 export function PilotDocumentsSection({ userId, isBoardMember = false }: PilotDocumentsSectionProps) {
   const router = useRouter()
   const [documents, setDocuments] = useState<Document[]>([])
-  const [documentTypes, setDocumentTypes] = useState<DocumentType[]>([])
+  const [documentDefinitions, setDocumentDefinitions] = useState<DocumentDefinition[]>([])
   const [userFunctions, setUserFunctions] = useState<string[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isUploadOpen, setIsUploadOpen] = useState(false)
@@ -46,15 +61,107 @@ export function PilotDocumentsSection({ userId, isBoardMember = false }: PilotDo
   const [editingExpiryDoc, setEditingExpiryDoc] = useState<Document | null>(null)
   const [newExpiryDate, setNewExpiryDate] = useState('')
   const [renewingDoc, setRenewingDoc] = useState<Document | null>(null)
+  const [renewalEndorsements, setRenewalEndorsements] = useState<EndorsementSelection[]>([])
+  const [renewalAvailableEndorsementIds, setRenewalAvailableEndorsementIds] = useState<string[]>([])
 
   // Upload form state
   const [selectedDocumentType, setSelectedDocumentType] = useState<string>('')
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [expiryDate, setExpiryDate] = useState('')
+  const [selectedSubcategoryId, setSelectedSubcategoryId] = useState<string | null>(null)
+  const [availableSubcategories, setAvailableSubcategories] = useState<any[]>([])
+  const [availableEndorsementIds, setAvailableEndorsementIds] = useState<string[]>([])
+  const [endorsementSelections, setEndorsementSelections] = useState<EndorsementSelection[]>([])
 
   useEffect(() => {
     loadData()
   }, [userId])
+
+  // Load subcategories and endorsements when document type changes
+  useEffect(() => {
+    if (selectedDocumentType) {
+      const selectedDef = documentDefinitions.find(d => d.id === selectedDocumentType)
+
+      // Load subcategories if applicable
+      if (selectedDef?.has_subcategories && selectedDef.document_subcategories) {
+        setAvailableSubcategories(selectedDef.document_subcategories)
+      } else {
+        setAvailableSubcategories([])
+        setSelectedSubcategoryId(null)
+      }
+
+      // Load endorsements if applicable
+      if (selectedDef?.has_endorsements && selectedDef.definition_endorsements) {
+        const endorsementIds = selectedDef.definition_endorsements
+          .map((de: any) => de.endorsement_id || de.endorsements?.id)
+          .filter(Boolean)
+        setAvailableEndorsementIds(endorsementIds)
+      } else {
+        setAvailableEndorsementIds([])
+        setEndorsementSelections([])
+      }
+    } else {
+      setAvailableSubcategories([])
+      setSelectedSubcategoryId(null)
+      setAvailableEndorsementIds([])
+      setEndorsementSelections([])
+    }
+  }, [selectedDocumentType, documentDefinitions])
+
+  // Load existing endorsements when opening renewal dialog
+  useEffect(() => {
+    if (renewingDoc) {
+      loadDocumentEndorsements(renewingDoc.id)
+      setExpiryDate(renewingDoc.expiry_date || '')
+
+      // Load available endorsements for this document definition
+      if (renewingDoc.document_definition_id) {
+        const docDef = documentDefinitions.find(d => d.id === renewingDoc.document_definition_id)
+        if (docDef?.has_endorsements && docDef.definition_endorsements) {
+          const endorsementIds = docDef.definition_endorsements
+            .map((de: any) => de.endorsement_id || de.endorsements?.id)
+            .filter(Boolean)
+          setRenewalAvailableEndorsementIds(endorsementIds)
+        } else {
+          setRenewalAvailableEndorsementIds([])
+        }
+      }
+    } else {
+      setRenewalEndorsements([])
+      setRenewalAvailableEndorsementIds([])
+    }
+  }, [renewingDoc, documentDefinitions])
+
+  const loadSubcategories = async (categoryId: string) => {
+    try {
+      const response = await fetch(`/api/documents/subcategories?categoryId=${categoryId}`)
+      if (response.ok) {
+        const data = await response.json()
+        setAvailableSubcategories(data.subcategories || [])
+      }
+    } catch (error) {
+      console.error('Error loading subcategories:', error)
+    }
+  }
+
+  const loadDocumentEndorsements = async (documentId: string) => {
+    try {
+      const response = await fetch(`/api/documents/${documentId}/endorsements`)
+      if (response.ok) {
+        const data = await response.json()
+        // Convert to EndorsementSelection format
+        const selections: EndorsementSelection[] = (data.privileges || []).map((priv: any) => ({
+          endorsementId: priv.endorsement_id,
+          expiryDate: priv.expiry_date,
+          hasIR: priv.has_ir,
+          irExpiryDate: priv.ir_expiry_date,
+        }))
+        setRenewalEndorsements(selections)
+      }
+    } catch (error) {
+      console.error('Error loading document endorsements:', error)
+    }
+  }
 
   const loadData = async () => {
     setIsLoading(true)
@@ -67,18 +174,18 @@ export function PilotDocumentsSection({ userId, isBoardMember = false }: PilotDo
         setDocuments(docsData.documents || [])
       }
 
-      // Fetch document types and user functions
-      const [typesResponse, userResponse] = await Promise.all([
-        fetch('/api/documents/types'),
+      // Fetch document definitions and user functions
+      const [defsResponse, userResponse] = await Promise.all([
+        fetch('/api/documents/definitions'),
         fetch(`/api/users/${userId}`)
       ])
 
-      let allDocumentTypes: DocumentType[] = []
+      let allDocumentDefinitions: DocumentDefinition[] = []
       let fetchedUserFunctionIds: string[] = []
 
-      if (typesResponse.ok) {
-        const typesData = await typesResponse.json()
-        allDocumentTypes = typesData.documentTypes || []
+      if (defsResponse.ok) {
+        const defsData = await defsResponse.json()
+        allDocumentDefinitions = defsData.definitions || []
       }
 
       if (userResponse.ok) {
@@ -87,22 +194,22 @@ export function PilotDocumentsSection({ userId, isBoardMember = false }: PilotDo
         setUserFunctions(fetchedUserFunctionIds)
       }
 
-      // Filter document types to show only relevant ones for the user
+      // Filter document definitions to show only relevant ones for the user
       // Show only if: required for at least one of the user's functions
-      const relevantDocumentTypes = allDocumentTypes.filter(docType => {
+      const relevantDocumentDefinitions = allDocumentDefinitions.filter(docDef => {
         // Skip if no function requirements (these are optional, non-role-specific documents)
-        if (!docType.required_for_functions || docType.required_for_functions.length === 0) {
+        if (!docDef.required_for_functions || docDef.required_for_functions.length === 0) {
           return false
         }
 
         // Show only if required for at least one of the user's assigned functions
-        // required_for_functions stores function IDs (UUIDs)
-        return docType.required_for_functions.some((reqFuncId: string) =>
-          fetchedUserFunctionIds.includes(reqFuncId)
+        // required_for_functions stores function codes (strings)
+        return docDef.required_for_functions.some((reqFuncCode: string) =>
+          fetchedUserFunctionIds.includes(reqFuncCode)
         )
       })
 
-      setDocumentTypes(relevantDocumentTypes)
+      setDocumentDefinitions(relevantDocumentDefinitions)
     } catch (error) {
       console.error('Error loading documents:', error)
       toast.error('Failed to load documents')
@@ -129,6 +236,13 @@ export function PilotDocumentsSection({ userId, isBoardMember = false }: PilotDo
       if (expiryDate) {
         formData.append('expiryDate', expiryDate)
       }
+      if (selectedSubcategoryId) {
+        formData.append('subcategoryId', selectedSubcategoryId)
+      }
+      // Send endorsement selections as JSON string
+      if (endorsementSelections.length > 0) {
+        formData.append('endorsements', JSON.stringify(endorsementSelections))
+      }
 
       const response = await fetch('/api/documents/upload', {
         method: 'POST',
@@ -138,9 +252,12 @@ export function PilotDocumentsSection({ userId, isBoardMember = false }: PilotDo
       if (response.ok) {
         toast.success('Document uploaded successfully')
         setIsUploadOpen(false)
+        // Reset form
         setSelectedDocumentType('')
         setSelectedFile(null)
         setExpiryDate('')
+        setSelectedSubcategoryId(null)
+        setEndorsementSelections([])
         loadData()
         // Trigger refresh for badges
         window.dispatchEvent(new Event('document-updated'))
@@ -225,6 +342,10 @@ export function PilotDocumentsSection({ userId, isBoardMember = false }: PilotDo
       if (expiryDate) {
         formData.append('expiryDate', expiryDate)
       }
+      // Send endorsement selections as JSON string
+      if (renewalEndorsements.length > 0) {
+        formData.append('endorsements', JSON.stringify(renewalEndorsements))
+      }
 
       const response = await fetch('/api/documents/renew', {
         method: 'POST',
@@ -274,8 +395,8 @@ export function PilotDocumentsSection({ userId, isBoardMember = false }: PilotDo
   }
 
   // Find missing required documents (already filtered by user's functions in loadData)
-  const uploadedTypeIds = documents.map(doc => doc.document_type_id).filter(Boolean)
-  const missingMandatory = documentTypes.filter(type => !uploadedTypeIds.includes(type.id))
+  const uploadedDefinitionIds = documents.map(doc => doc.document_definition_id).filter(Boolean)
+  const missingMandatory = documentDefinitions.filter(def => def.mandatory && !uploadedDefinitionIds.includes(def.id))
 
   if (isLoading) {
     return (
@@ -320,17 +441,40 @@ export function PilotDocumentsSection({ userId, isBoardMember = false }: PilotDo
                         <SelectValue placeholder="Select document type" />
                       </SelectTrigger>
                       <SelectContent>
-                        {documentTypes
-                          .filter(type => !uploadedTypeIds.includes(type.id))
-                          .map((type) => (
-                            <SelectItem key={type.id} value={type.id}>
-                              {type.name}
-                              {type.mandatory && ' (Required)'}
+                        {documentDefinitions
+                          .filter(def => !uploadedDefinitionIds.includes(def.id))
+                          .map((def) => (
+                            <SelectItem key={def.id} value={def.id}>
+                              {def.name}
+                              {def.mandatory && ' (Required)'}
                             </SelectItem>
                           ))}
                       </SelectContent>
                     </Select>
                   </div>
+
+                  {/* Subcategory Selector - show if subcategories are available */}
+                  {availableSubcategories.length > 0 && (
+                    <div className="space-y-2">
+                      <Label htmlFor="subcategory">Subcategory *</Label>
+                      <Select value={selectedSubcategoryId || 'none'} onValueChange={(value) => setSelectedSubcategoryId(value === 'none' ? null : value)}>
+                        <SelectTrigger id="subcategory">
+                          <SelectValue placeholder="Select subcategory" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">None / Not Specified</SelectItem>
+                          {availableSubcategories.map((sub) => (
+                            <SelectItem key={sub.id} value={sub.id}>
+                              {sub.name} {sub.code && `(${sub.code})`}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-muted-foreground">
+                        Specify the type/class of this document (e.g., PPL vs CPL, Class 1 vs Class 2)
+                      </p>
+                    </div>
+                  )}
 
                   <div className="space-y-2">
                     <Label htmlFor="file">File *</Label>
@@ -354,7 +498,25 @@ export function PilotDocumentsSection({ userId, isBoardMember = false }: PilotDo
                       value={expiryDate}
                       onChange={(e) => setExpiryDate(e.target.value)}
                     />
+                    <p className="text-xs text-muted-foreground">
+                      Main document expiry date (optional if only privileges have expiry)
+                    </p>
                   </div>
+
+                  {/* Endorsement Selector - allow selecting endorsements/ratings with IR tracking */}
+                  {availableEndorsementIds.length > 0 && (
+                    <div className="space-y-2">
+                      <Label>Endorsements / Ratings</Label>
+                      <EndorsementSelector
+                        value={endorsementSelections}
+                        onChange={setEndorsementSelections}
+                        availableEndorsementIds={availableEndorsementIds}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Select the endorsements/ratings you have for this document. For ratings that support IR, you can enable it separately.
+                      </p>
+                    </div>
+                  )}
                 </div>
                 <DialogFooter>
                   <Button
@@ -384,8 +546,8 @@ export function PilotDocumentsSection({ userId, isBoardMember = false }: PilotDo
             <AlertDescription>
               You need to upload the following mandatory documents:
               <ul className="list-disc list-inside mt-2">
-                {missingMandatory.map((type) => (
-                  <li key={type.id}>{type.name}</li>
+                {missingMandatory.map((def) => (
+                  <li key={def.id}>{def.name}</li>
                 ))}
               </ul>
             </AlertDescription>
@@ -409,6 +571,7 @@ export function PilotDocumentsSection({ userId, isBoardMember = false }: PilotDo
                   <TableHead>Document</TableHead>
                   <TableHead>Uploaded</TableHead>
                   <TableHead>Expiry Date</TableHead>
+                  <TableHead>Privileges</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
@@ -427,6 +590,9 @@ export function PilotDocumentsSection({ userId, isBoardMember = false }: PilotDo
                     </TableCell>
                     <TableCell className="text-sm">
                       {doc.expiry_date ? format(new Date(doc.expiry_date), 'MMM dd, yyyy') : '—'}
+                    </TableCell>
+                    <TableCell>
+                      <DocumentPrivilegesDisplay documentId={doc.id} compact />
                     </TableCell>
                     <TableCell>{getDocumentStatus(doc)}</TableCell>
                     <TableCell className="text-right">
@@ -543,6 +709,21 @@ export function PilotDocumentsSection({ userId, isBoardMember = false }: PilotDo
                   onChange={(e) => setExpiryDate(e.target.value)}
                 />
               </div>
+
+              {/* Endorsement Selector - edit endorsements/ratings */}
+              {renewalAvailableEndorsementIds.length > 0 && (
+                <div className="space-y-2">
+                  <Label>Endorsements / Ratings</Label>
+                  <EndorsementSelector
+                    value={renewalEndorsements}
+                    onChange={setRenewalEndorsements}
+                    availableEndorsementIds={renewalAvailableEndorsementIds}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Update endorsements or ratings. Changes will replace existing endorsements.
+                  </p>
+                </div>
+              )}
             </div>
             <DialogFooter>
               <Button

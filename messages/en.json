@@ -82,6 +82,8 @@
     "settingsDescription": "Manage your account and preferences",
     "documents": "Documents",
     "documentsDescription": "Upload and manage your flight documents",
+    "licenses": "Licenses",
+    "licensesDescription": "Manage your licenses and certifications",
     "accounting": "Accounting",
     "billing": "Billing",
     "permissions": "Permissions",
@@ -243,6 +245,10 @@
     "uploadDate": "Upload Date",
     "noDocuments": "No documents"
   },
+  "licenses": {
+    "title": "My Licenses",
+    "description": "Manage your licenses, certificates, and required documents"
+  },
   "roles": {
     "board": "Board",
     "member": "Member",
@@ -294,6 +300,7 @@
     "general": "General",
     "myDocuments": "My Documents",
     "documentTypes": "Document Types",
+    "documentCategories": "Document Categories",
     "membershipTypes": "Membership Types",
     "tandemRegistration": "Tandem Registration",
     "airportFees": "Airport Fees",

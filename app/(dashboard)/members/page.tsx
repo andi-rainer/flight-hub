@@ -34,9 +34,9 @@ interface UserWithDocuments extends User {
 async function getMembers(): Promise<UserWithDocuments[]> {
   const supabase = await createClient()
 
-  // Get all users with their documents, document types, and active memberships
+  // Get all users with their documents, document definitions, and active memberships
   // Exclude deleted users (those with @deleted.local emails)
-  const [usersResult, documentTypesResult, userFunctionsResult] = await Promise.all([
+  const [usersResult, documentDefinitionsResult, userFunctionsResult] = await Promise.all([
     supabase
       .from('users')
       .select(`
@@ -46,7 +46,7 @@ async function getMembers(): Promise<UserWithDocuments[]> {
       .not('email', 'like', '%@deleted.local')
       .order('name', { ascending: true }),
     supabase
-      .from('document_types')
+      .from('document_definitions')
       .select('id, name, mandatory, required_for_functions'),
     supabase
       .from('user_functions')
@@ -60,7 +60,7 @@ async function getMembers(): Promise<UserWithDocuments[]> {
 
   if (!usersResult.data) return []
 
-  const documentTypes = documentTypesResult.data || []
+  const documentDefinitions = documentDefinitionsResult.data || []
 
   // Create a map of user functions
   const userFunctionsMap = new Map<string, string[]>()
@@ -138,12 +138,12 @@ async function getMembers(): Promise<UserWithDocuments[]> {
       function_codes: userFunctionCodes,
     }
 
-    // Get mandatory document types for this user's functions
+    // Get mandatory document definitions for this user's functions
     // Check both codes and names for backward compatibility
-    const mandatoryForUser = documentTypes.filter(docType => {
-      if (!docType.mandatory) return false
-      if (!docType.required_for_functions || docType.required_for_functions.length === 0) return false
-      return docType.required_for_functions.some((reqFunc: string) => {
+    const mandatoryForUser = documentDefinitions.filter(docDef => {
+      if (!docDef.mandatory) return false
+      if (!docDef.required_for_functions || docDef.required_for_functions.length === 0) return false
+      return docDef.required_for_functions.some((reqFunc: string) => {
         // Check if user has this function by code, name, or ID
         return userFunctionCodes.includes(reqFunc) ||
                userFunctionNames.includes(reqFunc) ||
@@ -155,7 +155,7 @@ async function getMembers(): Promise<UserWithDocuments[]> {
 
     // Count uploaded(!) mandatory documents
     const uploadedMandatoryCount = userDocs.filter(doc => {
-      return mandatoryForUser.some(mandatoryDocType => mandatoryDocType.id === doc.document_type_id)
+      return mandatoryForUser.some(mandatoryDocDef => mandatoryDocDef.id === doc.document_definition_id)
     }).length
 
     // Check for expired or expiring documents and mandatory document approval

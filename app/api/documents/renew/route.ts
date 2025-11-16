@@ -15,6 +15,8 @@ export async function POST(request: NextRequest) {
     const documentId = formData.get('documentId') as string
     const userId = formData.get('userId') as string
     const expiryDate = formData.get('expiryDate') as string | null
+    const endorsementsJson = formData.get('endorsements') as string | null
+    const endorsements = endorsementsJson ? JSON.parse(endorsementsJson) : []
 
     if (!file || !documentId || !userId) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
@@ -42,21 +44,21 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
     }
 
-    // Get document type info
-    const { data: documentType, error: docTypeError } = await supabase
-      .from('document_types')
+    // Get document definition info
+    const { data: documentDefinition, error: docDefError } = await supabase
+      .from('document_definitions')
       .select('*')
-      .eq('id', existingDoc.document_type_id)
+      .eq('id', existingDoc.document_definition_id)
       .single()
 
-    if (docTypeError || !documentType) {
-      return NextResponse.json({ error: 'Document type not found' }, { status: 400 })
+    if (docDefError || !documentDefinition) {
+      return NextResponse.json({ error: 'Document definition not found' }, { status: 400 })
     }
 
     // Upload new file to Supabase Storage
     const fileExt = file.name.split('.').pop()
     const timestamp = Date.now()
-    const fileName = `${userId}/${documentType.name.toLowerCase().replace(/\s+/g, '-')}-${timestamp}.${fileExt}`
+    const fileName = `${userId}/${documentDefinition.name.toLowerCase().replace(/\s+/g, '-')}-${timestamp}.${fileExt}`
 
     const { error: uploadError } = await supabase.storage
       .from('documents')
@@ -72,11 +74,8 @@ export async function POST(request: NextRequest) {
     // Calculate expiry date if needed
     let calculatedExpiryDate = expiryDate
 
-    if (!calculatedExpiryDate && documentType.expires && documentType.expiry_type === 'DURATION' && documentType.default_validity_months) {
-      const expiry = new Date()
-      expiry.setMonth(expiry.getMonth() + documentType.default_validity_months)
-      calculatedExpiryDate = expiry.toISOString().split('T')[0]
-    }
+    // Note: document_definitions table doesn't have expiry_type or default_validity_months
+    // User must provide expiry_date during renewal
 
     // Update document record with new file URL and reset approval status
     const { data: updatedDoc, error: updateError } = await supabase
@@ -107,6 +106,38 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to update document record' }, { status: 500 })
     }
 
+    // Update user document endorsements - delete old ones and create new ones
+    if (endorsements.length > 0) {
+      // Delete existing user document endorsements for this document
+      const { error: deleteError } = await supabase
+        .from('user_document_endorsements')
+        .delete()
+        .eq('document_id', documentId)
+
+      if (deleteError) {
+        console.error('Error deleting old user document endorsements:', deleteError)
+        // Don't fail the renewal, just log the error
+      }
+
+      // Create new user document endorsement records
+      const endorsementRecords = endorsements.map((endorsement: any) => ({
+        document_id: documentId,
+        endorsement_id: endorsement.endorsementId,
+        expiry_date: endorsement.expiryDate || null,
+        has_ir: endorsement.hasIR || false,
+        ir_expiry_date: endorsement.irExpiryDate || null,
+      }))
+
+      const { error: endorsementError } = await supabase
+        .from('user_document_endorsements')
+        .insert(endorsementRecords)
+
+      if (endorsementError) {
+        console.error('Error creating user document endorsements:', endorsementError)
+        // Don't fail the renewal, just log the error
+      }
+    }
+
     // Delete old file from storage
     if (existingDoc.file_url) {
       const oldFilePath = existingDoc.file_url.replace('documents/', '')
@@ -120,18 +151,18 @@ export async function POST(request: NextRequest) {
       .eq('id', userId)
       .single()
 
-    // Get user's function IDs
-    const { data: userFunctionsData } = await supabase
+    // Get user's function codes for comparison with required_for_functions
+    const { data: userFunctionsWithCodes } = await supabase
       .from('user_functions')
-      .select('function_id')
+      .select('functions_master(code)')
       .eq('user_id', userId)
 
-    const userFunctionIds = userFunctionsData?.map(uf => uf.function_id) || []
+    const userFunctionCodes = userFunctionsWithCodes?.map((uf: any) => uf.functions_master?.code).filter(Boolean) || []
 
     // Check if document is required (either globally mandatory or required for user's functions)
-    const isRequired = documentType.mandatory ||
-      (userFunctionIds.length > 0 && documentType.required_for_functions.some(
-        (reqFuncId: string) => userFunctionIds.includes(reqFuncId)
+    const isRequired = documentDefinition.mandatory ||
+      (userFunctionCodes.length > 0 && documentDefinition.required_for_functions.some(
+        (reqFuncCode: string) => userFunctionCodes.includes(reqFuncCode)
       ))
 
     if (isRequired) {
@@ -143,7 +174,7 @@ export async function POST(request: NextRequest) {
 
       if (boardMembers && boardMembers.length > 0) {
         // Create notifications for all board members using RPC function to bypass RLS
-        const notificationMessage = `${uploadingUser?.name || 'A user'} ${uploadingUser?.surname || ''} renewed their document (${documentType.name}) and it needs approval.`
+        const notificationMessage = `${uploadingUser?.name || 'A user'} ${uploadingUser?.surname || ''} renewed their document (${documentDefinition.name}) and it needs approval.`
 
         for (const member of boardMembers) {
           const { error: notificationError } = await supabase.rpc('create_notification', {

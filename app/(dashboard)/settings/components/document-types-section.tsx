@@ -41,9 +41,16 @@ import { Shield, Plus, Pencil, Trash2, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 import type { DocumentType, FunctionMaster } from '@/lib/database.types'
 
+interface DocumentCategory {
+  id: string
+  name: string
+  requires_endorsements: boolean
+}
+
 export function DocumentTypesSection() {
   const [documentTypes, setDocumentTypes] = useState<DocumentType[]>([])
   const [functions, setFunctions] = useState<FunctionMaster[]>([])
+  const [categories, setCategories] = useState<DocumentCategory[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [editingDocType, setEditingDocType] = useState<DocumentType | null>(null)
@@ -53,7 +60,7 @@ export function DocumentTypesSection() {
   const [formData, setFormData] = useState({
     name: '',
     description: '',
-    category: '',
+    category_id: null as string | null,
     mandatory: false,
     expires: false,
     required_for_functions: [] as string[],
@@ -67,18 +74,26 @@ export function DocumentTypesSection() {
     setIsLoading(true)
 
     try {
-      // Fetch document types
-      const typesResponse = await fetch('/api/documents/types')
+      // Fetch document types, functions, and categories
+      const [typesResponse, functionsResponse, categoriesResponse] = await Promise.all([
+        fetch('/api/documents/types'),
+        fetch('/api/functions'),
+        fetch('/api/documents/categories'),
+      ])
+
       if (typesResponse.ok) {
         const typesData = await typesResponse.json()
         setDocumentTypes(typesData.documentTypes || [])
       }
 
-      // Fetch functions
-      const functionsResponse = await fetch('/api/functions')
       if (functionsResponse.ok) {
         const functionsData = await functionsResponse.json()
         setFunctions(functionsData.functions || [])
+      }
+
+      if (categoriesResponse.ok) {
+        const categoriesData = await categoriesResponse.json()
+        setCategories(categoriesData.categories || [])
       }
     } catch (error) {
       console.error('Error loading data:', error)
@@ -92,7 +107,7 @@ export function DocumentTypesSection() {
     setFormData({
       name: '',
       description: '',
-      category: '',
+      category_id: null,
       mandatory: false,
       expires: false,
       required_for_functions: [],
@@ -176,16 +191,22 @@ export function DocumentTypesSection() {
     }
   }
 
-  const openEditDialog = (docType: DocumentType) => {
+  const openEditDialog = async (docType: DocumentType) => {
     setEditingDocType(docType)
     setFormData({
       name: docType.name,
       description: docType.description || '',
-      category: docType.category || '',
+      category_id: (docType as any).category_id || null,
+      subcategory_id: (docType as any).subcategory_id || null,
       mandatory: docType.mandatory,
       expires: docType.expires,
       required_for_functions: docType.required_for_functions || [],
     })
+
+    // Load subcategories if category is set
+    if ((docType as any).category_id) {
+      await loadSubcategories((docType as any).category_id)
+    }
   }
 
   const closeEditDialog = () => {
@@ -260,13 +281,29 @@ export function DocumentTypesSection() {
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="category">Category</Label>
-                      <Input
-                        id="category"
-                        placeholder="e.g., License, Medical, Insurance"
-                        value={formData.category}
-                        onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                      />
+                      <Label htmlFor="doc-category">Document Category *</Label>
+                      <Select
+                        value={formData.category_id || 'none'}
+                        onValueChange={(value) =>
+                          setFormData({ ...formData, category_id: value === 'none' ? null : value })
+                        }
+                      >
+                        <SelectTrigger id="doc-category">
+                          <SelectValue placeholder="Select category (optional)" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">None</SelectItem>
+                          {categories.map((cat) => (
+                            <SelectItem key={cat.id} value={cat.id}>
+                              {cat.name}
+                              {cat.requires_endorsements && ' (Supports Privileges)'}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-muted-foreground">
+                        Links this document type to a category. Subcategory will be selected by the user during upload.
+                      </p>
                     </div>
 
                     <div className="space-y-2">
@@ -397,7 +434,7 @@ export function DocumentTypesSection() {
                         )}
                       </TableCell>
                       <TableCell className="text-sm">
-                        {docType.required_for_functions.length > 0
+                        {docType.required_for_functions && docType.required_for_functions.length > 0
                           ? `${docType.required_for_functions.length} function(s)`
                           : 'All'}
                       </TableCell>
@@ -433,14 +470,29 @@ export function DocumentTypesSection() {
                                   </div>
 
                                   <div className="space-y-2">
-                                    <Label htmlFor="edit-category">Category</Label>
-                                    <Input
-                                      id="edit-category"
-                                      value={formData.category}
-                                      onChange={(e) =>
-                                        setFormData({ ...formData, category: e.target.value })
+                                    <Label htmlFor="edit-doc-category">Document Category *</Label>
+                                    <Select
+                                      value={formData.category_id || 'none'}
+                                      onValueChange={(value) =>
+                                        setFormData({ ...formData, category_id: value === 'none' ? null : value })
                                       }
-                                    />
+                                    >
+                                      <SelectTrigger id="edit-doc-category">
+                                        <SelectValue placeholder="Select category (optional)" />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="none">None</SelectItem>
+                                        {categories.map((cat) => (
+                                          <SelectItem key={cat.id} value={cat.id}>
+                                            {cat.name}
+                                            {cat.requires_endorsements && ' (Supports Privileges)'}
+                                          </SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
+                                    <p className="text-xs text-muted-foreground">
+                                      Links this document type to a category. Subcategory will be selected by the user during upload.
+                                    </p>
                                   </div>
 
                                   <div className="space-y-2">

@@ -24,6 +24,21 @@ describe('/api/documents/user-alerts', () => {
   beforeEach(() => {
     jest.clearAllMocks()
     mockSupabase = createMockSupabaseClient()
+
+    // Add default RPC mock for privilege alerts
+    const rpcBuilder = {
+      single: jest.fn().mockResolvedValue({
+        data: {
+          total_alerts: 0,
+          expired_count: 0,
+          expiring_count: 0,
+          privilege_alerts: []
+        },
+        error: null
+      })
+    }
+    mockSupabase.rpc = jest.fn().mockReturnValue(rpcBuilder)
+
     ;(createClient as jest.Mock).mockResolvedValue(mockSupabase)
   })
 

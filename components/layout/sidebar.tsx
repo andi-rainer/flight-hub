@@ -88,6 +88,12 @@ const navItems: NavItem[] = [
     requiredPermission: 'billing.view.all',
   },
   {
+    titleKey: 'licenses',
+    href: '/licenses',
+    icon: FileText,
+    requiredPermission: 'documents.view.own',
+  },
+  {
     titleKey: 'documents',
     href: '/documents',
     icon: FileText,
@@ -138,7 +144,7 @@ function SidebarContent({ user, onNavigate, collapsed, onToggle }: { user: User;
     fetchUserAlerts()
   }, [isBoardMember, user.id])
 
-  // Real-time subscription for documents table changes
+  // Real-time subscription for documents and privileges table changes
   useEffect(() => {
     const supabase = createClient()
 
@@ -156,6 +162,19 @@ function SidebarContent({ user, onNavigate, collapsed, onToggle }: { user: User;
           console.log('Real-time document change detected:', payload)
           // Refetch badge counts when any document changes
           fetchPendingApprovals()
+          fetchUserAlerts()
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*', // Listen to INSERT, UPDATE, DELETE
+          schema: 'public',
+          table: 'document_privileges',
+        },
+        (payload) => {
+          console.log('Real-time privilege change detected:', payload)
+          // Refetch user alerts when privileges change
           fetchUserAlerts()
         }
       )
@@ -229,9 +248,9 @@ function SidebarContent({ user, onNavigate, collapsed, onToggle }: { user: User;
             if (item.href === '/members' && isBoardMember && pendingApprovalsCount > 0) {
               showBadge = true
               badgeContent = pendingApprovalsCount > 99 ? '99+' : pendingApprovalsCount
-            } else if (item.href === '/settings' && userAlertsCount > 0) {
+            } else if (item.href === '/licenses' && userAlertsCount > 0) {
               showBadge = true
-              // Just show a red dot for settings
+              // Show a red dot for user license alerts
               badgeContent = null
             } else if (item.badge) {
               showBadge = true

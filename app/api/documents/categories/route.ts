@@ -10,34 +10,41 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { data: documentDefinitions, error } = await supabase
-      .from('document_definitions')
+    const { data: categories, error } = await supabase
+      .from('document_categories')
       .select(`
         *,
-        function_categories (
+        document_subcategories (
           id,
-          name_en,
-          name_de
+          name,
+          code,
+          description,
+          sort_order,
+          active
         ),
-        definition_endorsements (
+        category_endorsements (
           endorsement_id,
           endorsements (
             id,
             code,
-            name
+            name,
+            name_de,
+            description,
+            active,
+            supports_ir
           )
         )
       `)
-      .order('name', { ascending: true })
+      .order('sort_order', { ascending: true })
 
     if (error) {
-      console.error('Error fetching document definitions:', error)
-      return NextResponse.json({ error: 'Failed to fetch document definitions' }, { status: 500 })
+      console.error('Error fetching document categories:', error)
+      return NextResponse.json({ error: 'Failed to fetch document categories' }, { status: 500 })
     }
 
-    return NextResponse.json({ documentDefinitions })
+    return NextResponse.json({ categories })
   } catch (error) {
-    console.error('Error in GET /api/documents/types:', error)
+    console.error('Error in GET /api/documents/categories:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
@@ -60,32 +67,31 @@ export async function POST(request: NextRequest) {
 
     const isBoardMember = userProfile?.role?.includes('board') || false
     if (!isBoardMember) {
-      return NextResponse.json({ error: 'Only board members can create document definitions' }, { status: 403 })
+      return NextResponse.json({ error: 'Only board members can create document categories' }, { status: 403 })
     }
 
     const body = await request.json()
 
-    const { data: documentDefinition, error } = await supabase
-      .from('document_definitions')
+    const { data: category, error } = await supabase
+      .from('document_categories')
       .insert({
         name: body.name,
         description: body.description || null,
-        category_id: body.category_id || null,
-        mandatory: body.mandatory || false,
-        expires: body.expires || false,
-        required_for_functions: body.required_for_functions || [],
+        icon: body.icon || null,
+        sort_order: body.sort_order || 0,
+        active: body.active !== undefined ? body.active : true,
       })
       .select()
       .single()
 
     if (error) {
-      console.error('Error creating document definition:', error)
-      return NextResponse.json({ error: 'Failed to create document definition' }, { status: 500 })
+      console.error('Error creating document category:', error)
+      return NextResponse.json({ error: 'Failed to create document category' }, { status: 500 })
     }
 
-    return NextResponse.json({ documentDefinition })
+    return NextResponse.json({ category })
   } catch (error) {
-    console.error('Error in POST /api/documents/types:', error)
+    console.error('Error in POST /api/documents/categories:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
@@ -108,40 +114,39 @@ export async function PUT(request: NextRequest) {
 
     const isBoardMember = userProfile?.role?.includes('board') || false
     if (!isBoardMember) {
-      return NextResponse.json({ error: 'Only board members can update document definitions' }, { status: 403 })
+      return NextResponse.json({ error: 'Only board members can update document categories' }, { status: 403 })
     }
 
     const { searchParams } = new URL(request.url)
     const id = searchParams.get('id')
 
     if (!id) {
-      return NextResponse.json({ error: 'Document type ID is required' }, { status: 400 })
+      return NextResponse.json({ error: 'Category ID is required' }, { status: 400 })
     }
 
     const body = await request.json()
 
-    const { data: documentDefinition, error} = await supabase
-      .from('document_definitions')
+    const { data: category, error } = await supabase
+      .from('document_categories')
       .update({
         name: body.name,
         description: body.description || null,
-        category_id: body.category_id || null,
-        mandatory: body.mandatory || false,
-        expires: body.expires || false,
-        required_for_functions: body.required_for_functions || [],
+        icon: body.icon || null,
+        sort_order: body.sort_order || 0,
+        active: body.active !== undefined ? body.active : true,
       })
       .eq('id', id)
       .select()
       .single()
 
     if (error) {
-      console.error('Error updating document definition:', error)
-      return NextResponse.json({ error: 'Failed to update document definition' }, { status: 500 })
+      console.error('Error updating document category:', error)
+      return NextResponse.json({ error: 'Failed to update document category' }, { status: 500 })
     }
 
-    return NextResponse.json({ documentDefinition })
+    return NextResponse.json({ category })
   } catch (error) {
-    console.error('Error in PUT /api/documents/types:', error)
+    console.error('Error in PUT /api/documents/categories:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
@@ -164,26 +169,26 @@ export async function DELETE(request: NextRequest) {
 
     const isBoardMember = userProfile?.role?.includes('board') || false
     if (!isBoardMember) {
-      return NextResponse.json({ error: 'Only board members can delete document definitions' }, { status: 403 })
+      return NextResponse.json({ error: 'Only board members can delete document categories' }, { status: 403 })
     }
 
     const { searchParams } = new URL(request.url)
     const id = searchParams.get('id')
 
     if (!id) {
-      return NextResponse.json({ error: 'Document definition ID is required' }, { status: 400 })
+      return NextResponse.json({ error: 'Category ID is required' }, { status: 400 })
     }
 
-    const { error } = await supabase.from('document_definitions').delete().eq('id', id)
+    const { error } = await supabase.from('document_categories').delete().eq('id', id)
 
     if (error) {
-      console.error('Error deleting document definition:', error)
-      return NextResponse.json({ error: 'Failed to delete document definition' }, { status: 500 })
+      console.error('Error deleting document category:', error)
+      return NextResponse.json({ error: 'Failed to delete document category' }, { status: 500 })
     }
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error('Error in DELETE /api/documents/types:', error)
+    console.error('Error in DELETE /api/documents/categories:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

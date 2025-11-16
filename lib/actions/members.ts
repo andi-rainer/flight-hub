@@ -381,7 +381,7 @@ export async function deleteMember(userId: string) {
 // DOCUMENT APPROVAL
 // ============================================================================
 
-export async function approveUserDocument(documentId: string) {
+export async function approveUserDocument(documentId: string, subcategoryId?: string | null) {
   const supabase = await createClient()
 
   // Check permission to approve documents
@@ -390,14 +390,21 @@ export async function approveUserDocument(documentId: string) {
     return { success: false, error: permError || 'Not authenticated' }
   }
 
-  // Update document approval status
+  // Update document approval status and optionally subcategory
+  const updateData: any = {
+    approved: true,
+    approved_by: user.id,
+    approved_at: new Date().toISOString(),
+  }
+
+  // If subcategory is provided, update it
+  if (subcategoryId !== undefined) {
+    updateData.subcategory_id = subcategoryId
+  }
+
   const { error } = await supabase
     .from('documents')
-    .update({
-      approved: true,
-      approved_by: user.id,
-      approved_at: new Date().toISOString(),
-    })
+    .update(updateData)
     .eq('id', documentId)
 
   if (error) {

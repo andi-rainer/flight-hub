@@ -82,6 +82,8 @@
     "settingsDescription": "Konto und Einstellungen verwalten",
     "documents": "Dokumente",
     "documentsDescription": "Flugdokumente hochladen und verwalten",
+    "licenses": "Lizenzen",
+    "licensesDescription": "Lizenzen und Zertifikate verwalten",
     "accounting": "Buchhaltung",
     "billing": "Abrechnung",
     "permissions": "Berechtigungen",
@@ -243,6 +245,10 @@
     "uploadDate": "Upload-Datum",
     "noDocuments": "Keine Dokumente"
   },
+  "licenses": {
+    "title": "Meine Lizenzen",
+    "description": "Verwalten Sie Ihre Lizenzen, Zertifikate und erforderlichen Dokumente"
+  },
   "roles": {
     "board": "Vorstand",
     "member": "Mitglied",
@@ -294,6 +300,7 @@
     "general": "Allgemein",
     "myDocuments": "Meine Dokumente",
     "documentTypes": "Dokumenttypen",
+    "documentCategories": "Dokumentkategorien",
     "membershipTypes": "Mitgliedschaftsarten",
     "tandemRegistration": "Tandem-Anmeldung",
     "airportFees": "Flughafengebühren",

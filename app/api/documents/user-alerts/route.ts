@@ -2,6 +2,22 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { addDays } from 'date-fns'
 
+// Type for get_user_privilege_alerts RPC function response
+interface PrivilegeAlertsResponse {
+  total_alerts: number
+  expired_count: number
+  expiring_count: number
+  privilege_alerts: Array<{
+    documentId: string
+    documentName: string
+    privilegeId: string
+    privilegeName: string
+    expiryDate: string
+    status: 'expired' | 'expiring_soon'
+    daysUntilExpiry: number
+  }>
+}
+
 /**
  * Get count of user's document alerts (expiring soon or missing required documents)
  */
@@ -26,44 +42,50 @@ export async function GET(request: NextRequest) {
 
     const isBoardMember = profile?.role?.includes('board') ?? false
 
-    // Get user's function IDs
-    const { data: userFunctionsData } = await supabase
+    // Get user's function codes for comparison with required_for_functions
+    const { data: userFunctionsWithCodes } = await supabase
       .from('user_functions')
-      .select('function_id')
+      .select('functions_master(code)')
       .eq('user_id', userId)
 
-    const userFunctionIds = userFunctionsData?.map(uf => uf.function_id) || []
+    const userFunctionCodes = userFunctionsWithCodes?.map((uf: any) => uf.functions_master?.code).filter(Boolean) || []
 
-    // Get all mandatory document types required for user's functions
-    const { data: requiredDocTypes } = await supabase
-      .from('document_types')
+    // Get all mandatory document definitions required for user's functions
+    const { data: requiredDocDefs } = await supabase
+      .from('document_definitions')
       .select('id, name, mandatory, required_for_functions')
 
-    const mandatoryForUser = requiredDocTypes?.filter(docType => {
-      if (!docType.mandatory) return false
-      if (!docType.required_for_functions || docType.required_for_functions.length === 0) return false
-      // required_for_functions stores function IDs (UUIDs)
-      return docType.required_for_functions.some((reqFuncId: string) =>
-        userFunctionIds.includes(reqFuncId)
-      )
+    const mandatoryForUser = requiredDocDefs?.filter(docDef => {
+      // Include if globally mandatory
+      if (docDef.mandatory) return true
+
+      // Include if required for any of the user's functions
+      if (docDef.required_for_functions && docDef.required_for_functions.length > 0) {
+        // required_for_functions stores function codes (strings)
+        return docDef.required_for_functions.some((reqFuncCode: string) =>
+          userFunctionCodes.includes(reqFuncCode)
+        )
+      }
+
+      return false
     }) || []
 
     // Get user's documents
     const { data: userDocuments } = await supabase
       .from('documents')
-      .select('document_type_id, expiry_date, approved')
+      .select('document_definition_id, expiry_date, approved')
       .eq('user_id', userId)
 
     let alertCount = 0
 
     // Check for missing documents
     // Count ALL uploaded documents (not just approved), matching the member list logic
-    const uploadedTypeIds = (userDocuments || [])
-      .map(doc => doc.document_type_id)
+    const uploadedDefIds = (userDocuments || [])
+      .map(doc => doc.document_definition_id)
       .filter(Boolean)
 
-    const missingDocuments = mandatoryForUser.filter(docType =>
-      !uploadedTypeIds.includes(docType.id)
+    const missingDocuments = mandatoryForUser.filter(docDef =>
+      !uploadedDefIds.includes(docDef.id)
     )
 
     alertCount += missingDocuments.length
@@ -89,11 +111,27 @@ export async function GET(request: NextRequest) {
 
     alertCount += expiredDocuments.length
 
-    // Check for unapproved documents (documents waiting for approval)
-    // Only count this for board members - regular users don't need to be alerted about pending approvals
-    const unapprovedDocuments = (userDocuments || []).filter(doc => !doc.approved)
-    const unapprovedCount = isBoardMember ? unapprovedDocuments.length : 0
-    alertCount += unapprovedCount
+    // Don't count unapproved documents for regular users - they don't need alerts for pending approvals
+    // Board members see pending approvals in a different badge on the Members page
+
+    // Get privilege alerts using database function
+    const { data: privilegeAlertsData, error: privilegeError } = await supabase
+      .rpc('get_user_privilege_alerts' as any, { p_user_id: userId })
+      .single()
+
+    if (privilegeError) {
+      console.error('Error fetching privilege alerts:', privilegeError)
+    }
+
+    const privilegeAlerts: PrivilegeAlertsResponse = (privilegeAlertsData as any) || {
+      total_alerts: 0,
+      expired_count: 0,
+      expiring_count: 0,
+      privilege_alerts: []
+    }
+
+    // Add privilege alerts to total count
+    alertCount += privilegeAlerts.total_alerts
 
     return NextResponse.json({
       count: alertCount,
@@ -101,8 +139,10 @@ export async function GET(request: NextRequest) {
         missing: missingDocuments.length,
         expiring: expiringDocuments.length,
         expired: expiredDocuments.length,
-        unapproved: unapprovedCount
-      }
+        privilegeExpired: privilegeAlerts.expired_count,
+        privilegeExpiring: privilegeAlerts.expiring_count
+      },
+      privilegeAlerts: privilegeAlerts.privilege_alerts
     })
   } catch (error) {
     console.error('Error in GET /api/documents/user-alerts:', error)

@@ -10,34 +10,34 @@ import type { ReservationInsert, ReservationUpdate } from '@/lib/database.types'
 async function hasValidDocuments(userId: string): Promise<{ valid: boolean; message?: string }> {
   const supabase = await createClient()
 
-  // Get user's function IDs
-  const { data: userFunctionsData, error: userError } = await supabase
+  // Get user's function codes for comparison with required_for_functions
+  const { data: userFunctionsWithCodes, error: userError } = await supabase
     .from('user_functions')
-    .select('function_id')
+    .select('functions_master(code)')
     .eq('user_id', userId)
 
   if (userError) {
     return { valid: false, message: 'Failed to check user functions' }
   }
 
-  const userFunctionIds = userFunctionsData?.map(uf => uf.function_id) || []
+  const userFunctionCodes = userFunctionsWithCodes?.map((uf: any) => uf.functions_master?.code).filter(Boolean) || []
 
-  // Get all document types that are mandatory and required for user's functions
-  const { data: requiredDocTypes, error: docTypesError } = await supabase
-    .from('document_types')
+  // Get all document definitions that are mandatory and required for user's functions
+  const { data: requiredDocDefs, error: docDefsError } = await supabase
+    .from('document_definitions')
     .select('id, name, mandatory, required_for_functions')
 
-  if (docTypesError) {
+  if (docDefsError) {
     return { valid: false, message: 'Failed to check required documents' }
   }
 
-  // Filter to get only mandatory document types required for user's functions
-  const mandatoryForUser = requiredDocTypes?.filter(docType => {
-    if (!docType.mandatory) return false
-    if (!docType.required_for_functions || docType.required_for_functions.length === 0) return false
-    // required_for_functions stores function IDs (UUIDs)
-    return docType.required_for_functions.some((reqFuncId: string) =>
-      userFunctionIds.includes(reqFuncId)
+  // Filter to get only mandatory document definitions required for user's functions
+  const mandatoryForUser = requiredDocDefs?.filter(docDef => {
+    if (!docDef.mandatory) return false
+    if (!docDef.required_for_functions || docDef.required_for_functions.length === 0) return false
+    // required_for_functions stores function codes (strings)
+    return docDef.required_for_functions.some((reqFuncCode: string) =>
+      userFunctionCodes.includes(reqFuncCode)
     )
   }) || []
 
@@ -49,7 +49,7 @@ async function hasValidDocuments(userId: string): Promise<{ valid: boolean; mess
   // Get user's approved, valid documents
   const { data: userDocuments, error: docsError } = await supabase
     .from('documents')
-    .select('document_type_id, expiry_date')
+    .select('document_definition_id, expiry_date')
     .eq('user_id', userId)
     .eq('approved', true)
 
@@ -64,11 +64,11 @@ async function hasValidDocuments(userId: string): Promise<{ valid: boolean; mess
     return new Date(doc.expiry_date) >= now
   })
 
-  const uploadedTypeIds = validDocuments.map(doc => doc.document_type_id).filter(Boolean)
+  const uploadedDefIds = validDocuments.map(doc => doc.document_definition_id).filter(Boolean)
 
-  // Check if all mandatory document types are uploaded and valid
-  const missingMandatory = mandatoryForUser.filter(docType =>
-    !uploadedTypeIds.includes(docType.id)
+  // Check if all mandatory document definitions are uploaded and valid
+  const missingMandatory = mandatoryForUser.filter(docDef =>
+    !uploadedDefIds.includes(docDef.id)
   )
 
   if (missingMandatory.length > 0) {

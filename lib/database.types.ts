@@ -763,6 +763,45 @@ export type Database = {
         }
         Relationships: []
       }
+      document_type_endorsements: {
+        Row: {
+          created_at: string
+          document_type_id: string
+          endorsement_id: string
+          id: string
+          is_required: boolean
+        }
+        Insert: {
+          created_at?: string
+          document_type_id: string
+          endorsement_id: string
+          id?: string
+          is_required?: boolean
+        }
+        Update: {
+          created_at?: string
+          document_type_id?: string
+          endorsement_id?: string
+          id?: string
+          is_required?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_type_endorsements_document_type_id_fkey"
+            columns: ["document_type_id"]
+            isOneToOne: false
+            referencedRelation: "document_types"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_type_endorsements_endorsement_id_fkey"
+            columns: ["endorsement_id"]
+            isOneToOne: false
+            referencedRelation: "endorsements"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       documents: {
         Row: {
           approved: boolean
@@ -776,6 +815,7 @@ export type Database = {
           id: string
           name: string
           plane_id: string | null
+          subcategory_id: string | null
           tags: string[] | null
           uploaded_at: string
           uploaded_by: string
@@ -793,6 +833,7 @@ export type Database = {
           id?: string
           name: string
           plane_id?: string | null
+          subcategory_id?: string | null
           tags?: string[] | null
           uploaded_at?: string
           uploaded_by: string
@@ -810,6 +851,7 @@ export type Database = {
           id?: string
           name?: string
           plane_id?: string | null
+          subcategory_id?: string | null
           tags?: string[] | null
           uploaded_at?: string
           uploaded_by?: string
@@ -929,6 +971,106 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      document_endorsement_privileges: {
+        Row: {
+          added_by: string
+          created_at: string
+          document_id: string
+          endorsement_id: string
+          expiry_date: string | null
+          has_ir: boolean
+          id: string
+          ir_expiry_date: string | null
+          notes: string | null
+          updated_at: string
+        }
+        Insert: {
+          added_by: string
+          created_at?: string
+          document_id: string
+          endorsement_id: string
+          expiry_date?: string | null
+          has_ir?: boolean
+          id?: string
+          ir_expiry_date?: string | null
+          notes?: string | null
+          updated_at?: string
+        }
+        Update: {
+          added_by?: string
+          created_at?: string
+          document_id?: string
+          endorsement_id?: string
+          expiry_date?: string | null
+          has_ir?: boolean
+          id?: string
+          ir_expiry_date?: string | null
+          notes?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_endorsement_privileges_added_by_fkey"
+            columns: ["added_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_endorsement_privileges_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_endorsement_privileges_endorsement_id_fkey"
+            columns: ["endorsement_id"]
+            isOneToOne: false
+            referencedRelation: "endorsements"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      endorsements: {
+        Row: {
+          active: boolean
+          code: string
+          created_at: string
+          description: string | null
+          id: string
+          is_predefined: boolean
+          name: string
+          name_de: string | null
+          supports_ir: boolean
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          code: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_predefined?: boolean
+          name: string
+          name_de?: string | null
+          supports_ir?: boolean
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          code?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_predefined?: boolean
+          name?: string
+          name_de?: string | null
+          supports_ir?: boolean
+          updated_at?: string
+        }
+        Relationships: []
       }
       flightlog: {
         Row: {
@@ -3566,3 +3708,19 @@ export const Constants = {
     },
   },
 } as const
+
+// Convenient type aliases for commonly used tables
+export type User = Tables<'users'>
+export type Plane = Tables<'planes'>
+export type DocumentType = Tables<'document_types'>
+export type FunctionMaster = Tables<'functions_master'>
+export type FunctionMasterInsert = TablesInsert<'functions_master'>
+export type FunctionMasterUpdate = TablesUpdate<'functions_master'>
+export type OperationTypeInsert = TablesInsert<'operation_types'>
+export type OperationTypeUpdate = TablesUpdate<'operation_types'>
+export type Endorsement = Tables<'endorsements'>
+export type DocumentEndorsementPrivilege = Tables<'document_endorsement_privileges'>
+export type DocumentTypeEndorsement = Tables<'document_type_endorsements'>
+
+// User with function codes (commonly used in RBAC)
+export type UserProfile = User & { function_codes?: string[] }

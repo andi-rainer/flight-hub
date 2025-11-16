@@ -1,10 +1,17 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import {
   Dialog,
   DialogContent,
@@ -19,13 +26,27 @@ import { approveUserDocument, unapproveUserDocument, deleteUserDocument } from '
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import type { Document, User } from '@/lib/database.types'
+import { EndorsementSelector, type EndorsementSelection } from '@/components/endorsement-selector'
 
 interface MemberDocumentsDialogProps {
   member: User
   documents: Document[]
 }
 
-function getDocumentExpiryStatus(expiryDate: string | null) {
+interface DocumentEndorsement {
+  id: string
+  endorsement_id: string
+  expiry_date: string | null
+  has_ir: boolean
+  ir_expiry_date: string | null
+  endorsement: {
+    code: string
+    name: string
+    supports_ir: boolean
+  }
+}
+
+function getExpiryStatus(expiryDate: string | null) {
   if (!expiryDate) return 'none'
 
   const now = new Date()
@@ -38,15 +59,118 @@ function getDocumentExpiryStatus(expiryDate: string | null) {
   return 'ok'
 }
 
+function getDocumentExpiryStatus(expiryDate: string | null) {
+  return getExpiryStatus(expiryDate)
+}
+
 export function MemberDocumentsDialog({ member, documents }: MemberDocumentsDialogProps) {
   const [open, setOpen] = useState(false)
   const [approvingDoc, setApprovingDoc] = useState<Document | null>(null)
   const [expiryDate, setExpiryDate] = useState('')
+  const [subcategoryId, setSubcategoryId] = useState<string | null>(null)
+  const [availableSubcategories, setAvailableSubcategories] = useState<any[]>([])
+  const [availableEndorsementIds, setAvailableEndorsementIds] = useState<string[]>([])
+  const [endorsementSelections, setEndorsementSelections] = useState<EndorsementSelection[]>([])
+  const [documentEndorsements, setDocumentEndorsements] = useState<Record<string, DocumentEndorsement[]>>({})
   const router = useRouter()
+
+  // Load endorsements for all documents when dialog opens
+  useEffect(() => {
+    if (open && documents.length > 0) {
+      loadAllDocumentEndorsements()
+    }
+  }, [open, documents])
+
+  // Load subcategories when approving document opens
+  useEffect(() => {
+    if (approvingDoc) {
+      loadDocumentTypeAndSubcategories(approvingDoc)
+    }
+  }, [approvingDoc])
+
+  const loadAllDocumentEndorsements = async () => {
+    const endorsementsMap: Record<string, DocumentEndorsement[]> = {}
+
+    await Promise.all(
+      documents.map(async (doc) => {
+        try {
+          const response = await fetch(`/api/documents/${doc.id}/endorsements`)
+          if (response.ok) {
+            const data = await response.json()
+            endorsementsMap[doc.id] = data.privileges || []
+          }
+        } catch (error) {
+          console.error(`Error loading endorsements for document ${doc.id}:`, error)
+        }
+      })
+    )
+
+    setDocumentEndorsements(endorsementsMap)
+  }
+
+  const loadDocumentTypeAndSubcategories = async (doc: Document) => {
+    if (!doc.document_definition_id) {
+      setAvailableSubcategories([])
+      setAvailableEndorsementIds([])
+      return
+    }
+
+    try {
+      // Get document definition with subcategories and endorsements
+      const defResponse = await fetch(`/api/documents/definitions`)
+      if (defResponse.ok) {
+        const data = await defResponse.json()
+        const docDef = data.definitions?.find((dd: any) => dd.id === doc.document_definition_id)
+
+        if (docDef) {
+          // Load subcategories if applicable
+          if (docDef.has_subcategories && docDef.document_subcategories) {
+            setAvailableSubcategories(docDef.document_subcategories)
+          } else {
+            setAvailableSubcategories([])
+          }
+
+          // Load available endorsements if applicable
+          if (docDef.has_endorsements && docDef.definition_endorsements) {
+            const endorsementIds = docDef.definition_endorsements
+              .map((de: any) => de.endorsement_id || de.endorsements?.id)
+              .filter(Boolean)
+            setAvailableEndorsementIds(endorsementIds)
+          } else {
+            setAvailableEndorsementIds([])
+          }
+        } else {
+          setAvailableSubcategories([])
+          setAvailableEndorsementIds([])
+        }
+      }
+
+      // Load existing endorsements for this document
+      if (doc.id) {
+        const endorsementsResponse = await fetch(`/api/documents/${doc.id}/endorsements`)
+        if (endorsementsResponse.ok) {
+          const endorsementsData = await endorsementsResponse.json()
+          const selections: EndorsementSelection[] = (endorsementsData.privileges || []).map((priv: any) => ({
+            endorsementId: priv.endorsement_id,
+            expiryDate: priv.expiry_date,
+            hasIR: priv.has_ir,
+            irExpiryDate: priv.ir_expiry_date,
+          }))
+          setEndorsementSelections(selections)
+        }
+      }
+    } catch (error) {
+      console.error('Error loading document data:', error)
+      setAvailableSubcategories([])
+      setAvailableEndorsementIds([])
+      setEndorsementSelections([])
+    }
+  }
 
   const handleApproveClick = (doc: Document) => {
     setApprovingDoc(doc)
     setExpiryDate(doc.expiry_date || '')
+    setSubcategoryId(doc.subcategory_id || null)
   }
 
   const handleApproveConfirm = async () => {
@@ -75,12 +199,36 @@ export function MemberDocumentsDialog({ member, documents }: MemberDocumentsDial
       }
     }
 
-    // Approve the document
-    const result = await approveUserDocument(approvingDoc.id)
+    // Update endorsements if applicable
+    if (availableEndorsementIds.length > 0) {
+      try {
+        const response = await fetch(`/api/documents/${approvingDoc.id}/endorsements`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            endorsements: endorsementSelections,
+          }),
+        })
+
+        if (!response.ok) {
+          toast.error('Failed to update endorsements')
+          return
+        }
+      } catch (error) {
+        toast.error('Failed to update endorsements')
+        console.error(error)
+        return
+      }
+    }
+
+    // Approve the document (and update subcategory if changed)
+    const result = await approveUserDocument(approvingDoc.id, subcategoryId)
     if (result.success) {
       toast.success('Document approved')
       setApprovingDoc(null)
       setExpiryDate('')
+      setSubcategoryId(null)
+      setEndorsementSelections([])
       // Trigger refresh for badges
       window.dispatchEvent(new Event('document-updated'))
       router.refresh()
@@ -138,6 +286,39 @@ export function MemberDocumentsDialog({ member, documents }: MemberDocumentsDial
     }
   }
 
+  const getCombinedStatus = (doc: Document): string => {
+    // Get document expiry status
+    const docStatus = getDocumentExpiryStatus(doc.expiry_date)
+
+    // Get endorsement expiry statuses
+    const endorsements = documentEndorsements[doc.id] || []
+    let worstEndorsementStatus = 'ok'
+
+    for (const endorsement of endorsements) {
+      // Check main endorsement expiry
+      const mainStatus = getExpiryStatus(endorsement.expiry_date)
+
+      // Check IR expiry if applicable
+      const irStatus = endorsement.has_ir ? getExpiryStatus(endorsement.ir_expiry_date) : 'ok'
+
+      // Get worst of the two
+      const endorsementWorst = ['expired', 'critical', 'warning', 'ok', 'none'].indexOf(mainStatus) <
+                               ['expired', 'critical', 'warning', 'ok', 'none'].indexOf(irStatus)
+                               ? mainStatus : irStatus
+
+      // Update overall worst
+      if (['expired', 'critical', 'warning', 'ok', 'none'].indexOf(endorsementWorst) <
+          ['expired', 'critical', 'warning', 'ok', 'none'].indexOf(worstEndorsementStatus)) {
+        worstEndorsementStatus = endorsementWorst
+      }
+    }
+
+    // Return worst of document and endorsements
+    return ['expired', 'critical', 'warning', 'ok', 'none'].indexOf(docStatus) <
+           ['expired', 'critical', 'warning', 'ok', 'none'].indexOf(worstEndorsementStatus)
+           ? docStatus : worstEndorsementStatus
+  }
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'expired':
@@ -173,6 +354,7 @@ export function MemberDocumentsDialog({ member, documents }: MemberDocumentsDial
           ) : (
             <div className="space-y-3">
               {documents.map((doc) => {
+                const combinedStatus = getCombinedStatus(doc)
                 const expiryStatus = getDocumentExpiryStatus(doc.expiry_date)
                 return (
                   <div
@@ -187,7 +369,7 @@ export function MemberDocumentsDialog({ member, documents }: MemberDocumentsDial
                             {doc.category}
                           </Badge>
                         )}
-                        {getStatusBadge(expiryStatus)}
+                        {getStatusBadge(combinedStatus)}
                       </div>
                       <div className="text-sm text-muted-foreground space-y-1">
                         <div>
@@ -216,6 +398,67 @@ export function MemberDocumentsDialog({ member, documents }: MemberDocumentsDial
                             {doc.approved ? 'Approved' : 'Pending'}
                           </Badge>
                         </div>
+
+                        {/* Display endorsements/ratings */}
+                        {documentEndorsements[doc.id] && documentEndorsements[doc.id].length > 0 && (
+                          <div className="mt-2 pt-2 border-t">
+                            <div className="text-xs font-semibold mb-1">Ratings/Endorsements:</div>
+                            <div className="space-y-1">
+                              {documentEndorsements[doc.id].map((endorsement) => {
+                                const mainStatus = getExpiryStatus(endorsement.expiry_date)
+                                const irStatus = endorsement.has_ir ? getExpiryStatus(endorsement.ir_expiry_date) : null
+                                const worstStatus = ['expired', 'critical', 'warning', 'ok', 'none'].indexOf(mainStatus) <
+                                                   ['expired', 'critical', 'warning', 'ok', 'none'].indexOf(irStatus || 'ok')
+                                                   ? mainStatus : (irStatus || mainStatus)
+
+                                return (
+                                  <div key={endorsement.id} className="flex items-start gap-2 text-xs">
+                                    <Badge variant="outline" className="text-xs">
+                                      {endorsement.endorsement.code}
+                                    </Badge>
+                                    <div className="flex-1">
+                                      {endorsement.expiry_date ? (
+                                        <div className={`flex items-center gap-1 ${
+                                          worstStatus === 'expired' ? 'text-red-600' :
+                                          worstStatus === 'critical' ? 'text-red-500' :
+                                          worstStatus === 'warning' ? 'text-orange-500' : ''
+                                        }`}>
+                                          {(worstStatus === 'expired' || worstStatus === 'critical' || worstStatus === 'warning') && (
+                                            <AlertTriangle className="h-3 w-3" />
+                                          )}
+                                          <span>
+                                            Expires: {new Date(endorsement.expiry_date).toLocaleDateString()}
+                                          </span>
+                                        </div>
+                                      ) : (
+                                        <span className="text-muted-foreground">No expiry</span>
+                                      )}
+                                      {endorsement.has_ir && (
+                                        <div className={`flex items-center gap-1 text-xs ${
+                                          irStatus === 'expired' ? 'text-red-600' :
+                                          irStatus === 'critical' ? 'text-red-500' :
+                                          irStatus === 'warning' ? 'text-orange-500' : 'text-blue-600'
+                                        }`}>
+                                          <span className="font-semibold">IR:</span>
+                                          {endorsement.ir_expiry_date ? (
+                                            <>
+                                              {(irStatus === 'expired' || irStatus === 'critical' || irStatus === 'warning') && (
+                                                <AlertTriangle className="h-3 w-3" />
+                                              )}
+                                              <span>{new Date(endorsement.ir_expiry_date).toLocaleDateString()}</span>
+                                            </>
+                                          ) : (
+                                            <span>No expiry</span>
+                                          )}
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                )
+                              })}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
                     <div className="flex items-center gap-1">
@@ -285,6 +528,45 @@ export function MemberDocumentsDialog({ member, documents }: MemberDocumentsDial
                 Leave empty if the document does not expire
               </p>
             </div>
+
+            {availableSubcategories.length > 0 && (
+              <div className="space-y-2">
+                <Label htmlFor="approve-subcategory">Subcategory (Optional)</Label>
+                <Select
+                  value={subcategoryId || 'none'}
+                  onValueChange={(value) => setSubcategoryId(value === 'none' ? null : value)}
+                >
+                  <SelectTrigger id="approve-subcategory">
+                    <SelectValue placeholder="Select subcategory" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">No subcategory</SelectItem>
+                    {availableSubcategories.map((sub: any) => (
+                      <SelectItem key={sub.id} value={sub.id}>
+                        {sub.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Change the subcategory if needed before approving
+                </p>
+              </div>
+            )}
+
+            {availableEndorsementIds.length > 0 && (
+              <div className="space-y-2">
+                <Label>Endorsements / Ratings</Label>
+                <EndorsementSelector
+                  value={endorsementSelections}
+                  onChange={setEndorsementSelections}
+                  availableEndorsementIds={availableEndorsementIds}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Add, remove, or update endorsements for this document. You can also adjust expiry dates and IR privileges.
+                </p>
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button
