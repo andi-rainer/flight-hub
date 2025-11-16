@@ -45,17 +45,22 @@ export async function PUT(
     }
 
     if (existing.is_predefined) {
-      // Can only update active status for predefined endorsements
-      if (typeof active !== 'boolean') {
+      // Can only update active status and supports_ir for predefined endorsements
+      const updateData: any = {}
+      if (typeof active === 'boolean') updateData.active = active
+      if (typeof supports_ir === 'boolean') updateData.supports_ir = supports_ir
+
+      // Must update at least one allowed field
+      if (Object.keys(updateData).length === 0) {
         return NextResponse.json(
-          { error: 'Cannot modify predefined endorsements (only active status can be toggled)' },
+          { error: 'Cannot modify predefined endorsements (only active status and IR capability can be changed)' },
           { status: 403 }
         )
       }
 
       const { data: endorsement, error } = await supabase
         .from('endorsements')
-        .update({ active })
+        .update(updateData)
         .eq('id', id)
         .select()
         .single()

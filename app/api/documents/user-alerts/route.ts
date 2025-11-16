@@ -2,19 +2,26 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { addDays } from 'date-fns'
 
-// Type for get_user_privilege_alerts RPC function response
-interface PrivilegeAlertsResponse {
+// Type for get_user_endorsement_alerts RPC function response
+interface EndorsementAlertsResponse {
   total_alerts: number
   expired_count: number
   expiring_count: number
-  privilege_alerts: Array<{
+  ir_expired_count: number
+  ir_expiring_count: number
+  endorsement_alerts: Array<{
     documentId: string
     documentName: string
-    privilegeId: string
-    privilegeName: string
+    endorsementId: string
+    endorsementName: string
+    endorsementCode: string
     expiryDate: string
     status: 'expired' | 'expiring_soon'
     daysUntilExpiry: number
+    hasIR: boolean
+    irExpiryDate: string | null
+    irStatus: 'expired' | 'expiring_soon' | 'valid'
+    irDaysUntilExpiry: number | null
   }>
 }
 
@@ -116,24 +123,26 @@ export async function GET(request: NextRequest) {
     // Don't count unapproved documents for regular users - they don't need alerts for pending approvals
     // Board members see pending approvals in a different badge on the Members page
 
-    // Get privilege alerts using database function
-    const { data: privilegeAlertsData, error: privilegeError } = await supabase
-      .rpc('get_user_privilege_alerts' as any, { p_user_id: userId })
+    // Get endorsement alerts using database function
+    const { data: endorsementAlertsData, error: endorsementError } = await supabase
+      .rpc('get_user_endorsement_alerts' as any, { p_user_id: userId })
       .single()
 
-    if (privilegeError) {
-      console.error('Error fetching privilege alerts:', privilegeError)
+    if (endorsementError) {
+      console.error('Error fetching endorsement alerts:', endorsementError)
     }
 
-    const privilegeAlerts: PrivilegeAlertsResponse = (privilegeAlertsData as any) || {
+    const endorsementAlerts = (endorsementAlertsData as any) || {
       total_alerts: 0,
       expired_count: 0,
       expiring_count: 0,
-      privilege_alerts: []
+      ir_expired_count: 0,
+      ir_expiring_count: 0,
+      endorsement_alerts: []
     }
 
-    // Add privilege alerts to total count
-    alertCount += privilegeAlerts.total_alerts
+    // Add endorsement alerts to total count
+    alertCount += endorsementAlerts.total_alerts
 
     return NextResponse.json({
       count: alertCount,
@@ -141,10 +150,12 @@ export async function GET(request: NextRequest) {
         missing: missingDocuments.length,
         expiring: expiringDocuments.length,
         expired: expiredDocuments.length,
-        privilegeExpired: privilegeAlerts.expired_count,
-        privilegeExpiring: privilegeAlerts.expiring_count
+        endorsementExpired: endorsementAlerts.expired_count,
+        endorsementExpiring: endorsementAlerts.expiring_count,
+        irExpired: endorsementAlerts.ir_expired_count,
+        irExpiring: endorsementAlerts.ir_expiring_count
       },
-      privilegeAlerts: privilegeAlerts.privilege_alerts
+      endorsementAlerts: endorsementAlerts.endorsement_alerts
     })
   } catch (error) {
     console.error('Error in GET /api/documents/user-alerts:', error)

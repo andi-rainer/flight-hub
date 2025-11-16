@@ -957,58 +957,79 @@ export function DocumentDefinitionsSection() {
 
       {/* Link Endorsement Dialog */}
       <Dialog open={isLinkEndorsementOpen} onOpenChange={setIsLinkEndorsementOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Link Endorsement to Document</DialogTitle>
+            <DialogTitle>Link Endorsements</DialogTitle>
             <DialogDescription>
-              Select an endorsement/rating that can apply to this document. Users will be able to select from these
-              when uploading.
+              Select endorsements that can apply to this document type
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             {availableEndorsements.length > 0 ? (
-              <div className="space-y-2">
-                {availableEndorsements
-                  .filter((endorsement) => {
+              <>
+                <div className="max-h-[400px] overflow-y-auto border rounded-md p-2 space-y-1">
+                  {availableEndorsements
+                    .filter((endorsement) => {
+                      const definition = definitions.find((d) => d.id === selectedDefinitionForEndorsement)
+                      if (!definition?.definition_endorsements) return true
+                      return !definition.definition_endorsements.some(
+                        (de) => de.endorsement_id === endorsement.id
+                      )
+                    })
+                    .map((endorsement) => (
+                      <button
+                        key={endorsement.id}
+                        type="button"
+                        className="w-full flex items-center justify-between p-3 rounded-md hover:bg-accent transition-colors text-left"
+                        onClick={() => {
+                          if (selectedDefinitionForEndorsement) {
+                            handleLinkEndorsement(selectedDefinitionForEndorsement, endorsement.id)
+                            setIsLinkEndorsementOpen(false)
+                            setSelectedDefinitionForEndorsement(null)
+                          }
+                        }}
+                      >
+                        <div className="flex-1 space-y-1">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-medium">{endorsement.name}</span>
+                            <Badge variant="outline" className="text-xs">{endorsement.code}</Badge>
+                            {endorsement.supports_ir && (
+                              <Badge variant="secondary" className="text-xs">IR Capable</Badge>
+                            )}
+                          </div>
+                          {endorsement.name_de && (
+                            <div className="text-xs text-muted-foreground">
+                              {endorsement.name_de}
+                            </div>
+                          )}
+                          {endorsement.description && (
+                            <div className="text-xs text-muted-foreground">
+                              {endorsement.description}
+                            </div>
+                          )}
+                        </div>
+                      </button>
+                    ))}
+                  {availableEndorsements.filter((endorsement) => {
                     const definition = definitions.find((d) => d.id === selectedDefinitionForEndorsement)
                     if (!definition?.definition_endorsements) return true
-                    return !definition.definition_endorsements.some(
-                      (de) => de.endorsement_id === endorsement.id
-                    )
-                  })
-                  .map((endorsement) => (
-                    <div
-                      key={endorsement.id}
-                      className="flex items-center justify-between p-3 border rounded-md hover:bg-accent cursor-pointer"
-                      onClick={() => {
-                        if (selectedDefinitionForEndorsement) {
-                          handleLinkEndorsement(selectedDefinitionForEndorsement, endorsement.id)
-                          setIsLinkEndorsementOpen(false)
-                          setSelectedDefinitionForEndorsement(null)
-                        }
-                      }}
-                    >
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium">{endorsement.name}</span>
-                        <Badge variant="outline">{endorsement.code}</Badge>
-                        {endorsement.supports_ir && <Badge variant="secondary">IR</Badge>}
-                      </div>
-                    </div>
-                  ))}
-                {availableEndorsements.filter((endorsement) => {
-                  const definition = definitions.find((d) => d.id === selectedDefinitionForEndorsement)
-                  if (!definition?.definition_endorsements) return true
-                  return !definition.definition_endorsements.some((de) => de.endorsement_id === endorsement.id)
-                }).length === 0 && (
-                  <p className="text-sm text-muted-foreground text-center py-4">
-                    All available endorsements are already linked to this document.
-                  </p>
-                )}
-              </div>
+                    return !definition.definition_endorsements.some((de) => de.endorsement_id === endorsement.id)
+                  }).length === 0 && (
+                    <p className="text-sm text-muted-foreground text-center py-8">
+                      All available endorsements are already linked
+                    </p>
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Click an endorsement to link it to this document type
+                </p>
+              </>
             ) : (
-              <p className="text-sm text-muted-foreground text-center py-4">
-                No endorsements available. Create endorsements in the Endorsements tab first.
-              </p>
+              <div className="text-center py-8 text-muted-foreground">
+                <Tag className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                <p className="text-sm">No endorsements available</p>
+                <p className="text-xs mt-1">Create endorsements in the Endorsements tab first</p>
+              </div>
             )}
           </div>
           <DialogFooter>
@@ -1020,7 +1041,7 @@ export function DocumentDefinitionsSection() {
                 setSelectedDefinitionForEndorsement(null)
               }}
             >
-              Cancel
+              Close
             </Button>
           </DialogFooter>
         </DialogContent>

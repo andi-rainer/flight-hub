@@ -508,14 +508,17 @@ export function MemberDocumentsDialog({ member, documents }: MemberDocumentsDial
 
       {/* Approval Dialog with Expiry Date */}
       <Dialog open={!!approvingDoc} onOpenChange={(open) => !open && setApprovingDoc(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Approve Document</DialogTitle>
-            <DialogDescription>
-              Review and approve {approvingDoc?.name}. You can set or update the expiry date before approving.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden p-0 gap-0">
+          <div className="flex flex-col max-h-[90vh]">
+            <div className="px-6 pt-6">
+              <DialogHeader>
+                <DialogTitle>Approve Document</DialogTitle>
+                <DialogDescription>
+                  Review and approve {approvingDoc?.name}. You can set or update the expiry date before approving.
+                </DialogDescription>
+              </DialogHeader>
+            </div>
+            <div className="space-y-4 px-6 py-4 overflow-y-auto flex-1">
             <div className="space-y-2">
               <Label htmlFor="approve-expiry">Expiry Date (Optional)</Label>
               <Input
@@ -567,20 +570,23 @@ export function MemberDocumentsDialog({ member, documents }: MemberDocumentsDial
                 </p>
               </div>
             )}
+            </div>
+            <div className="px-6 pb-6 border-t">
+              <DialogFooter className="mt-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setApprovingDoc(null)}
+                >
+                  Cancel
+                </Button>
+                <Button onClick={handleApproveConfirm}>
+                  <Check className="h-4 w-4 mr-2" />
+                  Approve Document
+                </Button>
+              </DialogFooter>
+            </div>
           </div>
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setApprovingDoc(null)}
-            >
-              Cancel
-            </Button>
-            <Button onClick={handleApproveConfirm}>
-              <Check className="h-4 w-4 mr-2" />
-              Approve Document
-            </Button>
-          </DialogFooter>
         </DialogContent>
       </Dialog>
     </Dialog>

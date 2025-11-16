@@ -425,15 +425,17 @@ export function PilotDocumentsSection({ userId, isBoardMember = false }: PilotDo
                 Upload Document
               </Button>
             </DialogTrigger>
-            <DialogContent>
-              <form onSubmit={handleUpload}>
-                <DialogHeader>
-                  <DialogTitle>Upload Document</DialogTitle>
-                  <DialogDescription>
-                    Select a document type and upload your file. Board members will review and approve it.
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4 py-4">
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden p-0 gap-0">
+              <form onSubmit={handleUpload} className="flex flex-col max-h-[90vh]">
+                <div className="px-6 pt-6">
+                  <DialogHeader>
+                    <DialogTitle>Upload Document</DialogTitle>
+                    <DialogDescription>
+                      Select a document type and upload your file. Board members will review and approve it.
+                    </DialogDescription>
+                  </DialogHeader>
+                </div>
+                <div className="space-y-4 px-6 py-4 overflow-y-auto flex-1">
                   <div className="space-y-2">
                     <Label htmlFor="document-type">Document Type *</Label>
                     <Select value={selectedDocumentType} onValueChange={setSelectedDocumentType}>
@@ -518,20 +520,22 @@ export function PilotDocumentsSection({ userId, isBoardMember = false }: PilotDo
                     </div>
                   )}
                 </div>
-                <DialogFooter>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setIsUploadOpen(false)}
-                    disabled={isUploading}
-                  >
-                    Cancel
-                  </Button>
-                  <Button type="submit" disabled={isUploading}>
-                    {isUploading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                    Upload
-                  </Button>
-                </DialogFooter>
+                <div className="px-6 pb-6 border-t">
+                  <DialogFooter className="mt-4">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setIsUploadOpen(false)}
+                      disabled={isUploading}
+                    >
+                      Cancel
+                    </Button>
+                    <Button type="submit" disabled={isUploading}>
+                      {isUploading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                      Upload
+                    </Button>
+                  </DialogFooter>
+                </div>
               </form>
             </DialogContent>
           </Dialog>
@@ -677,15 +681,17 @@ export function PilotDocumentsSection({ userId, isBoardMember = false }: PilotDo
 
       {/* Renew Document Dialog */}
       <Dialog open={!!renewingDoc} onOpenChange={(open) => !open && setRenewingDoc(null)}>
-        <DialogContent>
-          <form onSubmit={handleRenew}>
-            <DialogHeader>
-              <DialogTitle>Renew Document</DialogTitle>
-              <DialogDescription>
-                Upload a new version of {renewingDoc?.name}. The old document will be replaced.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden p-0 gap-0">
+          <form onSubmit={handleRenew} className="flex flex-col max-h-[90vh]">
+            <div className="px-6 pt-6">
+              <DialogHeader>
+                <DialogTitle>Renew Document</DialogTitle>
+                <DialogDescription>
+                  Upload a new version of {renewingDoc?.name}. The old document will be replaced.
+                </DialogDescription>
+              </DialogHeader>
+            </div>
+            <div className="space-y-4 px-6 py-4 overflow-y-auto flex-1">
               <div className="space-y-2">
                 <Label htmlFor="renew-file">New File *</Label>
                 <Input
@@ -725,20 +731,22 @@ export function PilotDocumentsSection({ userId, isBoardMember = false }: PilotDo
                 </div>
               )}
             </div>
-            <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setRenewingDoc(null)}
-                disabled={isUploading}
-              >
-                Cancel
-              </Button>
-              <Button type="submit" disabled={isUploading}>
-                {isUploading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                Renew Document
-              </Button>
-            </DialogFooter>
+            <div className="px-6 pb-6 border-t">
+              <DialogFooter className="mt-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setRenewingDoc(null)}
+                  disabled={isUploading}
+                >
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={isUploading}>
+                  {isUploading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                  Renew Document
+                </Button>
+              </DialogFooter>
+            </div>
           </form>
         </DialogContent>
       </Dialog>

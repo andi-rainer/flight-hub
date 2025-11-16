@@ -132,7 +132,14 @@ export function EndorsementsSection() {
   const handleUpdate = async () => {
     if (!selectedEndorsement) return
 
-    if (!formData.code || !formData.name) {
+    // For predefined endorsements, only update supports_ir
+    // For custom endorsements, update all fields
+    const updateData = selectedEndorsement.is_predefined
+      ? { supports_ir: formData.supports_ir }
+      : formData
+
+    // Validate required fields for custom endorsements
+    if (!selectedEndorsement.is_predefined && (!formData.code || !formData.name)) {
       toast.error('Code and name are required')
       return
     }
@@ -141,13 +148,17 @@ export function EndorsementsSection() {
       const response = await fetch(`/api/endorsements/${selectedEndorsement.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(updateData),
       })
 
       const data = await response.json()
 
       if (response.ok) {
-        toast.success('Endorsement updated successfully')
+        toast.success(
+          selectedEndorsement.is_predefined
+            ? 'IR capability updated successfully'
+            : 'Endorsement updated successfully'
+        )
         setEditDialogOpen(false)
         setSelectedEndorsement(null)
         resetForm()
@@ -355,6 +366,14 @@ export function EndorsementsSection() {
                       <Button
                         variant="ghost"
                         size="sm"
+                        onClick={() => openEditDialog(endorsement)}
+                        title="Edit IR capability"
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
                         onClick={() => handleToggleActive(endorsement)}
                       >
                         {endorsement.active ? (
@@ -467,66 +486,108 @@ export function EndorsementsSection() {
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Edit Endorsement</DialogTitle>
+            <DialogTitle>
+              {selectedEndorsement?.is_predefined ? 'Edit System Endorsement' : 'Edit Endorsement'}
+            </DialogTitle>
             <DialogDescription>
-              Modify the custom endorsement details
+              {selectedEndorsement?.is_predefined
+                ? 'Configure IR capability for this system endorsement'
+                : 'Modify the custom endorsement details'}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="edit-code">Code *</Label>
-              <Input
-                id="edit-code"
-                value={formData.code}
-                onChange={(e) =>
-                  setFormData({ ...formData, code: e.target.value.toUpperCase() })
-                }
-                placeholder="e.g., CUSTOM"
-                maxLength={20}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="edit-name">Name *</Label>
-              <Input
-                id="edit-name"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                placeholder="e.g., Custom Rating"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="edit-name-de">German Name</Label>
-              <Input
-                id="edit-name-de"
-                value={formData.name_de}
-                onChange={(e) => setFormData({ ...formData, name_de: e.target.value })}
-                placeholder="e.g., Benutzerdefinierte Berechtigung"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="edit-description">Description</Label>
-              <Textarea
-                id="edit-description"
-                value={formData.description}
-                onChange={(e) =>
-                  setFormData({ ...formData, description: e.target.value })
-                }
-                placeholder="Optional description"
-                rows={3}
-              />
-            </div>
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="edit-supports-ir"
-                checked={formData.supports_ir}
-                onCheckedChange={(checked) =>
-                  setFormData({ ...formData, supports_ir: !!checked })
-                }
-              />
-              <Label htmlFor="edit-supports-ir" className="text-sm font-normal cursor-pointer">
-                Can have IR (Instrument Rating) privileges
-              </Label>
-            </div>
+            {selectedEndorsement?.is_predefined ? (
+              // For predefined endorsements, only show IR toggle
+              <>
+                <div className="space-y-2">
+                  <Label>Endorsement</Label>
+                  <div className="flex items-center gap-2 p-2 bg-muted rounded-md">
+                    <Badge variant="secondary">{formData.code}</Badge>
+                    <span className="font-medium">{formData.name}</span>
+                  </div>
+                  {formData.name_de && (
+                    <div className="text-sm text-muted-foreground pl-2">
+                      {formData.name_de}
+                    </div>
+                  )}
+                </div>
+                <div className="flex items-center space-x-2 p-3 border rounded-lg">
+                  <Checkbox
+                    id="edit-supports-ir"
+                    checked={formData.supports_ir}
+                    onCheckedChange={(checked) =>
+                      setFormData({ ...formData, supports_ir: !!checked })
+                    }
+                  />
+                  <div className="flex-1">
+                    <Label htmlFor="edit-supports-ir" className="text-sm font-medium cursor-pointer">
+                      Can have IR (Instrument Rating) privileges
+                    </Label>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      When enabled, users can specify IR privileges for documents with this endorsement
+                    </p>
+                  </div>
+                </div>
+              </>
+            ) : (
+              // For custom endorsements, show all fields
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-code">Code *</Label>
+                  <Input
+                    id="edit-code"
+                    value={formData.code}
+                    onChange={(e) =>
+                      setFormData({ ...formData, code: e.target.value.toUpperCase() })
+                    }
+                    placeholder="e.g., CUSTOM"
+                    maxLength={20}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-name">Name *</Label>
+                  <Input
+                    id="edit-name"
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    placeholder="e.g., Custom Rating"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-name-de">German Name</Label>
+                  <Input
+                    id="edit-name-de"
+                    value={formData.name_de}
+                    onChange={(e) => setFormData({ ...formData, name_de: e.target.value })}
+                    placeholder="e.g., Benutzerdefinierte Berechtigung"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-description">Description</Label>
+                  <Textarea
+                    id="edit-description"
+                    value={formData.description}
+                    onChange={(e) =>
+                      setFormData({ ...formData, description: e.target.value })
+                    }
+                    placeholder="Optional description"
+                    rows={3}
+                  />
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="edit-supports-ir"
+                    checked={formData.supports_ir}
+                    onCheckedChange={(checked) =>
+                      setFormData({ ...formData, supports_ir: !!checked })
+                    }
+                  />
+                  <Label htmlFor="edit-supports-ir" className="text-sm font-normal cursor-pointer">
+                    Can have IR (Instrument Rating) privileges
+                  </Label>
+                </div>
+              </>
+            )}
           </div>
           <DialogFooter>
             <Button
