@@ -84,7 +84,7 @@ export function CostCentersAccountingTab() {
     setLoadingTransactions(true)
     const result = await getCostCenterTransactions(costCenterId)
     if (result.success && result.data) {
-      setTransactions(result.data)
+      setTransactions(result.data as any)
     } else {
       toast.error(result.error || 'Failed to load transactions')
     }

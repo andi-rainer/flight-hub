@@ -102,7 +102,7 @@ export default function ResetPasswordPage() {
     }
 
     verifyToken()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [])
 
 

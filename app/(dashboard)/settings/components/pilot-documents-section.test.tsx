@@ -1,7 +1,7 @@
 import React from 'react'
-import { render, screen, waitFor, within } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
+import { render, screen, waitFor } from '@testing-library/react'
 import { PilotDocumentsSection } from './pilot-documents-section'
+import { toast } from 'sonner'
 
 // Mock next/navigation
 const mockRefresh = jest.fn()
@@ -282,8 +282,6 @@ describe('PilotDocumentsSection', () => {
   })
 
   it('should handle fetch errors gracefully', async () => {
-    const { toast } = require('sonner')
-
     // Suppress expected console.error
     const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation()
 

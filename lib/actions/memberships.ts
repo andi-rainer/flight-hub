@@ -272,7 +272,7 @@ export async function assignMembership(data: {
 
   // Calculate end date based on duration
   const startDate = new Date(data.start_date)
-  let endDate = new Date(startDate)
+  const endDate = new Date(startDate)
 
   switch (membershipType.duration_unit) {
     case 'days':

@@ -26,7 +26,7 @@ export default async function DocumentsPage({
   const isBoardMember = userData?.role?.includes('board') || false
 
   // Fetch club documents (not associated with aircraft or users)
-  let query = supabase
+  const query = supabase
     .from('documents')
     .select(`
       *,

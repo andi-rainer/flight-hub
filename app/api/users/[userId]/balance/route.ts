@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server'
 
 export async function GET(
   request: Request,
-  { params }: { params: { userId: string } }
+  { params }: { params: Promise<{ userId: string }> }
 ) {
   const supabase = await createClient()
 
@@ -26,11 +26,13 @@ export async function GET(
     )
   }
 
+  const { userId } = await params
+
   // Get user balance
   const { data: userBalance, error } = await supabase
     .from('user_balances')
     .select('balance')
-    .eq('user_id', params.userId)
+    .eq('user_id', userId)
     .single()
 
   if (error) {

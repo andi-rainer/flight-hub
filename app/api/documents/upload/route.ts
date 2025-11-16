@@ -67,7 +67,7 @@ export async function POST(request: NextRequest) {
     const fileUrl = `documents/${fileName}`
 
     // Calculate expiry date if needed
-    let calculatedExpiryDate = expiryDate
+    const calculatedExpiryDate = expiryDate
 
     // Note: document_definitions table doesn't have expiry_type or default_validity_months
     // User must provide expiry_date if the definition has expires=true

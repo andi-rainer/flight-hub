@@ -15,7 +15,7 @@ function TableHead(props: { children: ReactNode }) {
   return null;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+ 
 export function BillingSection({ aircrafts }: BillingSectionProps) {
   return (
     <Card>

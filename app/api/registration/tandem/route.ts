@@ -143,7 +143,7 @@ export async function POST(request: Request) {
 
     // Calculate end date based on duration
     const startDate = new Date()
-    let endDate = new Date(startDate)
+    const endDate = new Date(startDate)
     switch (membershipType.duration_unit) {
       case 'days':
         endDate.setDate(endDate.getDate() + membershipType.duration_value)

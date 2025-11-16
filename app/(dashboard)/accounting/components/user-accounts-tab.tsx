@@ -89,7 +89,7 @@ export function UserAccountsTab() {
     setLoadingUsers(true)
     const result = await getUserBalances()
     if (result.success && result.data) {
-      setUsers(result.data)
+      setUsers(result.data as any)
     } else {
       toast.error(result.error || 'Failed to load users')
     }
@@ -141,13 +141,13 @@ export function UserAccountsTab() {
       if (result.success && result.data) {
         const user = result.data.find(u => u.user_id === userId)
         if (user) {
-          setSelectedUser(user)
+          setSelectedUser(user as any)
           loadTransactions(userId)
         }
       }
     } else if (selectedUser) {
       // Otherwise reload transactions for currently selected user
-      loadTransactions(selectedUser.user_id)
+      loadTransactions(selectedUser.user_id!)
     }
   }
 
