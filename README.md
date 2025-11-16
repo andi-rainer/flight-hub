@@ -2,6 +2,8 @@
 
 A production-grade web application for managing aircraft reservations, flight logs, and club member administration for small aviation and skydiving clubs.
 
+> 🚀 **New to FlightHub?** Start with [GETTING_STARTED.md](./GETTING_STARTED.md) for a complete overview of local development and automated deployments.
+
 ## Features
 
 - ✅ **Authentication** - Secure email/password login with Supabase Auth
@@ -27,10 +29,13 @@ A production-grade web application for managing aircraft reservations, flight lo
 
 ### Prerequisites
 - Node.js 18+ installed
-- Supabase account and project
+- Docker Desktop (for local development)
+- Supabase CLI (`brew install supabase/tap/supabase`)
 - Git
 
-### Installation
+### Local Development Setup (Recommended)
+
+For development, use a local Supabase instance for a clean, isolated testing environment:
 
 ```bash
 # Clone the repository
@@ -40,26 +45,68 @@ cd flight-hub
 # Install dependencies
 npm install
 
+# Run automated setup script
+./setup-local-supabase.sh
+```
+
+This will:
+- Start local Supabase (PostgreSQL, Auth, Storage, etc.)
+- Apply all migrations from `supabase/migrations/`
+- Configure `.env.local` with local credentials
+- Provide you with a clean database for testing
+
+**Manual Setup:**
+
+```bash
+# Start local Supabase
+npm run supabase:start
+
+# Copy local credentials to .env.local
+# (see output from supabase start)
+```
+
+See **[LOCAL_DEVELOPMENT.md](./LOCAL_DEVELOPMENT.md)** for complete documentation.
+
+### Cloud Setup (Production)
+
+For production deployment on Vercel:
+
+```bash
 # Setup environment variables
 cp .env.example .env.local
 ```
 
-Edit `.env.local` with your Supabase credentials:
+Edit `.env.local` with your Supabase cloud credentials:
 ```env
 NEXT_PUBLIC_SUPABASE_URL=your-supabase-url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 ```
 
-### Database Setup
+### Automated Deployments
 
-The database migrations are already in `/supabase/migrations/`. To apply them:
+Production deployments are handled by GitHub Actions:
 
 ```bash
-# Link to your Supabase project
-supabase link --project-ref your-project-ref
+# Push to main triggers automatic deployment
+git push origin main
 
-# Push migrations
-supabase db push
+# GitHub Actions will:
+# 1. Apply database migrations to production
+# 2. Deploy to Vercel
+# 3. Post deployment summary
+```
+
+See **[GITHUB_ACTIONS_SETUP.md](./GITHUB_ACTIONS_SETUP.md)** for configuration details.
+
+### Database Migrations
+
+```bash
+# Test migrations locally
+npm run supabase:reset
+
+# Deploy to production (via GitHub Actions)
+git push origin main
 ```
 
 ### Create First User

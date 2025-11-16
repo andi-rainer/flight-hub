@@ -4,8 +4,17 @@ This directory contains the complete database schema, migrations, and documentat
 
 ## Project Information
 
-- **Project Reference**: `bfzynfnowzkvhvleocny`
-- **Database**: PostgreSQL (via Supabase)
+### Environment Setup
+
+FlightHub uses a **three-tier environment system**:
+
+| Environment | Database | Purpose | Migrations |
+|------------|----------|---------|------------|
+| **Local** | Docker Supabase | Development & Testing | Applied via `supabase start` |
+| **Staging** | Cloud Supabase (staging project) | Team Testing & Preview | Applied via GitHub Actions (auto) |
+| **Production** | Cloud Supabase (`pememmvfgvsukpqxxwbm`) | Live Application | Applied via GitHub Actions (manual) |
+
+- **Database**: PostgreSQL 17 (via Supabase)
 - **Schema Version**: 2.0.0
 - **Last Updated**: November 2025
 
@@ -32,25 +41,42 @@ supabase/
 
 ## Quick Start
 
-### 1. Link Your Project (First Time Setup)
+### Local Development
 
 ```bash
-supabase link --project-ref bfzynfnowzkvhvleocny
+# Start local Supabase (applies all migrations automatically)
+npm run supabase:start
+
+# Or using Supabase CLI directly
+supabase start
+
+# Migrations are automatically applied from supabase/migrations/
+# No need to link to cloud for local development
 ```
 
-### 2. Push Migrations to Remote Database
+### Staging & Production Setup
+
+**Note:** Migrations are applied automatically via GitHub Actions. Manual migration push is not recommended.
+
+#### Initial Setup Only (One-Time)
 
 ```bash
+# For staging project (replace with your staging project ref)
+supabase link --project-ref [staging-project-ref]
+supabase db push
+
+# For production project
+supabase link --project-ref pememmvfgvsukpqxxwbm
 supabase db push
 ```
 
-### 3. Verify Schema
+#### After Initial Setup
 
-```bash
-supabase db diff --linked --schema public
-```
+Migrations are applied automatically:
+- **Staging**: On every push to `main` branch (via `.github/workflows/deploy-staging.yml`)
+- **Production**: On manual workflow trigger (via `.github/workflows/deploy-production.yml`)
 
-Should return: "No schema changes found" (if migrations applied successfully)
+**See**: [DUAL_ENVIRONMENT_SETUP.md](../DUAL_ENVIRONMENT_SETUP.md) for complete deployment workflow.
 
 ## Schema Overview
 
@@ -95,11 +121,78 @@ All tables have RLS enabled with comprehensive policies:
 
 ## Initial Setup Steps
 
-### 1. Create First User
+### Local Development Setup
 
-Sign up through your application. The trigger will automatically create an entry in `public.users`.
+#### 1. Start Local Supabase
 
-### 2. Promote to Board Member
+```bash
+npm run supabase:start
+# Automatically applies all migrations
+```
+
+#### 2. Create Test User
+
+Via Supabase Studio (http://127.0.0.1:54323):
+1. Go to **Authentication** → **Users** → **Add user**
+2. Enter email and password
+3. Auto-confirm email: YES
+
+Via SQL:
+```sql
+-- Create test admin user
+INSERT INTO auth.users (
+  email,
+  encrypted_password,
+  email_confirmed_at,
+  raw_user_meta_data
+)
+VALUES (
+  'admin@test.local',
+  crypt('password123', gen_salt('bf')),
+  now(),
+  '{"name": "Admin", "surname": "User"}'::jsonb
+);
+
+-- Update users table with board role
+INSERT INTO public.users (id, email, name, surname, role)
+SELECT
+  id,
+  email,
+  raw_user_meta_data->>'name',
+  raw_user_meta_data->>'surname',
+  ARRAY['board']::text[]
+FROM auth.users
+WHERE email = 'admin@test.local'
+ON CONFLICT (id) DO UPDATE
+SET role = ARRAY['board']::text[];
+```
+
+**See**: [../QUICK_START_LOCAL.md](../QUICK_START_LOCAL.md) for detailed local setup.
+
+### Staging & Production Setup
+
+#### 1. Create Supabase Projects
+
+Create two separate Supabase projects:
+- **Staging**: For team testing
+- **Production**: For live application (may already exist: `pememmvfgvsukpqxxwbm`)
+
+#### 2. Initialize Databases
+
+```bash
+# Link and push migrations to each project
+supabase link --project-ref [staging-ref]
+supabase db push
+
+supabase link --project-ref pememmvfgvsukpqxxwbm
+supabase db push
+```
+
+#### 3. Create First User in Each Environment
+
+Sign up through your application or use Supabase Dashboard → Authentication → Users.
+
+#### 4. Promote to Board Member
 
 ```sql
 UPDATE public.users
@@ -107,28 +200,23 @@ SET role = array_append(role, 'board')
 WHERE email = 'admin@example.com';
 ```
 
-### 3. Configure Storage (Optional)
+#### 5. Configure Storage
 
-Create storage buckets for:
+Storage buckets are created automatically via migration `20250202100007_storage_buckets.sql`.
+
+Buckets created:
 - `documents` - For aircraft/user documents
 - `flight-logs` - For mass & balance PDFs
+- `user-documents` - For user-uploaded documents
 
-Set appropriate storage policies based on document RLS.
-
-### 4. Configure Auth Providers
+#### 6. Configure Auth Providers
 
 In Supabase Dashboard > Authentication > Providers:
 - Enable Email provider
-- Configure OAuth providers (Google, GitHub, etc.) as needed
-- Set redirect URLs
+- Configure OAuth providers (optional)
+- Set redirect URLs for each environment
 
-### 5. Add Sample Data (Development Only)
-
-The sample data migration includes:
-- 9 club functions
-- 4 sample aircraft
-
-Additional test data requires authenticated users.
+**See**: [../.github/DUAL_ENVIRONMENT_CHECKLIST.md](../.github/DUAL_ENVIRONMENT_CHECKLIST.md) for complete setup.
 
 ## Common Operations
 
@@ -226,21 +314,82 @@ supabase migration new migration_name
 # Edit the generated file in supabase/migrations/
 ```
 
-### Applying Migrations
+### Testing Migrations Locally
 
 ```bash
-# Push to remote database
-supabase db push
+# Reset local database (drops all data and re-applies all migrations)
+npm run supabase:reset
 
-# Apply to local development database
+# Or using Supabase CLI directly
 supabase db reset
+
+# Test your app with the fresh migration
+npm run dev
 ```
+
+**Important**: Always test migrations locally with `supabase reset` multiple times before deploying to staging/production.
+
+### Applying Migrations to Cloud
+
+**Automated (Recommended)**:
+- **Staging**: Migrations applied automatically when you push to `main` branch
+- **Production**: Migrations applied when you manually trigger production deployment
+
+**Manual (Initial Setup Only)**:
+```bash
+# For initial setup or emergency fixes only
+supabase link --project-ref [project-ref]
+supabase db push
+```
+
+### Deployment Workflow
+
+```
+1. Create migration locally
+   ↓
+2. Test with: npm run supabase:reset (multiple times)
+   ↓
+3. Commit and push to main
+   ↓
+4. GitHub Actions applies to staging automatically
+   ↓
+5. Test in staging environment
+   ↓
+6. Manually trigger production deployment
+   ↓
+7. GitHub Actions applies to production
+```
+
+**See**: [../DUAL_ENVIRONMENT_SETUP.md](../DUAL_ENVIRONMENT_SETUP.md) for complete workflow.
 
 ### Rolling Back
 
 Supabase doesn't support automatic rollbacks. To revert:
-1. Create a new migration that reverses the changes
-2. Apply the new migration
+
+1. **Create a rollback migration**:
+```bash
+supabase migration new rollback_feature_name
+```
+
+2. **Add SQL to reverse the changes**:
+```sql
+-- Example: Rollback added column
+ALTER TABLE users DROP COLUMN IF EXISTS new_column;
+```
+
+3. **Test locally**:
+```bash
+npm run supabase:reset
+```
+
+4. **Deploy via normal workflow**:
+```bash
+git add .
+git commit -m "fix: rollback broken migration"
+git push origin main  # Deploys to staging
+
+# Then manually deploy to production
+```
 
 ## Performance Considerations
 
@@ -342,19 +491,42 @@ SELECT * FROM user_balances WHERE balance < 0;
 - [PostgREST API Reference](https://postgrest.org/en/stable/api.html)
 - [Row Level Security Guide](https://supabase.com/docs/guides/auth/row-level-security)
 
+## Deployment Environments
+
+### Local Development
+- **Database**: Docker Supabase (isolated, resettable)
+- **Purpose**: Development and testing
+- **Migrations**: Applied automatically via `supabase start`
+- **URL**: http://127.0.0.1:54321
+- **Studio**: http://127.0.0.1:54323
+
+### Staging
+- **Database**: Cloud Supabase (staging project)
+- **Purpose**: Team testing before production
+- **Migrations**: Applied automatically via GitHub Actions on push to `main`
+- **Deployment**: Automatic
+
+### Production
+- **Database**: Cloud Supabase (`pememmvfgvsukpqxxwbm`)
+- **Purpose**: Live application
+- **Migrations**: Applied via GitHub Actions on manual trigger
+- **Deployment**: Manual (requires confirmation)
+
 ## Version History
 
 ### v2.0.0 (November 2025)
-- Granular RBAC system with function-based permissions
-- user_functions junction table for many-to-many relationships
-- function_categories for organizing functions
-- Billing and accounting system (cost_centers, enhanced accounts)
-- Maintenance tracking system for aircraft
-- Membership types and management
-- Airport fees system
-- Storage bucket setup automation
-- Realtime subscriptions configuration
-- 19+ migration files with comprehensive features
+- **Deployment**: Three-tier environment system (Local → Staging → Production)
+- **Automation**: GitHub Actions for staging and production deployments
+- **RBAC**: Granular function-based permission system
+- **Database**: user_functions junction table, function_categories
+- **Billing**: Cost centers, enhanced accounting system
+- **Maintenance**: Aircraft maintenance tracking
+- **Memberships**: Membership types and management system
+- **Airport Fees**: Dynamic airport fee system
+- **Storage**: Automated bucket setup via migrations
+- **Realtime**: Configured subscriptions for live updates
+- **Endorsements**: Document endorsement/rating system with IR tracking
+- **Migrations**: 30+ migration files with comprehensive features
 
 ### v1.0.0 (February 2025)
 - Initial schema with core 8 tables
@@ -362,3 +534,11 @@ SELECT * FROM user_balances WHERE balance < 0;
 - Helper functions and views
 - Sample data for testing
 - Comprehensive documentation
+
+## Related Documentation
+
+- [DUAL_ENVIRONMENT_SETUP.md](../DUAL_ENVIRONMENT_SETUP.md) - Complete staging/production setup guide
+- [QUICK_START_LOCAL.md](../QUICK_START_LOCAL.md) - Quick local development reference
+- [.github/DUAL_ENVIRONMENT_CHECKLIST.md](../.github/DUAL_ENVIRONMENT_CHECKLIST.md) - Setup checklist
+- [SCHEMA_DOCUMENTATION.md](./SCHEMA_DOCUMENTATION.md) - Detailed schema documentation
+- [QUICK_REFERENCE.md](./QUICK_REFERENCE.md) - Common SQL queries
