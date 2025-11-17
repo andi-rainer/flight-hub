@@ -91,7 +91,8 @@ export async function inviteUser(data: {
   }
 
   // Send invitation email with explicit redirect URL
-  const redirectTo = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+  const redirectTo = (process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000').replace(/\/$/, '')
+  console.log('[Invite User] Using redirect URL:', `${redirectTo}/auth/callback`)
   const { error: inviteError } = await adminClient.auth.admin.inviteUserByEmail(
     data.email,
     { redirectTo: `${redirectTo}/auth/callback` }
@@ -219,7 +220,8 @@ export async function resendInvitation(userId: string) {
   }
 
   // User is not confirmed, send regular invitation with explicit redirect URL
-  const redirectTo = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+  const redirectTo = (process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000').replace(/\/$/, '')
+  console.log('[Resend Invite] Using redirect URL:', `${redirectTo}/auth/callback`)
   const { error: inviteError } = await adminClient.auth.admin.inviteUserByEmail(
     targetUser.email,
     { redirectTo: `${redirectTo}/auth/callback` }
