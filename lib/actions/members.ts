@@ -3,7 +3,7 @@
 import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { requirePermission } from '@/lib/permissions'
-import type { UserUpdate } from '@/lib/database.types'
+import type { TablesUpdate } from '@/lib/database.types'
 import { assignMembership } from './memberships'
 
 /**
@@ -16,7 +16,7 @@ import { assignMembership } from './memberships'
 // USER MANAGEMENT
 // ============================================================================
 
-export async function updateMember(userId: string, data: UserUpdate) {
+export async function updateMember(userId: string, data: TablesUpdate<'users'>) {
   const supabase = await createClient()
 
   // Check permission to edit members
@@ -61,7 +61,7 @@ export async function inviteUser(data: {
     return { success: false, error: permError || 'Not authenticated' }
   }
 
-  // Check if user already exists
+  // Check if the user already exists
   const { data: existingUser } = await supabase
     .from('users')
     .select('id')
@@ -72,10 +72,10 @@ export async function inviteUser(data: {
     return { success: false, error: 'A user with this email already exists' }
   }
 
-  // Create user via Supabase Auth using admin client
+  // Create the user via Supabase Auth using the admin client
   const adminClient = createAdminClient()
 
-  // Create user without confirming email
+  // Create the user without confirming email
   const { data: authData, error: authError } = await adminClient.auth.admin.createUser({
     email: data.email,
     email_confirm: false, // Don't auto-confirm - user needs to set password via email
@@ -90,8 +90,12 @@ export async function inviteUser(data: {
     return { success: false, error: authError.message }
   }
 
-  // Send invitation email
-  const { error: inviteError } = await adminClient.auth.admin.inviteUserByEmail(data.email)
+  // Send invitation email with explicit redirect URL
+  const redirectTo = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+  const { error: inviteError } = await adminClient.auth.admin.inviteUserByEmail(
+    data.email,
+    { redirectTo: `${redirectTo}/auth/callback` }
+  )
 
   if (inviteError) {
     console.error('Error sending invitation email:', inviteError)
@@ -214,9 +218,11 @@ export async function resendInvitation(userId: string) {
     }
   }
 
-  // User is not confirmed, send regular invitation
+  // User is not confirmed, send regular invitation with explicit redirect URL
+  const redirectTo = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
   const { error: inviteError } = await adminClient.auth.admin.inviteUserByEmail(
-    targetUser.email
+    targetUser.email,
+    { redirectTo: `${redirectTo}/auth/callback` }
   )
 
   if (inviteError) {

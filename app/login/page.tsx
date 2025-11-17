@@ -337,7 +337,7 @@ export default function LoginPage() {
                   />
                 </div>
               </CardContent>
-              <CardFooter className="flex flex-col space-y-4">
+              <CardFooter className="flex flex-col pt-5">
                 <Button
                   type="submit"
                   className="w-full"
@@ -346,7 +346,7 @@ export default function LoginPage() {
                   {isLoading ? 'Signing in...' : 'Sign In'}
                 </Button>
 
-                <div className="text-sm text-center text-muted-foreground">
+                <div className="text-sm text-center text-muted-foreground pt-3">
                   <Link
                     href="/forgot-password"
                     className="hover:text-primary underline underline-offset-4"

@@ -3724,3 +3724,20 @@ export type DocumentTypeEndorsement = Tables<'document_type_endorsements'>
 
 // User with function codes (commonly used in RBAC)
 export type UserProfile = User & { function_codes?: string[] }
+
+// Additional type aliases
+export type MembershipType = Tables<'membership_types'>
+export type UserMembership = Tables<'user_memberships'>
+export type Document = Tables<'documents'>
+export type FunctionWithStats = {
+  id: string
+  code: string
+  name: string
+  name_de: string | null
+  category_id: string | null
+  is_system: boolean
+  active: boolean
+  yearly_fee: number | null
+  user_count: number
+  sort_order: number | null
+}
