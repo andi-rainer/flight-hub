@@ -3,7 +3,14 @@
 ## Overview
 Complete Supabase database schema for FlightHub aviation club management application.
 
-**Project Reference:** bfzynfnowzkvhvleocny
+**Project Reference:** <TO BE DEFINED>
+**Last Updated:** November 17, 2025
+
+## Database Statistics
+- **Tables:** 16 core tables with RLS
+- **Views:** 5 views (4 materialized, 1 regular)
+- **Functions:** 5 PostgreSQL helper functions
+- **Indexes:** 45+ strategic indexes for performance
 
 ## Schema Design Principles
 
@@ -12,6 +19,7 @@ Complete Supabase database schema for FlightHub aviation club management applica
 3. **Performance**: Strategic indexes on frequently queried fields
 4. **Auditability**: Created/updated timestamps on all relevant tables
 5. **Flexibility**: JSONB fields for complex data, arrays for multi-value attributes
+6. **Hybrid RBAC**: Combines role-based (board/member) with function-based permissions
 
 ## Database Tables
 
@@ -24,7 +32,10 @@ Extends `auth.users` with aviation club specific profile information.
 - `name`, `surname` (TEXT) - User name
 - `role` (TEXT[]) - User roles: 'member', 'board'
 - `license_number` (TEXT) - Pilot license number
-- `functions` (TEXT[]) - Assigned club functions from functions_master
+- `functions` (TEXT[]) - **DEPRECATED** - Use user_functions junction table instead
+- `emergency_contact_name`, `emergency_contact_phone` (TEXT) - Emergency contact info
+- `phone` (TEXT) - User phone number
+- `preferred_language` (TEXT) - User's language preference ('en' or 'de')
 
 **RLS Policies:**
 - All authenticated users can read all user profiles
@@ -40,26 +51,86 @@ Extends `auth.users` with aviation club specific profile information.
 ---
 
 ### 2. functions_master
-Master list of club functions/roles with associated yearly fees.
+Master list of club functions/roles with associated yearly fees. Supports both system functions (hardcoded) and custom functions (board-defined).
 
 **Key Fields:**
 - `id` (UUID) - Primary key
-- `name` (TEXT, UNIQUE) - Function name
-- `yearly_rate` (NUMERIC) - Annual fee for this function
+- `code` (TEXT, UNIQUE) - Unique function code (e.g., 'PILOT', 'FLIGHT_INSTRUCTOR')
+- `name` (TEXT) - English name
+- `name_de` (TEXT) - German name
+- `category_id` (UUID, FK to function_categories) - Function category
+- `is_system` (BOOLEAN) - TRUE for system functions (cannot be deleted)
+- `active` (BOOLEAN) - Whether function is active/available
+- `yearly_fee` (NUMERIC) - Annual fee for this function
 - `description` (TEXT) - Function description
 
 **RLS Policies:**
 - All authenticated users can read
 - Only board members can insert/update/delete
 
-**Sample Data:**
-- President, Vice President, Treasurer, Secretary
-- Safety Officer, Maintenance Coordinator
-- Flight Instructor, Aircraft Manager, Events Coordinator
+**System Functions:**
+- Aviation: PILOT, FLIGHT_INSTRUCTOR, CHIEF_PILOT
+- Skydiving: TANDEM_MASTER, SKYDIVE_INSTRUCTOR, SPORT_JUMPER
+- Operations: MANIFEST_COORDINATOR
+- Administration: TREASURER, CHAIRMAN, SECRETARY
+
+**Indexes:**
+- `idx_functions_master_code` - UNIQUE index on code
+- `idx_functions_master_category` - Category lookup
+- `idx_functions_master_active` - Filter active functions
 
 ---
 
-### 3. planes
+### 3. function_categories
+Organizes functions into logical categories.
+
+**Key Fields:**
+- `id` (UUID) - Primary key
+- `code` (TEXT, UNIQUE) - Category code (e.g., 'AVIATION', 'SKYDIVING')
+- `name_en` (TEXT) - English category name
+- `name_de` (TEXT) - German category name
+- `sort_order` (INT) - Display order
+
+**RLS Policies:**
+- All authenticated users can read
+- Only board members can create/modify categories
+
+**Default Categories:**
+- AVIATION - Aviation-related functions
+- SKYDIVING - Skydiving-related functions
+- OPERATIONS - Operational functions
+- ADMINISTRATION - Administrative functions
+- CUSTOM - Custom club-specific functions
+
+---
+
+### 4. user_functions
+Junction table for many-to-many relationship between users and functions.
+
+**Key Fields:**
+- `id` (UUID) - Primary key
+- `user_id` (UUID, FK to users) - User reference
+- `function_id` (UUID, FK to functions_master) - Function reference
+- `assigned_at` (TIMESTAMPTZ) - When function was assigned
+- `assigned_by` (UUID, FK to users) - Who assigned the function
+- `valid_from` (DATE) - Function validity start date
+- `valid_until` (DATE, nullable) - Function validity end date
+
+**RLS Policies:**
+- All authenticated users can read
+- Only board members can assign/unassign functions
+
+**Indexes:**
+- `idx_user_functions_user_id` - User lookup
+- `idx_user_functions_function_id` - Function lookup
+- `idx_user_functions_unique` - UNIQUE constraint on (user_id, function_id)
+
+**Check Constraints:**
+- `valid_until` must be after `valid_from` if provided
+
+---
+
+### 5. planes
 Aircraft fleet information and specifications.
 
 **Key Fields:**
@@ -87,7 +158,7 @@ Aircraft fleet information and specifications.
 
 ---
 
-### 4. reservations
+### 6. reservations
 Flight reservations/bookings for aircraft.
 
 **Key Fields:**
@@ -120,7 +191,7 @@ Flight reservations/bookings for aircraft.
 
 ---
 
-### 5. flightlog
+### 7. flightlog
 Flight log entries tracking actual flights.
 
 **Key Fields:**
@@ -167,7 +238,7 @@ Flight log entries tracking actual flights.
 
 ---
 
-### 6. documents
+### 8. documents
 Document management for users, aircraft, and general club documents.
 
 **Key Fields:**
@@ -209,7 +280,151 @@ Document management for users, aircraft, and general club documents.
 
 ---
 
-### 7. accounts
+### 9. endorsements
+Aviation endorsements/ratings (SEP, MEP, IR, FI, etc.) with IR (Instrument Rating) support.
+
+**Key Fields:**
+- `id` (UUID) - Primary key
+- `code` (TEXT, UNIQUE) - Endorsement code (e.g., 'SEP', 'MEP', 'IR')
+- `name` (TEXT) - English name
+- `name_de` (TEXT) - German name
+- `supports_ir` (BOOLEAN) - Whether this endorsement can have separate IR expiry
+- `is_system` (BOOLEAN) - TRUE for predefined endorsements (cannot be deleted)
+- `active` (BOOLEAN) - Whether endorsement is active/available
+- `description` (TEXT) - Endorsement description
+
+**RLS Policies:**
+- All authenticated users can read
+- Only board members can create/modify endorsements
+
+**Predefined Endorsements:**
+- SEP (Single-Engine Piston) - supports_ir: TRUE
+- MEP (Multi-Engine Piston) - supports_ir: TRUE
+- SET (Single-Engine Turbine) - supports_ir: TRUE
+- TMG (Touring Motor Glider) - supports_ir: FALSE
+- IR (Instrument Rating) - supports_ir: FALSE
+- FI (Flight Instructor) - supports_ir: FALSE
+- And more (CRI, IRI, TRI, SFI, FE, TRE, CRE, IRE, NIGHT, AEROBATIC, AFF_I, TANDEM_I, COACH, VIDEOGRAPHER)
+
+**Indexes:**
+- `idx_endorsements_code` - UNIQUE index on code
+- `idx_endorsements_active` - Filter active endorsements
+
+---
+
+### 10. document_type_endorsements
+Links document types to required endorsements.
+
+**Key Fields:**
+- `id` (UUID) - Primary key
+- `document_type_id` (UUID, FK to document_types) - Document type reference
+- `endorsement_id` (UUID, FK to endorsements) - Endorsement reference
+
+**RLS Policies:**
+- All authenticated users can read
+- Only board members can create/modify mappings
+
+**Purpose:** Determines which endorsements are required for which document types.
+
+---
+
+### 11. document_endorsement_privileges
+Tracks which endorsements users have on their documents, with separate IR expiry tracking.
+
+**Key Fields:**
+- `id` (UUID) - Primary key
+- `document_id` (UUID, FK to documents) - Document reference
+- `endorsement_id` (UUID, FK to endorsements) - Endorsement reference
+- `endorsement_expiry` (DATE) - Main endorsement expiry date
+- `ir_expiry` (DATE, nullable) - Separate IR expiry date (if endorsement supports_ir)
+
+**RLS Policies:**
+- Follows document visibility rules
+- Only board members can create/modify endorsement privileges
+
+**RPC Function:** `get_user_endorsement_alerts(user_uuid)` - Returns expiring endorsements with IR tracking
+
+**Indexes:**
+- `idx_document_endorsement_privileges_document` - Document lookup
+- `idx_document_endorsement_privileges_endorsement` - Endorsement lookup
+- `idx_document_endorsement_privileges_expiry` - Expiry date queries
+
+---
+
+### 12. membership_types
+Different membership categories (Short-term, Regular, etc.).
+
+**Key Fields:**
+- `id` (UUID) - Primary key
+- `code` (TEXT, UNIQUE) - Membership type code
+- `name` (TEXT) - English name
+- `name_de` (TEXT) - German name
+- `description` (TEXT) - Description
+- `monthly_fee` (NUMERIC) - Monthly membership fee
+- `active` (BOOLEAN) - Whether type is available for new memberships
+
+**RLS Policies:**
+- All authenticated users can read
+- Only board members can create/modify membership types
+
+**Sample Types:**
+- SHORT_TERM - Short-term membership
+- REGULAR - Regular membership
+- STUDENT - Student membership
+- FAMILY - Family membership
+
+---
+
+### 13. user_memberships
+Tracks user membership periods and status.
+
+**Key Fields:**
+- `id` (UUID) - Primary key
+- `user_id` (UUID, FK to users) - User reference
+- `membership_type_id` (UUID, FK to membership_types) - Membership type reference
+- `start_date` (DATE) - Membership start date
+- `end_date` (DATE) - Membership end date
+- `status` (TEXT) - 'active', 'expired', 'cancelled'
+- `auto_renew` (BOOLEAN) - Automatic renewal flag
+- `payment_status` (TEXT) - Payment tracking
+
+**RLS Policies:**
+- Users can read their own memberships
+- Board members can read/modify all memberships
+
+**Indexes:**
+- `idx_user_memberships_user_id` - User lookup
+- `idx_user_memberships_status` - Status filtering
+- `idx_user_memberships_end_date` - Expiry queries
+
+**Check Constraints:**
+- `end_date` must be after `start_date`
+
+---
+
+### 14. board_contact_settings
+Configurable contact information for the club (singleton table).
+
+**Key Fields:**
+- `id` (UUID) - Primary key
+- `contact_email` (TEXT, nullable) - Contact email address
+- `contact_phone` (TEXT, nullable) - Contact phone number
+- `contact_name` (TEXT, nullable) - Contact person name/title
+- `office_hours` (TEXT, nullable) - Office hours information
+- `updated_at` (TIMESTAMPTZ) - Last update timestamp
+- `updated_by` (UUID, FK to users) - Who last updated
+
+**RLS Policies:**
+- All users can read (public visibility)
+- Only board members can update
+
+**Purpose:** Displayed on account-inactive page for members with expired memberships to contact the board.
+
+**Singleton Pattern:** Only one row should exist in this table.
+
+---
+
+### 15. accounts
 Financial account transactions for members.
 
 **Key Fields:**
@@ -234,7 +449,7 @@ Financial account transactions for members.
 
 ---
 
-### 8. notifications
+### 16. notifications
 User notification system.
 
 **Key Fields:**
@@ -262,19 +477,39 @@ User notification system.
 ## Views
 
 ### active_reservations
-Shows current and future active reservations with plane and user details.
+Materialized view showing current and future active reservations with plane and user details.
 
 **Fields:** All reservation fields plus tail_number, plane_type, plane_color, user details, duration_hours
 
+**Refresh:** Automatically refreshed via triggers on reservations table changes
+
 ### flightlog_with_times
-Shows all flightlog entries with calculated times and denormalized plane/pilot information.
+Materialized view showing all flightlog entries with calculated times and denormalized plane/pilot information.
 
 **Fields:** All flightlog fields plus block_time_hours, flight_time_hours, tail_number, plane_type, pilot/copilot names
 
+**Refresh:** Automatically refreshed via triggers on flightlog table changes
+
 ### user_balances
-Aggregated account balances per user.
+Materialized view with aggregated account balances per user.
 
 **Fields:** user_id, email, name, surname, balance, transaction_count
+
+**Refresh:** Automatically refreshed via triggers on accounts table changes
+
+### functions_with_stats
+Materialized view showing functions with user assignment counts.
+
+**Fields:** All function_master fields plus user_count (number of users with this function)
+
+**Refresh:** Automatically refreshed via triggers on user_functions table changes
+
+### users_with_functions
+View (not materialized) showing users joined with their function codes array.
+
+**Fields:** All user fields plus function_codes (TEXT[] of assigned function codes)
+
+**Purpose:** Used for RBAC permission checks
 
 ---
 
@@ -287,14 +522,25 @@ Returns TRUE if the user has 'board' in their role array.
 
 ### calculate_block_time(block_on, block_off)
 Returns block time in hours as NUMERIC.
+- Used in flightlog_with_times view
+- Immutable function for performance
 
 ### calculate_flight_time(takeoff_time, landing_time)
 Returns flight time in hours as NUMERIC.
+- Used in flightlog_with_times view
+- Immutable function for performance
 
 ### can_reserve_aircraft(plane_id UUID)
 Returns FALSE if aircraft has approved blocking documents that are expired.
 - Should be checked before allowing reservations
 - Security definer function
+
+### get_user_endorsement_alerts(user_uuid UUID)
+Returns endorsements expiring within 30/60/90 days with IR tracking.
+- Returns table: endorsement_code, endorsement_name, expiry_date, ir_expiry_date, days_until_expiry, days_until_ir_expiry, severity
+- Used for dashboard alerts
+- Security definer function
+- Replaces deprecated `get_user_privilege_alerts`
 
 ---
 

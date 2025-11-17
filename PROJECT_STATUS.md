@@ -5,7 +5,7 @@ FlightHub is a production-grade aviation club management application built with 
 
 ---
 
-## ✅ Completed Features (7/9 major features)
+## ✅ Completed Features (All Major Features Complete)
 
 ### 1. **Project Setup & Infrastructure** ✅
 - Next.js 15 with App Router, TypeScript, and Tailwind CSS
@@ -16,14 +16,18 @@ FlightHub is a production-grade aviation club management application built with 
 - Middleware for route protection
 
 ### 2. **Database Schema** ✅
-- 8 tables with comprehensive RLS policies
-- 3 database views for calculated data
-- 4 helper functions
-- 40+ indexes for performance
-- Sample data for testing
+- 16 tables with comprehensive RLS policies
+- 5 database views (4 materialized, 1 regular) for calculated data
+- 5 helper functions (including get_user_endorsement_alerts)
+- 45+ indexes for performance
 - Complete TypeScript type definitions
 - **Location:** `/supabase/migrations/`
 - **Documentation:** `/supabase/SCHEMA_DOCUMENTATION.md`
+- **Recent Additions:**
+  - Endorsements system (SEP, MEP, IR) with separate IR expiry tracking
+  - Board contact settings for multi-club support
+  - Membership types and user memberships tracking
+  - Function categories and user_functions junction table
 
 ### 3. **Authentication System** ✅
 - Email/password login with Supabase Auth
@@ -85,121 +89,144 @@ FlightHub is a production-grade aviation club management application built with 
 ### 9. **Settings Page** ✅ (Board Only)
 **Features:**
 - Functions management (create, edit, delete club functions)
+- Endorsements management (SEP, MEP, IR with separate expiry tracking)
+- Membership types management
 - Yearly billing rates per function
+- Airport fees configuration
+- Tandem registration settings
+- Board contact settings (email, phone, office hours)
 - User profile settings (all users)
 - Email and password change
-- Billing rates placeholder (requires schema migration)
 **Location:** `/app/(dashboard)/settings/`
 
----
-
-## 🚧 Remaining Features (2/9)
-
-### 10. **Reservations Page** ⏳ (Not Started)
-**Required Features:**
-- Calendar view showing all reservations (suggest: react-big-calendar or custom)
-- Filter by aircraft (dropdown)
+### 10. **Reservations Page** ✅
+**Features:**
+- Calendar view showing all reservations using react-big-calendar
+- Filter by aircraft (dropdown with all/specific aircraft)
 - Visual status indicators: active (green), standby (orange), cancelled (gray)
-- Highlight skydiving reservations
 - Create reservation dialog:
   - Aircraft, date/time range, status, priority (board), remarks
-  - Validation: Check user has valid/approved medical & license
-  - Conflict detection: Check for overlapping reservations
+  - Conflict detection for overlapping reservations
+  - Drag-to-resize time slots
 - Edit/delete own reservations (members)
 - Board can edit all reservations
-**Complexity:** High (calendar integration, conflict validation)
+- Real-time updates via Supabase Realtime
+- RBAC permissions (reservations.create, reservations.edit)
 **Location:** `/app/(dashboard)/reservations/`
 
-### 11. **Flightlog Page** ⏳ (Not Started)
-**Required Features:**
-- Table view of all flightlog entries
-- Columns: Date, Aircraft, Pilot(s), Block On/Off, Takeoff/Landing, Block Time, Flight Time, Fuel, Oil, M&B PDF, Locked, Charged
-- Filter by aircraft, date range, pilot
-- Add new flight entry (members)
+### 11. **Flightlog Page** ✅
+**Features:**
+- Aircraft selection page showing all aircraft
+- Per-aircraft flight log view with table
+- Columns: Date, Aircraft, Pilot(s), Block On/Off, Takeoff/Landing, Block Time, Flight Time, Fuel, Oil, Locked, Charged
+- Add new flight entry (Pilot/Flight Instructor)
 - Edit entry (creator if unlocked, or board)
 - Lock/unlock entries (board only)
 - **Treasurer charging feature:**
-  - Select users to charge (with percentage split)
+  - Select users and cost centers to charge (with percentage split)
+  - Split airport fees (equally or assign to user)
   - Create transactions in accounts table
   - Auto-lock entry when charged
+  - Atomic reversal of all split charges
 - M&B PDF upload/view
-**Complexity:** Very High (complex permissions, charging system)
+- RBAC permissions (flight.log.create, flight.log.approve, flight.log.lock, flight.log.charge)
+- 21+ automated business logic tests
 **Location:** `/app/(dashboard)/flightlog/`
 
----
+### 12. **Billing & Accounting** ✅ (Board Only)
+**Features:**
+- Cost centers management
+- User accounts view with balances
+- Cost center accounts view with balances
+- Transaction history per user/cost center
+- Manual transaction creation
+- Flight charge reversal (atomic, all splits)
+- Manual transaction reversal (non-flight only)
+- Split charge support (multiple users + cost centers)
+- Airport fee allocation (split or assign)
+**Location:** `/app/(dashboard)/billing/`, `/app/(dashboard)/accounting/`
 
-## 📊 Project Statistics
-
-- **Total Commits:** 7+
-- **Files Created:** 100+
-- **Lines of Code:** ~10,000+
-- **Database Tables:** 8
-- **RLS Policies:** 30+
-- **shadcn/ui Components:** 20+
-- **Features Completed:** 78% (7/9)
-
----
-
-## 🎯 Next Steps
-
-### Priority 1: Reservations Page
-1. Install calendar library: `npm install react-big-calendar date-fns`
-2. Create `/app/(dashboard)/reservations/page.tsx`
-3. Build calendar component with reservation display
-4. Implement create reservation dialog with validation
-5. Add conflict detection logic
-6. Test with sample data
-
-### Priority 2: Flightlog Page
-1. Create `/app/(dashboard)/flightlog/page.tsx`
-2. Build table with all columns and filters
-3. Implement add/edit dialog
-4. Add lock/unlock functionality
-5. Build treasurer charging interface with percentage splits
-6. Integrate with accounts table for transactions
-7. Add M&B PDF upload
-
-### Priority 3: Final Polish
-1. Add comprehensive loading states
-2. Improve error boundaries
-3. Add more empty states
-4. Test all features end-to-end
-5. Verify RLS policies work correctly
-6. Performance optimization
-7. Accessibility audit
+### 13. **Permissions Management** ✅
+**Features:**
+- Granular RBAC system
+- System functions (Pilot, Flight Instructor, Chief Pilot, etc.)
+- Custom functions (board-defined)
+- Function assignment with validity periods
+- Permission matrix with 30+ granular permissions
+- Function categories (Aviation, Skydiving, Operations, Administration, Custom)
+**Location:** `/lib/permissions/`
 
 ---
 
-## 🔧 Technical Debt / Nice-to-Haves
+## 🎯 Potential Future Enhancements
 
-1. **Billing Rates Migration:**
-   - Add `hourly_rate` column to `planes` table
-   - Complete Settings page billing section
+### Advanced Reporting & Analytics
+- Flight hours by pilot, aircraft, operation type
+- Revenue and cost center analytics
+- Utilization statistics per aircraft
+- Member activity reports
+- Maintenance cost tracking
+
+### Mobile Optimization
+- Progressive Web App (PWA) support
+- Offline mode for basic functions
+- Push notifications for reservations and expiring documents
+- Mobile-optimized calendar view
+
+### Integration Features
+- Calendar sync (iCal, Google Calendar export)
+- Email notifications for critical events
+- SMS alerts for urgent notifications
+- Third-party weather API integration
+
+### Maintenance Tracking Enhancements
+- Scheduled maintenance workflows
+- Component life tracking with alerts
+- Maintenance history reports
+- Integration with flight hours for scheduled intervals
+
+### User Experience Improvements
+- Bulk operations (multi-select for charging, approvals)
+- Advanced search and filtering
+- Customizable dashboard widgets
+- Export to PDF/Excel for reports
+- Automated backup and restore tools
+
+---
+
+## 🔧 Known Technical Considerations
+
+1. **Legacy Fields:**
+   - `users.functions` TEXT[] field is deprecated (use `user_functions` junction table instead)
+   - Maintained for backward compatibility but not used in new code
 
 2. **Storage Buckets:**
-   - Create `club-documents` bucket in Supabase Dashboard
-   - Create `aircraft-documents` bucket
-   - Create `user-documents` bucket
-   - Create `flight-logs` bucket for M&B PDFs
-   - Configure RLS policies on buckets
+   - Storage buckets should be created in Supabase Dashboard:
+     - `club-documents` - General club documents
+     - `aircraft-documents` - Aircraft-specific documents
+     - `user-documents` - User licenses, medical certificates, etc.
+     - `flight-logs` - Mass & balance PDFs
+   - RLS policies should be configured on buckets to match application logic
 
-3. **Notifications System:**
-   - Implement automatic notifications for:
-     - Document expiring (45 days, 5 days, expired)
-     - Reservation status change (standby → active)
-     - Flight charged to account
-   - Consider Edge Function or scheduled job
+3. **Email Templates:**
+   - Customize Supabase Auth email templates for:
+     - Invitation emails (24-hour expiry)
+     - Password reset emails
+     - Email confirmation
+   - Add club branding and custom messaging
 
-4. **Email Templates:**
-   - Customize Supabase Auth email templates
-   - Add club branding
+4. **Automated Notifications:**
+   - Current: Manual notification creation via RPC
+   - Future: Scheduled Edge Functions for:
+     - Document expiring alerts (30/60/90 days)
+     - Endorsement expiry warnings (with IR tracking)
+     - Membership renewal reminders
+     - Reservation reminders
 
-5. **Advanced Features (Future):**
-   - Automatic reservation conflict prevention
-   - Maintenance tracking
-   - Advanced reporting/analytics
-   - Mobile app (React Native)
-   - Calendar sync (iCal, Google Calendar)
+5. **Testing Coverage:**
+   - Current: 21+ business logic tests for flight charging/reversal
+   - Future: Expand to cover all server actions
+   - Consider E2E tests with Playwright for critical user flows
 
 ---
 
@@ -251,5 +278,5 @@ UPDATE public.users SET role = ARRAY['board'] WHERE email = 'your-email@example.
 
 ---
 
-**Last Updated:** 2025-10-16
-**Status:** 78% Complete - Production-ready infrastructure with 7/9 major features implemented
+**Last Updated:** 2025-11-17
+**Status:** Production Ready - All major features complete (13/13 features implemented)

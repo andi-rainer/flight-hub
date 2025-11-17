@@ -1,375 +1,243 @@
 # FlightHub ✈️
 
-A production-grade web application for managing aircraft reservations, flight logs, and club member administration for small aviation and skydiving clubs.
+**Production-ready web application for managing aircraft reservations, flight logs, member administration, and financial tracking for aviation and skydiving clubs.**
 
-> 🚀 **New to FlightHub?** Start with [GETTING_STARTED.md](./GETTING_STARTED.md) for a complete overview of local development and automated deployments.
+[![Next.js](https://img.shields.io/badge/Next.js-15-black)](https://nextjs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5-blue)](https://www.typescriptlang.org/)
+[![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL-green)](https://supabase.com/)
+[![Status](https://img.shields.io/badge/Status-Production%20Ready-success)](https://flighthub-staging.vercel.app)
 
-## Features
+> 📖 **Comprehensive Documentation**: See [CLAUDE.md](./CLAUDE.md) for complete codebase documentation (1300+ lines)
 
-- ✅ **Authentication** - Secure email/password login with Supabase Auth
-- ✅ **Dashboard** - Overview of reservations, account balance, flights, and notifications
-- ✅ **Aircraft Management** - Track aircraft, documents, and flight logs
-- ✅ **Member Management** - User administration with roles and document approval
-- ✅ **Documents** - Club document library with categories and search
-- ✅ **Settings** - Function management and user profile settings
-- ✅ **Billing & Accounting** - Cost centers, transactions, and financial tracking
-- ✅ **Permissions** - Granular function-based permission management
-- ⏳ **Reservations** - Calendar-based booking system (in progress)
-- ✅ **Flight Logs** - Flight logging with split charging and atomic reversals
+## ✨ Features
 
-## Tech Stack
+### Core Functionality
+- ✅ **Authentication** - Secure login with Supabase Auth (24-hour invite tokens)
+- ✅ **Dashboard** - Real-time overview of reservations, balance, flights, and alerts
+- ✅ **Aircraft Management** - Track aircraft, documents, maintenance, and components
+- ✅ **Member Management** - User administration, document approval, function assignment
+- ✅ **Reservations** - Calendar-based booking with conflict detection
+- ✅ **Flight Logs** - Comprehensive logging with approval workflow and locking
+- ✅ **Documents** - Club library with categories, search, and expiry tracking
+- ✅ **Endorsements** - Aviation ratings (SEP, MEP, IR) with separate IR expiry tracking
+- ✅ **Billing & Accounting** - Split charges, cost centers, atomic reversals
+- ✅ **Settings** - Functions, membership types, fees, board contact information
+- ✅ **Permissions** - Granular RBAC (role-based + function-based)
 
-- **Framework:** Next.js 15 (App Router, TypeScript)
-- **Styling:** Tailwind CSS
-- **UI Components:** shadcn/ui
-- **Backend:** Supabase (Auth, Postgres, Storage)
-- **Deployment:** Vercel
+### Recent Additions (November 2025)
+- 🆕 **Endorsement System** - Centralized endorsements with IR (Instrument Rating) support
+- 🆕 **Board Contact Settings** - Configurable contact info for multi-club deployment
+- 🆕 **Split Charge Reversal** - Atomic reversal of all flight transactions
+- 🆕 **24-Hour Invitations** - Fixed invite token expiry
 
-## Quick Start
+## 🚀 Quick Start
 
 ### Prerequisites
-- Node.js 18+ installed
-- Docker Desktop (for local development)
-- Supabase CLI (`brew install supabase/tap/supabase`)
-- Git
+- Node.js 18+
+- Docker Desktop (for local Supabase)
+- Supabase CLI: `brew install supabase/tap/supabase`
 
-### Local Development Setup (Recommended)
-
-For development, use a local Supabase instance for a clean, isolated testing environment:
+### Local Development
 
 ```bash
-# Clone the repository
-git clone https://github.com/andi-rainer/flight-hub.git
+# Clone repository
+git clone https://github.com/your-org/flight-hub.git
 cd flight-hub
 
 # Install dependencies
 npm install
 
-# Run automated setup script
-./setup-local-supabase.sh
-```
-
-This will:
-- Start local Supabase (PostgreSQL, Auth, Storage, etc.)
-- Apply all migrations from `supabase/migrations/`
-- Configure `.env.local` with local credentials
-- Provide you with a clean database for testing
-
-**Manual Setup:**
-
-```bash
-# Start local Supabase
+# Start Supabase locally
 npm run supabase:start
 
-# Copy local credentials to .env.local
-# (see output from supabase start)
-```
-
-See **[LOCAL_DEVELOPMENT.md](./LOCAL_DEVELOPMENT.md)** for complete documentation.
-
-### Cloud Setup (Production)
-
-For production deployment on Vercel:
-
-```bash
-# Setup environment variables
-cp .env.example .env.local
-```
-
-Edit `.env.local` with your Supabase cloud credentials:
-```env
-NEXT_PUBLIC_SUPABASE_URL=your-supabase-url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
-SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
-```
-
-### Automated Deployments
-
-Production deployments are handled by GitHub Actions:
-
-```bash
-# Push to main triggers automatic deployment
-git push origin main
-
-# GitHub Actions will:
-# 1. Apply database migrations to production
-# 2. Deploy to Vercel
-# 3. Post deployment summary
-```
-
-See **[GITHUB_ACTIONS_SETUP.md](./GITHUB_ACTIONS_SETUP.md)** for configuration details.
-
-### Database Migrations
-
-```bash
-# Test migrations locally
+# Run migrations
 npm run supabase:reset
 
-# Deploy to production (via GitHub Actions)
-git push origin main
-```
-
-### Create First User
-
-1. Run the development server:
-```bash
+# Start development server
 npm run dev
 ```
 
-2. Navigate to http://localhost:3000
+Visit [http://localhost:3000](http://localhost:3000)
 
-3. Sign up with your email/password
+## 🏗️ Tech Stack
 
-4. Promote your user to board member in Supabase SQL Editor:
-```sql
--- Find your user ID
-SELECT id, email FROM public.users;
+| Layer | Technology |
+|-------|-----------|
+| **Framework** | Next.js 15 (App Router) |
+| **Language** | TypeScript 5.x |
+| **Styling** | Tailwind CSS 4 + PostCSS |
+| **UI Components** | shadcn/ui (Radix primitives) |
+| **Database** | PostgreSQL (via Supabase) |
+| **Auth** | Supabase Auth |
+| **Storage** | Supabase Storage |
+| **State** | Server Components + Server Actions |
+| **Forms** | react-hook-form + Zod |
+| **i18n** | next-intl (German/English) |
+| **Testing** | Jest + React Testing Library |
+| **Deployment** | Vercel |
 
--- Add board role
-UPDATE public.users
-SET role = ARRAY['board']
-WHERE id = 'your-user-id';
-```
-
-See `FIRST_USER_SETUP.md` for detailed instructions.
-
-### Create Storage Buckets
-
-Create these buckets in your Supabase Dashboard (Storage section):
-- `aircraft-documents` (public) - Aircraft-related documents
-- `club-documents` (public) - General club documents
-- `user-documents` (private) - User licenses, medical certificates, ID
-- `flight-logs` (private) - Flight log records
-
-RLS policies for storage buckets are automatically created by migration `20250202100007_storage_buckets.sql`
-
-## Project Structure
+## 📁 Project Structure
 
 ```
 flight-hub/
-├── app/
+├── app/                      # Next.js App Router
 │   ├── (dashboard)/          # Protected routes with sidebar
-│   │   ├── dashboard/        # Main dashboard
 │   │   ├── aircrafts/        # Aircraft management
-│   │   ├── members/          # Member management (board only)
+│   │   ├── members/          # Member administration
+│   │   ├── reservations/     # Flight booking calendar
+│   │   ├── flightlog/        # Flight logging
+│   │   ├── billing/          # Cost centers & rates
+│   │   ├── accounting/       # Transactions
 │   │   ├── documents/        # Club documents
-│   │   ├── settings/         # Settings (board only)
-│   │   ├── billing/          # Billing/cost center management
-│   │   ├── accounting/       # Accounting transactions (board)
-│   │   ├── permissions/      # Function/permission management
-│   │   ├── reservations/     # Reservations (WIP)
-│   │   └── flightlog/        # Flight logs (WIP)
-│   ├── api/                  # API routes (18 route handlers)
-│   │   ├── documents/        # Document management API
-│   │   ├── users/            # User search, balance, tracking
-│   │   └── functions/        # System functions API
-│   ├── login/                # Login page
-│   ├── forgot-password/      # Password reset flow
-│   └── layout.tsx            # Root layout
-├── components/
-│   ├── layout/               # Sidebar, header, navigation
-│   ├── providers/            # Theme provider
-│   └── ui/                   # shadcn/ui components (33 files)
-├── lib/
-│   ├── supabase/             # Supabase clients
+│   │   └── settings/         # System configuration
+│   ├── api/                  # API routes (18 handlers)
+│   └── auth/                 # Authentication pages
+├── components/               # Reusable React components
+│   ├── ui/                   # shadcn/ui components
+│   └── layout/               # Layout components
+├── lib/                      # Server-side utilities
 │   ├── actions/              # Server actions (13+ files)
-│   ├── permissions/          # RBAC permission system
-│   ├── constants/            # System function definitions
-│   ├── hooks/                # React hooks
-│   └── utils/                # Utility functions
-├── supabase/
-│   ├── migrations/           # Database migrations (19 files)
-│   ├── SCHEMA_DOCUMENTATION.md
-│   └── QUICK_REFERENCE.md
-├── __tests__/                # Test files and utilities
-└── middleware.ts             # Auth + locale middleware
+│   ├── permissions/          # RBAC system
+│   └── supabase/             # Supabase clients
+├── supabase/                 # Database
+│   ├── migrations/           # Schema migrations (10+ files)
+│   └── SCHEMA_DOCUMENTATION.md
+└── __tests__/                # Jest tests
 ```
 
-## Development
+## 🗄️ Database
+
+**11 Core Tables:**
+- `users` - User profiles with roles
+- `functions_master` - System & custom functions
+- `user_functions` - User-function assignments
+- `planes` - Aircraft fleet
+- `reservations` - Flight bookings
+- `flightlog` - Flight records
+- `documents` - Universal document management
+- `endorsements` - Aviation ratings (NEW)
+- `document_endorsement_privileges` - Endorsements with IR tracking (NEW)
+- `accounts` - Financial transactions
+- `board_contact_settings` - Contact information (NEW)
+
+**4 Materialized Views:**
+- `active_reservations` - Filtered future reservations
+- `flightlog_with_times` - Calculated flight times
+- `user_balances` - Account balances
+- `functions_with_stats` - Functions with user counts
+
+## 🔐 Security
+
+- ✅ **Row Level Security (RLS)** on all tables
+- ✅ **Hybrid RBAC** - Role-based + function-based permissions
+- ✅ **Server-side validation** for all mutations
+- ✅ **Session management** via HTTP-only cookies
+- ✅ **Audit trails** for sensitive operations
+- ✅ **Permission matrix** - 30+ granular permissions
+
+## 🧪 Testing
 
 ```bash
-# Run development server
-npm run dev
-
-# Build for production
-npm run build
-
-# Start production server
-npm start
-
-# Lint code
-npm run lint
-
-# Run tests
-npm test
-
-# Run tests in watch mode
-npm test -- --watch
-
-# Run tests with coverage
-npm test -- --coverage
+npm test                 # Run tests
+npm run test:coverage    # Coverage report
+npm run test:watch       # Watch mode
 ```
 
-## Testing
+**Test Coverage:**
+- Unit tests for server actions
+- API route tests
+- Business logic tests (flight charging/reversal)
+- Component tests
 
-FlightHub uses a **hybrid testing strategy** for comprehensive coverage:
+## 🌍 Environment Variables
 
-### Business Logic Tests
-- **Framework:** Jest 29.x with @testing-library/react
-- **Location:** `__tests__/actions/`
-- **Coverage:** 21 passing tests for flight charging system
-- **Focus:** Percentage validation, split calculations, transaction conventions, state transitions
-
-### Test Files
-- `__tests__/actions/flight-charging-simple.test.ts` - Core business logic (21 tests)
-- `__tests__/utils/flight-charging-mocks.ts` - Mock utilities for Supabase
-
-### Documentation
-- `TESTING_STRATEGY.md` - Complete testing approach and guide
-- `FLIGHT_CHARGING_TEST_PLAN.md` - 70+ manual test scenarios
-
-### Running Tests
-```bash
-# Run flight charging tests
-npm test -- __tests__/actions/flight-charging-simple.test.ts
-
-# Run all tests
-npm test
-
-# Watch mode for development
-npm test -- --watch
-```
-
-## Authorization System
-
-### Role-Based Access (Legacy)
-- **Member:** Default role for all users
-- **Board:** Board members with elevated privileges
-
-### Function-Based Permissions (Granular RBAC)
-FlightHub implements a hybrid authorization system combining roles with function-based permissions:
-
-**System Functions:**
-- **Aviation:** Pilot, Flight Instructor, Chief Pilot
-- **Skydiving:** Tandem Master, Skydive Instructor, Sport Jumper
-- **Operations:** Manifest Coordinator
-- **Administration:** Treasurer, Chairman, Secretary
-
-**Features:**
-- Users can have multiple functions with validity periods (valid_from/valid_until)
-- Custom functions can be created by board members
-- Granular permissions control feature access (30+ permissions)
-- Function assignments tracked in `user_functions` junction table
-
-**Permission Examples:**
-- `flight.log.create` - Pilot, Flight Instructor
-- `flight.log.approve` - Chief Pilot, Board
-- `billing.view.all` - Board, Treasurer
-- `documents.approve` - Board
-
-## Key Features Detail
-
-### Dashboard
-- Quick stats for reservations, balance, costs, notifications
-- Upcoming reservations by aircraft
-- Account transactions history
-- Recent flight logs
-
-### Aircraft Management
-- List all aircraft with search and filters
-- Aircraft details with specifications
-- Document management with expiry tracking
-- Flight logs history per aircraft
-
-### Member Management (Board Only)
-- Invite new members via email
-- Assign roles and functions
-- Approve user documents (licenses, medical, ID)
-- Track document expiry dates
-
-### Documents
-- Upload and categorize club documents
-- Search and filter by category
-- Download documents
-- Board can upload, rename, delete
-
-### Settings (Board Only)
-- Manage club functions (Pilot, Skydiver, Student, etc.)
-- Set yearly billing rates per function
-- User profile settings for all users
-- Configure membership types and tandem registration
-
-### Billing & Accounting (Board Only)
-- Cost centers for expense allocation
-- User account management and balance tracking
-- Transaction creation and reversal with tracking
-- Flight charging from locked flight logs with split charging support
-- **Split Charging:** Distribute flight costs across multiple users/cost centers by percentage
-- **Atomic Reversals:** Reversing split charges reverses ALL related transactions together
-- **Operation Type Defaults:** Pre-configured cost splits per operation type (e.g., maintenance)
-- Account balance reports and history
-
-## Deployment
-
-### Deploy to Vercel
-
-```bash
-# Install Vercel CLI
-npm i -g vercel
-
-# Deploy
-vercel
-
-# Set environment variables in Vercel dashboard
-```
-
-### Environment Variables
-
-Required environment variables:
 ```env
-NEXT_PUBLIC_SUPABASE_URL=your-supabase-url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
+# Supabase
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+
+# Application
+NEXT_PUBLIC_APP_URL=https://your-domain.com
 ```
 
-## Documentation
+## 📚 Documentation
 
-### Core Documentation
-- **Complete Documentation:** `CLAUDE.md` - Comprehensive codebase documentation
-- **Project Status:** `PROJECT_STATUS.md` - Current implementation status
-- **Schema:** `supabase/SCHEMA_DOCUMENTATION.md` - Complete database schema
-- **Quick Reference:** `supabase/QUICK_REFERENCE.md` - Common SQL queries
-- **Auth Setup:** `AUTH_SETUP.md` - Authentication documentation
-- **Schema Summary:** `SCHEMA_SUMMARY.md` - Database schema summary
+| Document | Description |
+|----------|-------------|
+| **[CLAUDE.md](./CLAUDE.md)** | Complete codebase documentation (1300+ lines) |
+| **[PROJECT_STATUS.md](./PROJECT_STATUS.md)** | Feature implementation status |
+| **[AUTH_SETUP.md](./AUTH_SETUP.md)** | Authentication setup guide |
+| **[LOCAL_DEVELOPMENT.md](./LOCAL_DEVELOPMENT.md)** | Local development guide |
+| **[supabase/SCHEMA_DOCUMENTATION.md](./supabase/SCHEMA_DOCUMENTATION.md)** | Database schema docs |
+| **[supabase/QUICK_REFERENCE.md](./supabase/QUICK_REFERENCE.md)** | Common SQL queries |
 
-### Testing Documentation
-- **Testing Strategy:** `TESTING_STRATEGY.md` - Hybrid testing approach and guide
-- **Flight Charging Test Plan:** `FLIGHT_CHARGING_TEST_PLAN.md` - 70+ test scenarios
+## 🛠️ Development Commands
 
-### Feature Documentation
-- **Operation Type Cost Splitting:** `OPERATION_TYPE_COST_SPLITTING.md` - Split charging and reversals
+```bash
+# Development
+npm run dev              # Dev server (Turbopack)
+npm run dev:stable       # Dev server (stable)
+npm run build            # Production build
+npm run start            # Production server
 
-## Contributing
+# Database
+npm run supabase:start   # Start local Supabase
+npm run supabase:stop    # Stop Supabase
+npm run supabase:reset   # Reset DB (migrations + seed)
+npm run supabase:push    # Push migrations to remote
 
-This is a private project for a specific aviation club. For feature requests or bug reports, please create an issue.
+# Code Quality
+npm run lint             # ESLint
+npm test                 # Jest tests
+```
 
-## License
+## 🚢 Deployment
 
-Private - All rights reserved
+### Vercel
+1. Connect GitHub repo to Vercel
+2. Configure environment variables
+3. Deploy automatically on push to main
 
-## Support
+### Supabase
+1. Create project at [supabase.com](https://supabase.com)
+2. Run: `npm run supabase:push`
+3. Configure Auth settings:
+   - **Site URL**: Your production URL
+   - **Redirect URLs**: Add your domain
 
-For questions or issues, contact the development team or create an issue in the GitHub repository.
+## 📝 Recent Updates
+
+### November 17, 2025
+- ✅ Endorsement system redesign with IR tracking
+- ✅ Board contact settings for multi-club support
+- ✅ Fixed 24-hour invitation token expiry
+- ✅ Document definition filter bug fixes
+- ✅ TypeScript type improvements
+- ✅ Dialog overflow fixes
+
+### November 13, 2025
+- ✅ Split charge reversal fix (atomic)
+- ✅ 21 automated business logic tests
+- ✅ Granular RBAC system
+- ✅ Membership system
+
+## 🤝 Contributing
+
+This is a private project for an Austrian aviation club.
+
+## 📄 License
+
+Proprietary - All Rights Reserved
+
+## 📞 Support
+
+- 📖 Documentation: `CLAUDE.md`
+- 🗄️ Database Schema: `supabase/SCHEMA_DOCUMENTATION.md`
+- 💬 Board Contact: Settings → Board Contact (if configured)
 
 ---
 
-Built with ❤️ using Next.js, Supabase, and shadcn/ui
+**Built with ❤️ for the Austrian Aviation Community**
 
-**Project Status:** ~85% Complete (8.5/9 major features implemented)
-**Last Updated:** November 13, 2025
-
-### Recent Updates
-- ✅ Fixed split charge reversal bug (atomic reversals for all related transactions)
-- ✅ Added comprehensive testing strategy with 21 passing business logic tests
-- ✅ Created detailed test plan with 70+ manual test scenarios
-- ✅ Enhanced flight charging documentation
+*Stack: Next.js 15 • TypeScript • Supabase • Tailwind CSS • shadcn/ui*

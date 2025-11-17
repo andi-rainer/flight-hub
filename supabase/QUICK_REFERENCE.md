@@ -1,8 +1,8 @@
 # FlightHub Database Quick Reference
 
 ## Connection Info
-- **Project**: bfzynfnowzkvhvleocny
-- **Region**: Your configured region
+- **Project**: <TO BE DEFINED>
+- **Region**: EUROPE-Central
 - **Database**: PostgreSQL 15+ via Supabase
 
 ## Tables at a Glance

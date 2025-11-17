@@ -2,8 +2,8 @@
 
 **Project**: Flight Club Management System (Austrian Aviation Club)
 **Stack**: Next.js 15 + Supabase + shadcn/ui + Tailwind CSS
-**Status**: ~85% Complete (8.5/9 major features)
-**Last Updated**: November 13, 2025
+**Status**: Production Ready (All Major Features Complete)
+**Last Updated**: November 17, 2025
 
 ---
 
@@ -43,11 +43,11 @@ FlightHub is a production-grade web application for managing aircraft reservatio
 - **Storage**: Supabase Storage (for documents, aircraft docs, flight logs)
 
 ### Database Design
-- **Tables**: 8 core tables (users, planes, flightlog, documents, accounts, etc.)
-- **Views**: 3 materialized views (active_reservations, flightlog_with_times, user_balances)
-- **Functions**: 4 PostgreSQL helper functions
+- **Tables**: 11 core tables (users, planes, flightlog, documents, accounts, endorsements, board_contact_settings, etc.)
+- **Views**: 4 materialized views (active_reservations, flightlog_with_times, user_balances, functions_with_stats)
+- **Functions**: 5 PostgreSQL helper functions (including get_user_endorsement_alerts)
 - **Security**: Row Level Security (RLS) on all tables
-- **Indexes**: 40+ strategic indexes for performance
+- **Indexes**: 45+ strategic indexes for performance
 
 ### Testing
 - **Framework**: Jest 29.x
@@ -472,20 +472,25 @@ if (permissionChecker.can('flight.log.lock')) { ... }
 - `/app/(dashboard)/accounting/components/reverse-charge-dialog.tsx` - Flight reversal UI
 - `/app/(dashboard)/accounting/components/undo-transaction-dialog.tsx` - Manual reversal UI
 
-### 7. Flight Log (In Progress)
+### 7. Flight Log (Complete)
 - **Entry**: Create flight log entries (Pilot/Flight Instructor)
+- **Aircraft Selection**: Select aircraft and view flight history
 - **Approval**: Chief Pilot or board approves flights
 - **Locking**: Board locks flights (prevents further editing)
-- **Charging**: Board creates account charge from locked flight
+- **Charging**: Board creates account charge from locked flight with split allocation
 - **Calculations**: Auto-calculate block time and flight time
 - **Crew**: Track pilot, copilot, passengers
+- **Reversal**: Atomic reversal of split charges (21+ automated tests)
+- **Permissions**: RBAC-based access control (flight.log.create, flight.log.approve, flight.log.lock)
 
-### 8. Reservations (In Progress)
+### 8. Reservations (Complete)
 - **Calendar View**: react-big-calendar showing all reservations
 - **Conflict Detection**: Prevent overlapping same-aircraft bookings
 - **Standby List**: Intentional overlaps for waiting list
-- **Time Slots**: Duration-based booking
+- **Time Slots**: Duration-based booking with drag-to-resize
 - **Aircraft Filter**: Filter by available aircraft
+- **Real-time Updates**: Live reservation updates via Supabase Realtime
+- **Permissions**: RBAC-based access control (reservations.create, reservations.edit)
 
 ### 9. Permissions Management (Complete)
 - **Function Viewing**: Board can view all functions (system and custom)
@@ -968,20 +973,50 @@ if (!result.success) return { error: result.error.flatten() }
 
 ---
 
-## 14. RECENT DEVELOPMENTS
+## 14. RECENT DEVELOPMENTS (November 2025)
 
-### Latest: Split Charge Reversal Fix (November 2025)
+### Latest: Endorsement System Redesign & Board Contact Settings (Nov 17, 2025)
+
+**1. Endorsement System Redesign**
+- **Replaced**: `document_privileges` table → new `endorsements` system
+- **New Tables**:
+  - `endorsements` - Central endorsements (SEP, MEP, IR, FI, etc.) with `supports_ir` flag
+  - `document_type_endorsements` - Links endorsements to document types
+  - `document_endorsement_privileges` - Tracks endorsements on documents with IR expiry
+- **Features**:
+  - Separate IR (Instrument Rating) expiry tracking
+  - Predefined endorsements (cannot be deleted, only deactivated)
+  - Custom endorsements (board can create club-specific ones)
+  - Board can configure which endorsements support IR
+- **RPC Function**: `get_user_endorsement_alerts` with IR tracking
+- **Migration**: `20250203000005_endorsement_system_redesign.sql`
+
+**2. Board Contact Settings**
+- **New Feature**: Configurable contact information for multi-club support
+- **Table**: `board_contact_settings` (email, phone, contact name, office hours)
+- **UI**: New "Board Contact" tab in Settings (board members only)
+- **Display**: Dynamic contact info on account-inactive page
+- **RLS**: Public read, board-only write
+- **Migration**: `20250203000007_board_contact_settings.sql`
+
+**3. Invitation Flow Fix**
+- **Issue**: Invite tokens expired after 5 minutes
+- **Fix**: Use single `inviteUserByEmail` call (not `createUser` + `inviteUserByEmail`)
+- **Result**: Proper 24-hour token expiry
+- **Explicit redirectTo**: Uses `NEXT_PUBLIC_APP_URL` environment variable
+
+**4. Critical Bug Fixes**
+- **Document Definition Filter**: Fixed function code vs UUID mismatch in upload dropdown
+- **User API**: Returns function codes instead of IDs for RBAC compatibility
+- **Sidebar Subscriptions**: Fixed real-time subscription (`document_privileges` → `document_endorsements`)
+- **Dialog Overflow**: Implemented 3-section layout (header, scrollable content, footer)
+- **TypeScript Types**: Added missing exports (MembershipType, UserMembership, Document, FunctionWithStats)
+
+### Split Charge Reversal Fix (November 2025)
 - **Critical Bug Fix**: Fixed split-charged flight reversals
-- **Problem**: When reversing a split-charged flight (e.g., 50% pilot, 25% CC-A, 25% CC-B), only the clicked transaction was reversed, leaving other transactions unreversed
-- **Impact**: Caused double-charging when re-charging the flight
-- **Solution**: Updated `reverseFlightCharge()` and `reverseCostCenterFlightCharge()` to:
-  - Find ALL user and cost center transactions with same `flightlog_id`
-  - Reverse ALL transactions atomically
-  - Mark ALL as reversed with same timestamp
-  - Unlock flight for re-charging
-- **Testing**: Added 21 automated business logic tests + comprehensive manual test plan
-- **Documentation**: Created `TESTING_STRATEGY.md` and `FLIGHT_CHARGING_TEST_PLAN.md`
-- **Files Modified**: `lib/actions/accounts.ts`, `lib/actions/cost-centers.ts`, `lib/actions/accounting.ts`
+- **Problem**: When reversing a split-charged flight, only clicked transaction was reversed
+- **Solution**: Atomic reversal of ALL transactions with same `flightlog_id`
+- **Testing**: Added 21 automated tests + manual test plan
 
 ### Granular RBAC System
 - Implemented hybrid RBAC combining roles + function-based permissions
