@@ -3,8 +3,9 @@ import { redirect } from '@/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
-import { AlertCircle, Mail, Phone, Calendar } from 'lucide-react'
+import { AlertCircle, Mail, Phone, Calendar, User } from 'lucide-react'
 import { signOut } from '@/lib/actions/auth'
+import { getBoardContactSettings } from '@/lib/actions/settings'
 
 async function getUserMembershipStatus() {
   const userProfile = await getUserProfile()
@@ -23,9 +24,13 @@ async function getUserMembershipStatus() {
     .limit(1)
     .single()
 
+  // Get board contact settings
+  const contactSettings = await getBoardContactSettings()
+
   return {
     user: userProfile,
     membership,
+    contactSettings,
   }
 }
 
@@ -36,7 +41,7 @@ export default async function AccountInactivePage() {
     redirect('/login')
   }
 
-  const { user, membership } = data
+  const { user, membership, contactSettings } = data
   const today = new Date().toISOString().split('T')[0]
   const isActive = membership ? membership.end_date >= today : false
 
@@ -97,20 +102,54 @@ export default async function AccountInactivePage() {
             <p className="text-sm text-muted-foreground">
               Please contact the board members to renew your membership and regain access to the system.
             </p>
-            <div className="flex flex-col sm:flex-row gap-3">
-              <Button asChild variant="default" className="flex-1">
-                <a href="mailto:board@example.com">
-                  <Mail className="h-4 w-4 mr-2" />
-                  Email Board
-                </a>
-              </Button>
-              <Button asChild variant="outline" className="flex-1">
-                <a href="tel:+41000000000">
-                  <Phone className="h-4 w-4 mr-2" />
-                  Call Club
-                </a>
-              </Button>
-            </div>
+
+            {/* Show contact info if configured */}
+            {(contactSettings?.contact_email || contactSettings?.contact_phone || contactSettings?.contact_name) && (
+              <>
+                {contactSettings.contact_name && (
+                  <p className="text-sm flex items-center gap-2">
+                    <User className="h-4 w-4 text-muted-foreground" />
+                    <span className="font-medium">{contactSettings.contact_name}</span>
+                  </p>
+                )}
+
+                <div className="flex flex-col sm:flex-row gap-3">
+                  {contactSettings.contact_email && (
+                    <Button asChild variant="default" className="flex-1">
+                      <a href={`mailto:${contactSettings.contact_email}`}>
+                        <Mail className="h-4 w-4 mr-2" />
+                        Email Board
+                      </a>
+                    </Button>
+                  )}
+                  {contactSettings.contact_phone && (
+                    <Button asChild variant="outline" className="flex-1">
+                      <a href={`tel:${contactSettings.contact_phone}`}>
+                        <Phone className="h-4 w-4 mr-2" />
+                        Call Club
+                      </a>
+                    </Button>
+                  )}
+                </div>
+
+                {contactSettings.office_hours && (
+                  <div className="mt-4 p-3 rounded-md bg-muted/50 text-sm">
+                    <p className="font-medium mb-1">Office Hours:</p>
+                    <p className="text-muted-foreground whitespace-pre-line">{contactSettings.office_hours}</p>
+                  </div>
+                )}
+              </>
+            )}
+
+            {/* Fallback message if no contact info configured */}
+            {!contactSettings?.contact_email && !contactSettings?.contact_phone && (
+              <Alert>
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  Contact information has not been configured yet. Please reach out to a board member directly.
+                </AlertDescription>
+              </Alert>
+            )}
           </div>
 
           <div className="pt-4 border-t">

@@ -487,3 +487,77 @@ export async function updateAircraftHourlyRate(planeId: string, hourlyRate: numb
     error: 'Hourly rate feature requires database migration. See settings.ts for details.'
   }
 }
+
+// ============================================================================
+// BOARD CONTACT SETTINGS
+// ============================================================================
+
+export async function getBoardContactSettings() {
+  const supabase = await createClient()
+
+  const { data, error } = await supabase
+    .from('board_contact_settings')
+    .select('*')
+    .single()
+
+  if (error) {
+    console.error('Error fetching board contact settings:', error)
+    return null
+  }
+
+  return data
+}
+
+export async function updateBoardContactSettings(data: {
+  contact_email?: string | null
+  contact_phone?: string | null
+  contact_name?: string | null
+  office_hours?: string | null
+}) {
+  const supabase = await createClient()
+
+  // Verify user is board member
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) {
+    return { success: false, error: 'Not authenticated' }
+  }
+
+  const { data: profile } = await supabase
+    .from('users')
+    .select('role')
+    .eq('id', user.id)
+    .single()
+
+  if (!profile?.role?.includes('board')) {
+    return { success: false, error: 'Not authorized - board members only' }
+  }
+
+  // Get the single settings record
+  const { data: existingSettings } = await supabase
+    .from('board_contact_settings')
+    .select('id')
+    .single()
+
+  if (!existingSettings) {
+    return { success: false, error: 'Settings record not found' }
+  }
+
+  // Update settings
+  const { error } = await supabase
+    .from('board_contact_settings')
+    .update({
+      ...data,
+      updated_by: user.id,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', existingSettings.id)
+
+  if (error) {
+    console.error('Error updating board contact settings:', error)
+    return { success: false, error: error.message }
+  }
+
+  revalidatePath('/settings')
+  revalidatePath('/account-inactive')
+  return { success: true }
+}
