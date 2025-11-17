@@ -114,11 +114,9 @@ export default async function AccountInactivePage() {
           </div>
 
           <div className="pt-4 border-t">
-            <form action={signOut}>
-              <Button type="submit" variant="ghost" className="w-full">
-                Sign Out
-              </Button>
-            </form>
+            <Button type="submit" onClick={signOut} variant="ghost" className="w-full">
+              Sign Out
+            </Button>
           </div>
         </CardContent>
       </Card>

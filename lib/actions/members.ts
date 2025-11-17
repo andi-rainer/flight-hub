@@ -72,36 +72,33 @@ export async function inviteUser(data: {
     return { success: false, error: 'A user with this email already exists' }
   }
 
-  // Create the user via Supabase Auth using the admin client
+  // Use Supabase's invite flow which generates a proper 24-hour token
   const adminClient = createAdminClient()
+  const redirectTo = (process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000').replace(/\/$/, '')
 
-  // Create the user without confirming email
-  const { data: authData, error: authError } = await adminClient.auth.admin.createUser({
-    email: data.email,
-    email_confirm: false, // Don't auto-confirm - user needs to set password via email
-    user_metadata: {
-      name: data.name,
-      surname: data.surname,
+  console.log('[Invite User] Inviting user with redirect URL:', `${redirectTo}/auth/callback`)
+
+  // Use the inviteUserByEmail which creates the user AND sends the invite in one step
+  // This generates a proper invite token with 24-hour expiry
+  const { data: authData, error: authError } = await adminClient.auth.admin.inviteUserByEmail(
+    data.email,
+    {
+      redirectTo: `${redirectTo}/auth/callback`,
+      data: {
+        name: data.name,
+        surname: data.surname,
+      }
     }
-  })
+  )
 
   if (authError) {
-    console.error('Error creating user:', authError)
+    console.error('Error inviting user:', authError)
     return { success: false, error: authError.message }
   }
 
-  // Send invitation email with explicit redirect URL
-  const redirectTo = (process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000').replace(/\/$/, '')
-  console.log('[Invite User] Using redirect URL:', `${redirectTo}/auth/callback`)
-  const { error: inviteError } = await adminClient.auth.admin.inviteUserByEmail(
-    data.email,
-    { redirectTo: `${redirectTo}/auth/callback` }
-  )
-
-  if (inviteError) {
-    console.error('Error sending invitation email:', inviteError)
-    // Don't fail the entire operation - user is created, they can be invited later
-    console.warn('User created but invitation email failed to send. Use resend invitation.')
+  if (!authData.user) {
+    console.error('No user data returned from invite')
+    return { success: false, error: 'Failed to create user' }
   }
 
   // Create or update user profile using upsert (in case profile was auto-created by trigger)

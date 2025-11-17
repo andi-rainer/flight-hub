@@ -280,11 +280,13 @@ export async function updateMemberProfile(userId: string, data: {
   functions?: string[]
   role?: string[]
 }) {
+  console.log('[Update Member Profile] Starting update for userId:', userId)
   const supabase = await createClient()
 
   // Verify user is board member
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) {
+    console.error('[Update Member Profile] Not authenticated')
     return { success: false, error: 'Not authenticated' }
   }
 
