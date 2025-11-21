@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import { Link } from '@/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -22,7 +22,6 @@ export default function LoginPage() {
   const [isPasswordReset, setIsPasswordReset] = useState(false)
   const [isCheckingToken, setIsCheckingToken] = useState(true)
   const router = useRouter()
-  const searchParams = useSearchParams()
 
   // Check for access token on mount (from invite link or password reset)
   useEffect(() => {
@@ -32,6 +31,7 @@ export default function LoginPage() {
       // First, check for query parameters (from email link before token exchange)
       const queryParams = new URLSearchParams(window.location.search)
       const tokenType = queryParams.get('type')
+      const setupParam = queryParams.get('setup') // From PKCE flow (confirm-invite page)
       const errorParam = queryParams.get('error')
       const errorDescription = queryParams.get('error_description')
 
@@ -48,8 +48,6 @@ export default function LoginPage() {
       const accessToken = hashParams.get('access_token')
       const refreshToken = hashParams.get('refresh_token')
       const type = hashParams.get('type') || tokenType
-
-      console.log('Token check:', { hasAccessToken: !!accessToken, hasRefreshToken: !!refreshToken, type })
 
       if (accessToken && (type === 'invite' || type === 'recovery')) {
         try {
@@ -95,6 +93,20 @@ export default function LoginPage() {
           window.location.reload()
         }, 1000)
         return
+      } else if (setupParam === 'true' && tokenType === 'invite') {
+        // PKCE flow: Session already established, check if user exists
+        const { data: { user }, error } = await supabase.auth.getUser()
+
+        if (error) {
+          console.error('Error getting user:', error)
+          setError('Failed to load user information. Please try again.')
+        } else if (user?.email) {
+          setEmail(user.email)
+          setIsSettingPassword(true)
+          setIsPasswordReset(false)
+          // Clean up the URL
+          window.history.replaceState(null, '', window.location.pathname)
+        }
       }
 
       setIsCheckingToken(false)

@@ -57,8 +57,8 @@ function ConfirmInviteContent() {
       }
 
       if (data.session) {
-        // Successfully created session, redirect to password setup
-        router.push('/auth/setup-password')
+        // Successfully created session, redirect to login for password setup
+        router.push('/login?type=invite&setup=true')
       } else {
         setError('Failed to create session. Please try again.')
         setIsLoading(false)
@@ -104,8 +104,8 @@ function ConfirmInviteContent() {
       }
 
       if (data.session) {
-        // Successfully created session, redirect to password setup
-        router.push('/auth/setup-password')
+        // Successfully created session, redirect to login for password setup
+        router.push('/login?type=invite&setup=true')
       } else {
         setError('Failed to create session. Please try again.')
         setIsLoading(false)
