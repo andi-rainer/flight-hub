@@ -95,7 +95,7 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
   // Public routes that don't require authentication
-  const publicRoutes = ['/login', '/forgot-password', '/reset-password', '/auth/callback', '/auth/auth-code-error', '/registration/tandem']
+  const publicRoutes = ['/login', '/forgot-password', '/reset-password', '/auth/callback', '/auth/confirm-invite', '/auth/auth-code-error', '/registration/tandem']
   const isPublicRoute = publicRoutes.some((route) => pathname.startsWith(route))
 
   // Routes that require authentication but bypass dashboard layout checks
@@ -119,8 +119,18 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(redirectUrl)
   }
 
-  // Redirect authenticated users away from login page
+  // Redirect authenticated users away from login page (except for password setup)
   if (user && pathname === '/login') {
+    // Allow password setup for new invites and password resets
+    const setupParam = request.nextUrl.searchParams.get('setup')
+    const typeParam = request.nextUrl.searchParams.get('type')
+
+    // If user is setting up password (from invite or recovery), allow them to stay
+    if (setupParam === 'true' || typeParam === 'invite' || typeParam === 'recovery') {
+      return supabaseResponse
+    }
+
+    // Otherwise redirect to dashboard
     const redirectUrl = request.nextUrl.clone()
     redirectUrl.pathname = '/dashboard'
     return NextResponse.redirect(redirectUrl)
