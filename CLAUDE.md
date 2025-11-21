@@ -2,17 +2,16 @@
 
 **Project**: Flight Club Management System (Austrian Aviation Club)
 **Stack**: Next.js 15 + Supabase + shadcn/ui + Tailwind CSS
-**Status**: Production Ready (All Major Features Complete)
+**Status**: Production Ready
 **Last Updated**: November 17, 2025
 
 ---
 
 ## 1. PROJECT OVERVIEW
 
-FlightHub is a production-grade web application for managing aircraft reservations, flight logs, member administration, and financial tracking for small aviation and skydiving clubs. The application is built for an Austrian club and uses EUR currency and German language as defaults.
+FlightHub is a production-grade web application for managing aircraft reservations, flight logs, member administration, and financial tracking for aviation and skydiving clubs. The application is built for an Austrian club and uses EUR currency and German language as defaults.
 
 ### Key Characteristics
-- **Austrian Club Focus**: Uses EUR currency, German language defaults, Austrian address format
 - **Multi-Purpose**: Supports both general aviation and skydiving operations
 - **Hybrid RBAC System**: Combines role-based (board/member) with function-based permissions
 - **Comprehensive Document Management**: Tracks documents with expiry dates and approval workflows
@@ -141,9 +140,6 @@ flight-hub/
 ├── supabase/                             # Database and migrations
 │   ├── migrations/                       # Database migrations (10+ files)
 │   │   ├── 20250202100000_schema.sql     # Core schema
-│   │   ├── 20250202100002_billing.sql    # Billing system
-│   │   ├── 20250202100004_maintenance.sql# Maintenance tracking
-│   │   ├── 20250202100006_rbac_system.sql# Granular RBAC with functions
 │   │   └── [others]
 │   ├── SCHEMA_DOCUMENTATION.md           # Comprehensive schema docs
 │   ├── README.md                         # Supabase setup guide
@@ -388,7 +384,7 @@ if (permissionChecker.can('flight.log.lock')) { ... }
 
 ## 6. KEY FEATURES & IMPLEMENTATION
 
-### 1. Dashboard (Complete)
+### 1. Dashboard
 - **Stats Cards**: Upcoming reservations count, account balance, monthly costs, unread notifications
 - **Upcoming Reservations**: Next 7 days filtered by aircraft
 - **Account History**: Recent 10 transactions with amount/description
@@ -396,7 +392,7 @@ if (permissionChecker.can('flight.log.lock')) { ... }
 - **Notifications**: Unread notifications with mark-as-read
 - **Real-time**: Subscription updates for document changes and notifications
 
-### 2. Aircraft Management (Complete)
+### 2. Aircraft Management
 - **List View**: Search, active/inactive filter, responsive table
 - **Detail Tabs**:
   - **Details**: View/edit specifications (board only)
@@ -408,7 +404,7 @@ if (permissionChecker.can('flight.log.lock')) { ... }
 - **Storage Integration**: Supabase Storage buckets
 - **Blocking Documents**: Documents can block aircraft reservations
 
-### 3. Member Management (Complete - Board Only)
+### 3. Member Management (Board Only)
 - **Member List**: All users with roles, functions, email
 - **Invite Users**: Via Supabase Auth (sends invitation email)
 - **Edit Member**: Update name, surname, functions, roles, contact info
@@ -416,7 +412,7 @@ if (permissionChecker.can('flight.log.lock')) { ... }
 - **Document Approval**: View/approve user documents (licenses, medical, ID)
 - **Document Expiry**: Track expiry dates for compliance
 
-### 4. Documents (Complete)
+### 4. Documents
 - **Club Documents**: General documents (not aircraft or user specific)
 - **Upload**: Category, tags, metadata (board only)
 - **Categories**: Regulations, Procedures, Forms, General, Custom
@@ -425,7 +421,7 @@ if (permissionChecker.can('flight.log.lock')) { ... }
 - **Storage**: Supabase Storage integration
 - **Responsive**: Table and card views
 
-### 5. Settings (Complete - Board Only)
+### 5. Settings (Board Only)
 - **Function Management**: Create, edit, delete custom functions
 - **System Functions**: View/toggle active system functions
 - **Yearly Fees**: Set function fees for billing
@@ -435,7 +431,7 @@ if (permissionChecker.can('flight.log.lock')) { ... }
 - **Billing Rates**: Airport fees, operation type rates
 - **Tandem Registration**: Configure tandem skydive registration fields
 
-### 6. Billing & Accounting (Complete - Board Only)
+### 6. Billing & Accounting (Board Only)
 - **Cost Centers**: Manage cost centers for allocation
 - **Transactions**: View/create transactions by user or cost center
 - **User Accounts**: View individual account balances and history
@@ -448,7 +444,7 @@ if (permissionChecker.can('flight.log.lock')) { ... }
 
 **IMPORTANT**: The application has TWO different reversal systems:
 
-**1. Flight Charge Reversals** (for split-charged flights)
+**1. Flight Charge Reversals** (for flights)
 - **Functions**: `reverseFlightCharge()` (accounts.ts), `reverseCostCenterFlightCharge()` (cost-centers.ts)
 - **Purpose**: Reverse ALL transactions for a flight atomically
 - **Behavior**: When reversing a split-charged flight (e.g., 50% pilot, 25% Cost Center A, 25% Cost Center B), clicking "Reverse Charge" on ANY transaction will:
@@ -472,18 +468,16 @@ if (permissionChecker.can('flight.log.lock')) { ... }
 - `/app/(dashboard)/accounting/components/reverse-charge-dialog.tsx` - Flight reversal UI
 - `/app/(dashboard)/accounting/components/undo-transaction-dialog.tsx` - Manual reversal UI
 
-### 7. Flight Log (Complete)
-- **Entry**: Create flight log entries (Pilot/Flight Instructor)
+### 7. Flight Log
+- **Entry**: Create flight log entries
 - **Aircraft Selection**: Select aircraft and view flight history
-- **Approval**: Chief Pilot or board approves flights
-- **Locking**: Board locks flights (prevents further editing)
-- **Charging**: Board creates account charge from locked flight with split allocation
+- **Charging & Locking**: Board creates account charge from flight with possible split allocation - This locks an entry
 - **Calculations**: Auto-calculate block time and flight time
-- **Crew**: Track pilot, copilot, passengers
-- **Reversal**: Atomic reversal of split charges (21+ automated tests)
+- **Crew**: Track pilot, other crew-members
+- **Reversal**: Atomic reversal of split charges
 - **Permissions**: RBAC-based access control (flight.log.create, flight.log.approve, flight.log.lock)
 
-### 8. Reservations (Complete)
+### 8. Reservations
 - **Calendar View**: react-big-calendar showing all reservations
 - **Conflict Detection**: Prevent overlapping same-aircraft bookings
 - **Standby List**: Intentional overlaps for waiting list
@@ -492,7 +486,7 @@ if (permissionChecker.can('flight.log.lock')) { ... }
 - **Real-time Updates**: Live reservation updates via Supabase Realtime
 - **Permissions**: RBAC-based access control (reservations.create, reservations.edit)
 
-### 9. Permissions Management (Complete)
+### 9. Permissions Management
 - **Function Viewing**: Board can view all functions (system and custom)
 - **Assignment**: UI for assigning functions to users
 - **Validity Periods**: Set valid_from/valid_until dates
@@ -511,7 +505,7 @@ The flight charging system is one of the most critical features of FlightHub, en
 #### 1. Simple Charging
 - **Charge to User**: Entire flight cost charged to a single user
 - **Charge to Cost Center**: Entire flight cost charged to a cost center
-- **Lock Required**: Flights must be locked before charging
+- **Lock**: Flights will be locked when charging
 - **Transaction Creation**: Creates negative amount (debit) in user's account or cost center
 
 #### 2. Split Charging
@@ -537,14 +531,14 @@ All transactions linked by flightlog_id
 #### 3. Operation Type Default Splits
 - Pre-configured splits per operation type (Training, Maintenance, etc.)
 - Auto-populate split percentages when charging
-- Can be overridden by board member
+- Can be overridden
 - Stored in operation_types table
 
 #### 4. Transaction Reversal System
 
 **CRITICAL**: FlightHub has TWO different reversal systems:
 
-**A. Flight Charge Reversals** (for split-charged flights)
+**A. Flight Charge Reversals**
 - **Functions**: `reverseFlightCharge()` (accounts.ts), `reverseCostCenterFlightCharge()` (cost-centers.ts)
 - **Purpose**: Reverse ALL transactions for a flight atomically
 - **UI**: Orange "Reverse Charge" button on flight-related transactions
@@ -614,45 +608,25 @@ Flight charged: 50% User, 30% CC-A, 20% CC-B
 
 ### Testing
 
-#### Automated Tests (21 passing tests)
+#### Automated Tests
 - **File**: `__tests__/actions/flight-charging-simple.test.ts`
 - **Coverage**:
-  - Split percentage validation (4 tests)
-  - Split amount calculation (5 tests)
-  - Transaction amount convention (3 tests)
-  - Flight status transitions (3 tests)
-  - Reversal completeness (2 tests)
-  - Error scenarios (4 tests)
+  - Split percentage validation
+  - Split amount calculation
+  - Transaction amount convention
+  - Flight status transitions
+  - Reversal completeness
+  - Error scenarios
 
 #### Manual Test Plan
 - **File**: `FLIGHT_CHARGING_TEST_PLAN.md`
-- **Scenarios**: 70+ test cases covering:
+- **Scenarios**:
   - Simple charges and reversals
   - 2-way, 3-way, 4+ way split charges
   - Airport fee allocation (split vs assign)
   - Re-charging after reversal
   - Edge cases and error handling
   - Authorization and validation
-
-#### Testing Strategy
-- **File**: `TESTING_STRATEGY.md`
-- **Approach**: Hybrid testing combining:
-  - Unit tests for business logic (~95% coverage)
-  - Manual testing for integration (database, RLS, UI)
-  - Mock utilities for Supabase client testing
-
-### Known Issues & Fixes
-
-#### Recent Fix: Split Charge Reversal Bug (November 2025)
-**Problem**: When reversing a split-charged flight, only the clicked transaction was reversed, leaving other transactions unreversed. This caused double-charging when re-charging the flight.
-
-**Solution**: Updated `reverseFlightCharge()` and `reverseCostCenterFlightCharge()` to:
-1. Find ALL transactions with same `flightlog_id`
-2. Reverse ALL transactions atomically
-3. Mark ALL as reversed with same timestamp
-4. Unlock flight for re-charging
-
-**Testing**: Confirmed working through manual testing and automated test suite.
 
 ### Best Practices
 
@@ -671,7 +645,7 @@ Flight charged: 50% User, 30% CC-A, 20% CC-B
 
 ---
 
-## 8. API ROUTES (18 Route Handlers)
+## 8. API ROUTES
 
 Located in `app/api/`:
 
@@ -705,7 +679,7 @@ Located in `app/api/`:
 
 ---
 
-## 9. SERVER ACTIONS (13+ Actions)
+## 9. SERVER ACTIONS
 
 Located in `lib/actions/`:
 
@@ -736,18 +710,10 @@ Located in `lib/actions/`:
 ## 10. COMPONENTS & UI
 
 ### Layout Components
-- **Sidebar** (`components/layout/sidebar.tsx`): Desktop & mobile navigation with real-time document count badges
+- **Sidebar** (`components/layout/sidebar.tsx`): Desktop & mobile navigation with real-time document badges
 - **Header** (`components/layout/header.tsx`): Top bar with mobile menu toggle
 - **User Menu** (`components/layout/user-menu.tsx`): Profile dropdown with settings/logout
 - **Mode Toggle** (`components/layout/mode-toggle.tsx`): Dark/light mode switch
-
-### UI Primitives (shadcn/ui)
-- Basic: Button, Input, Label, Card, Badge, Avatar
-- Structured: Table, Tabs, Separator, ScrollArea
-- Interactive: Dialog, Dropdown Menu, Select, Radio Group, Checkbox, Switch
-- Feedback: Alert, AlertDialog, Toast (Sonner)
-- Forms: Form, Textarea, Popover
-- Advanced: Calendar (date-picker), Command (combobox)
 
 ### Custom Components
 - **PersonSelector** (`components/person-selector.tsx`): Smart selector for filtering users by required functions
@@ -774,15 +740,14 @@ Located in `lib/actions/`:
 
 ### Setup
 - **Library**: next-intl (wrapper around Intl APIs)
-- **Languages**: German (de) and English (en)
 - **Default**: English
 - **Fallback**: Browser language detection, then English
 
 ### Configuration Files
 - `i18n.ts`: Configure next-intl with message loading
 - `middleware.ts`: Detect and set locale from cookie/header/database
-- `messages/de.json`: German translations
-- `messages/en.json`: English translations
+- `messages/de.json`: German
+- `messages/en.json`: English
 
 ### Usage
 ```typescript
@@ -790,12 +755,6 @@ const t = useTranslations('namespace')
 t('key') // Returns translated string
 <Trans i18nKey="key" /> // For translations with HTML
 ```
-
-### Supported Features
-- Pluralization
-- Formatting (dates, numbers, currency)
-- Nested translations
-- Default messages
 
 ### Default Language Behavior
 1. Check user's `preferred_language` in database
@@ -820,23 +779,24 @@ t('key') // Returns translated string
 
 ### Existing Tests
 
-#### Flight Charging System (21 passing tests)
+#### Flight Charging System
 - **File**: `__tests__/actions/flight-charging-simple.test.ts`
 - **Test Coverage**:
-  - Split Percentage Validation (4 tests)
-  - Split Amount Calculation (5 tests)
-  - Transaction Amount Convention (3 tests)
-  - Flight Status Transitions (3 tests)
-  - Reversal Completeness (2 tests)
-  - Error Scenarios (4 tests)
-- **Run Time**: ~400ms
+  - Split Percentage Validation
+  - Split Amount Calculation
+  - Transaction Amount Convention
+  - Flight Status Transitions
+  - Reversal Completeness
+  - Error Scenarios
 - **Focus**: Business logic validation without complex database mocking
 
-#### Other Test Files (4+ test files)
+#### Other Test Files
 - `app/api/documents/upload/route.test.ts` - Document upload API
 - `app/api/documents/user-alerts/route.test.ts` - User alerts API
 - `app/api/documents/renew/route.test.ts` - Document renewal API
 - `app/(dashboard)/reservations/actions.test.ts` - Reservation actions
+- `__tests__/actions/flight-charging-simple.test.ts` - Business logic tests
+- `__tests__/utils/flight-charging-mocks.ts` - Mock utilities for testing
 
 ### Mock Utilities
 - `__tests__/utils/flight-charging-mocks.ts`: Mock utilities for flight charging tests
@@ -849,8 +809,7 @@ t('key') // Returns translated string
 
 FlightHub uses a **hybrid testing approach** combining:
 
-1. **Unit Tests for Business Logic** (~95% coverage)
-   - Fast execution (< 1 second)
+1. **Unit Tests for Business Logic**
    - No complex database mocking
    - Focus on calculations, validations, and state transitions
    - Easy to maintain and extend
@@ -861,11 +820,6 @@ FlightHub uses a **hybrid testing approach** combining:
    - Concurrent operations
    - Real-world scenarios with actual data
 
-3. **Comprehensive Test Documentation**
-   - `TESTING_STRATEGY.md` - Complete testing approach guide
-   - `FLIGHT_CHARGING_TEST_PLAN.md` - 70+ manual test scenarios
-   - Step-by-step testing checklists
-   - Test data fixtures and expected results
 
 ### Running Tests
 
@@ -878,9 +832,6 @@ npm test -- __tests__/actions/flight-charging-simple.test.ts
 
 # Run with coverage
 npm test -- --coverage
-
-# Watch mode for development
-npm test -- --watch
 ```
 
 ### Testing Patterns
@@ -1016,7 +967,7 @@ if (!result.success) return { error: result.error.flatten() }
 - **Critical Bug Fix**: Fixed split-charged flight reversals
 - **Problem**: When reversing a split-charged flight, only clicked transaction was reversed
 - **Solution**: Atomic reversal of ALL transactions with same `flightlog_id`
-- **Testing**: Added 21 automated tests + manual test plan
+- **Testing**: Added automated tests
 
 ### Granular RBAC System
 - Implemented hybrid RBAC combining roles + function-based permissions
@@ -1066,21 +1017,6 @@ NEXT_PUBLIC_APP_NAME=FlightHub
 DATABASE_URL=postgresql://postgres:pass@db.project.supabase.co:5432/postgres
 ```
 
-### npm Scripts
-```json
-{
-  "dev": "next dev --turbopack",           // Dev with Turbopack
-  "dev:clean": "rm -rf .next && next dev", // Fresh build
-  "dev:stable": "next dev",                // Stable version
-  "build": "next build --turbopack",       // Production build
-  "start": "next start",                   // Start production server
-  "lint": "eslint",                        // Check code
-  "test": "jest",                          // Run tests
-  "test:watch": "jest --watch",            // Tests in watch mode
-  "test:coverage": "jest --coverage"       // Coverage report
-}
-```
-
 ### Key Configuration Files
 - `next.config.ts`: Next.js config with Turbopack and i18n plugin
 - `tsconfig.json`: TypeScript compiler options
@@ -1095,13 +1031,12 @@ DATABASE_URL=postgresql://postgres:pass@db.project.supabase.co:5432/postgres
 ## 16. PERFORMANCE CONSIDERATIONS
 
 ### Database
-- 40+ strategic indexes on frequently queried columns
+- Strategic indexes on frequently queried columns
 - Materialized views for pre-calculated data
 - Partial indexes on active records only
 - Composite indexes for common query patterns
 
 ### Frontend
-- Next.js App Router with streaming
 - Turbopack for faster builds
 - Code splitting and lazy loading
 - Image optimization via next/image
@@ -1110,13 +1045,6 @@ DATABASE_URL=postgresql://postgres:pass@db.project.supabase.co:5432/postgres
 - Supabase-managed query result caching
 - Next.js `revalidatePath()` for cache invalidation
 - Client-side React Query pattern ready
-
-### Expected Performance
-- User profile lookup: <1ms (indexed by UUID)
-- Active reservations query: <10ms (partial index)
-- Flight history: <50ms (indexed pilot_id + time)
-- Document expiry check: <5ms (partial index)
-- Account balance: <20ms (view with aggregation)
 
 ---
 
@@ -1157,35 +1085,15 @@ DATABASE_URL=postgresql://postgres:pass@db.project.supabase.co:5432/postgres
 ## 18. DEPLOYMENT & DEVOPS
 
 ### Deployment Target
-- **Platform**: Vercel (recommended for Next.js)
-- **Database**: Supabase (managed PostgreSQL)
-- **Storage**: Supabase Storage (AWS S3-backed)
+- **Platform**: Vercel
+- **Database**: Supabase
+- **Storage**: Supabase Storage
 
 ### Deployment Steps
-1. Connect GitHub repository to Vercel
-2. Set environment variables in Vercel dashboard
+1. Vercel connected to GitHub
+2. Vercel dashboard environment variables are set
 3. Automatic deploys on push to main
-4. Database migrations applied manually via Supabase CLI
-
-### Database Migrations
-```bash
-# Link to Supabase project
-supabase link --project-ref <ref>
-
-# Push migrations
-supabase db push
-
-# Pull remote changes
-supabase db pull
-
-# Check migration status
-supabase db diff
-```
-
-### Monitoring
-- Supabase Dashboard: Database performance, auth logs
-- Vercel Dashboard: Deployment status, function execution
-- Application logging: Browser console and server logs
+4. Database migrations applied manually
 
 ---
 
@@ -1209,7 +1117,7 @@ supabase db diff
 
 4. **Build UI**
    - Create components in `app/(dashboard)/[feature]/`
-   - Use shadcn/ui primitives
+   - Use shadcn/ui
    - Call server actions on form submit
 
 5. **Test**
@@ -1223,12 +1131,6 @@ supabase db diff
 2. Check with `hasPermission(user, 'new.permission')`
 3. Use in server actions with `requirePermission()`
 4. Update sidebar/components to respect permission
-
-### Adding a Language
-
-1. Add translations to `messages/de.json` or `messages/en.json`
-2. Use in components with `useTranslations('namespace')`
-3. Test German/English switching
 
 ---
 
@@ -1277,69 +1179,19 @@ supabase db diff
 - `/PROJECT_STATUS.md` - Feature implementation status
 - `SCHEMA_SUMMARY.md` - Database schema summary
 
-#### Testing Documentation
-- `TESTING_STRATEGY.md` - Hybrid testing approach and comprehensive guide
-- `FLIGHT_CHARGING_TEST_PLAN.md` - 70+ manual test scenarios for flight charging system
-- `__tests__/actions/flight-charging-simple.test.ts` - 21 passing business logic tests
-- `__tests__/utils/flight-charging-mocks.ts` - Mock utilities for testing
-
 #### Feature Documentation
 - `OPERATION_TYPE_COST_SPLITTING.md` - Split charging system and atomic reversals
 - `README.md` - Project overview and quick start guide
-
-### External Documentation
-- [Next.js Docs](https://nextjs.org/docs)
-- [Supabase Docs](https://supabase.com/docs)
-- [shadcn/ui Components](https://ui.shadcn.com/)
-- [Tailwind CSS](https://tailwindcss.com/docs)
-- [PostgreSQL RLS](https://www.postgresql.org/docs/current/ddl-rowsecurity.html)
-
-### Development Resources
-- [next-intl Docs](https://next-intl-docs.vercel.app/)
-- [react-hook-form](https://react-hook-form.com/)
-- [Zod Validation](https://zod.dev/)
-- [Jest Testing](https://jestjs.io/docs/getting-started)
-
----
-
-## 22. KEY DECISION RATIONALE
-
-### Why Hybrid RBAC?
-- Simple role system (member/board) covers 80% of use cases
-- Function-based permissions provide flexibility for club-specific roles
-- Reduces database complexity vs pure attribute-based access control
-
-### Why Single Documents Table?
-- Unified management interface for all document types
-- Single set of RLS policies instead of multiple tables
-- Check constraints ensure data consistency
-
-### Why Supabase?
-- PostgreSQL power with managed hosting
-- RLS for security without application code
-- Real-time subscriptions for live updates
-- Built-in authentication with email invitations
-- Storage integration for documents
-
-### Why Next.js App Router?
-- Server components for data fetching
-- Server actions for form handling
-- Built-in API routes
-- Middleware for auth
-- Excellent TypeScript support
 
 ---
 
 ## 23. FUTURE ROADMAP
 
 ### Planned Features (from PROJECT_STATUS.md)
-1. **Reservations Calendar**: react-big-calendar integration
-2. **Flight Log Entry Interface**: Complete form with validation
-3. **Maintenance Tracking**: Track aircraft maintenance records
-4. **Advanced Reporting**: Flight hours, revenue, utilization stats
-5. **Mobile Optimization**: Offline support, push notifications
-6. **Audit Logging**: Track all sensitive operations
-7. **Waiting List**: Auto-promotion when conflicts resolve
+1. **Advanced Reporting**: Flight hours, revenue, utilization stats
+2. **Mobile Optimization**: Offline support, push notifications
+3. **Audit Logging**: Track all sensitive operations
+4. **Waiting List**: Auto-promotion when conflicts resolve
 
 ### Scaling Considerations
 - Materialized views if queries slow down (refresh hourly)
@@ -1377,4 +1229,3 @@ FlightHub is a well-architected, production-ready aviation club management syste
 - **Scalability**: Design supports growth to thousands of members and records
 
 The codebase follows Next.js and Supabase best practices with clear patterns for extending features, adding permissions, and managing user data. All critical paths are secured with either database-level RLS or server-side permission checks.
-

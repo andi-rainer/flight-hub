@@ -168,13 +168,16 @@ export async function inviteUser(data: {
 }
 
 export async function resendInvitation(userId: string) {
+  console.log('[Resend Invite] START - userId:', userId, 'type:', typeof userId)
   const supabase = await createClient()
 
   // Check permission to edit members (resending invitation is an edit operation)
   const { user, error: permError } = await requirePermission(supabase, 'members.edit')
   if (permError || !user) {
+    console.log('[Resend Invite] Permission denied:', permError)
     return { success: false, error: permError || 'Not authenticated' }
   }
+  console.log('[Resend Invite] Permission granted to user:', user.id)
 
   // Get the user to resend invite to
   const { data: targetUser } = await supabase
@@ -184,31 +187,38 @@ export async function resendInvitation(userId: string) {
     .single()
 
   if (!targetUser) {
+    console.log('[Resend Invite] Target user not found in DB for id:', userId)
     return { success: false, error: 'User not found' }
   }
+  console.log('[Resend Invite] Target user found:', targetUser.email)
 
   // Get auth user details to check if confirmed
   const adminClient = createAdminClient()
   const { data: authUser, error: getUserError } = await adminClient.auth.admin.getUserById(userId)
 
   if (getUserError || !authUser) {
-    console.error('Error getting user:', getUserError)
+    console.error('[Resend Invite] Error getting auth user:', getUserError)
     return { success: false, error: 'Could not retrieve user information' }
   }
+  console.log('[Resend Invite] Auth user confirmed:', !!authUser.user.email_confirmed_at)
 
   // If user is already confirmed, send password reset instead of invitation
   if (authUser.user.email_confirmed_at) {
-    const { data: resetLink, error: resetError } = await adminClient.auth.admin.generateLink({
-      type: 'recovery',
-      email: targetUser.email,
-    })
+    console.log('[Resend Invite] User already confirmed, sending password reset email')
+    const redirectTo = (process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000').replace(/\/$/, '')
+
+    // Use resetPasswordForEmail to actually send the email (works with local Supabase/Inbucket)
+    const { error: resetError } = await supabase.auth.resetPasswordForEmail(
+      targetUser.email,
+      { redirectTo: `${redirectTo}/auth/callback` }
+    )
 
     if (resetError) {
-      console.error('Error generating reset link:', resetError)
+      console.error('[Resend Invite] Error sending password reset email:', resetError)
       return { success: false, error: resetError.message }
     }
 
-    // Note: The reset link is generated but Supabase should send the email automatically
+    console.log('[Resend Invite] Password reset email sent successfully to:', targetUser.email)
     revalidatePath('/members')
     return {
       success: true,
@@ -218,17 +228,18 @@ export async function resendInvitation(userId: string) {
 
   // User is not confirmed, send regular invitation with explicit redirect URL
   const redirectTo = (process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000').replace(/\/$/, '')
-  console.log('[Resend Invite] Using redirect URL:', `${redirectTo}/auth/callback`)
+  console.log('[Resend Invite] Sending invitation with redirect URL:', `${redirectTo}/auth/callback`)
   const { error: inviteError } = await adminClient.auth.admin.inviteUserByEmail(
     targetUser.email,
     { redirectTo: `${redirectTo}/auth/callback` }
   )
 
   if (inviteError) {
-    console.error('Error resending invitation:', inviteError)
+    console.error('[Resend Invite] Error resending invitation:', inviteError)
     return { success: false, error: inviteError.message }
   }
 
+  console.log('[Resend Invite] Invitation sent successfully to:', targetUser.email)
   revalidatePath('/members')
   return {
     success: true,

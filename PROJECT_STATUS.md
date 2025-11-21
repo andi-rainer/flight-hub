@@ -183,7 +183,6 @@ FlightHub is a production-grade aviation club management application built with 
 - Scheduled maintenance workflows
 - Component life tracking with alerts
 - Maintenance history reports
-- Integration with flight hours for scheduled intervals
 
 ### User Experience Improvements
 - Bulk operations (multi-select for charging, approvals)
@@ -191,7 +190,6 @@ FlightHub is a production-grade aviation club management application built with 
 - Customizable dashboard widgets
 - Export to PDF/Excel for reports
 - Automated backup and restore tools
-
 ---
 
 ## 🔧 Known Technical Considerations
