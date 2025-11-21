@@ -15,6 +15,8 @@ function ConfirmInviteContent() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [otp, setOtp] = useState('')
+  const MIN_OTP_LENGTH = 6 // Minimum OTP length
+  const MAX_OTP_LENGTH = 10 // Maximum OTP length
   const [email, setEmail] = useState('')
   const [showOtpInput, setShowOtpInput] = useState(false)
 
@@ -55,8 +57,8 @@ function ConfirmInviteContent() {
       }
 
       if (data.session) {
-        // Successfully created session, redirect to dashboard
-        router.push('/dashboard')
+        // Successfully created session, redirect to password setup
+        router.push('/auth/setup-password')
       } else {
         setError('Failed to create session. Please try again.')
         setIsLoading(false)
@@ -72,12 +74,12 @@ function ConfirmInviteContent() {
     e.preventDefault()
 
     if (!email || !otp) {
-      setError('Please enter both your email and the 6-digit code.')
+      setError('Please enter both your email and the code from your invitation email.')
       return
     }
 
-    if (otp.length !== 6) {
-      setError('The code must be 6 digits.')
+    if (otp.length < MIN_OTP_LENGTH) {
+      setError(`The code must be at least ${MIN_OTP_LENGTH} digits.`)
       return
     }
 
@@ -102,8 +104,8 @@ function ConfirmInviteContent() {
       }
 
       if (data.session) {
-        // Successfully created session, redirect to dashboard
-        router.push('/dashboard')
+        // Successfully created session, redirect to password setup
+        router.push('/auth/setup-password')
       } else {
         setError('Failed to create session. Please try again.')
         setIsLoading(false)
@@ -168,7 +170,7 @@ function ConfirmInviteContent() {
                 className="w-full"
                 type="button"
               >
-                I have a 6-digit code
+                I have a code from the email
               </Button>
             </>
           ) : (
@@ -192,27 +194,26 @@ function ConfirmInviteContent() {
 
                 <div className="space-y-2">
                   <label htmlFor="otp" className="text-sm font-medium">
-                    6-Digit Code
+                    Invitation Code
                   </label>
                   <Input
                     id="otp"
                     type="text"
-                    placeholder="123456"
+                    placeholder="Enter code from email"
                     value={otp}
-                    onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                    onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, MAX_OTP_LENGTH))}
                     required
                     disabled={isLoading}
-                    maxLength={6}
-                    pattern="[0-9]{6}"
+                    maxLength={MAX_OTP_LENGTH}
                   />
                   <p className="text-xs text-muted-foreground">
-                    Enter the 6-digit code from your invitation email
+                    Enter the code from your invitation email (usually 6-8 digits)
                   </p>
                 </div>
 
                 <Button
                   type="submit"
-                  disabled={isLoading || !email || otp.length !== 6}
+                  disabled={isLoading || !email || otp.length < MIN_OTP_LENGTH}
                   className="w-full"
                 >
                   {isLoading ? (
