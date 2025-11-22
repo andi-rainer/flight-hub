@@ -105,7 +105,6 @@ CREATE TABLE public.planes (
     max_fuel NUMERIC(8, 2),
     fuel_consumption NUMERIC(6, 2),
     max_mass NUMERIC(8, 2),
-    cg_limits JSONB,
 
     -- Capacity
     passenger_seats INTEGER DEFAULT 1,

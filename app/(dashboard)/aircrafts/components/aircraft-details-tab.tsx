@@ -87,16 +87,10 @@ export function AircraftDetailsTab({ aircraft, isBoardMember }: AircraftDetailsT
           <div className="border-t pt-4">
             <h3 className="text-lg font-semibold mb-4">{t('technicalSpecifications')}</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {aircraft.empty_weight !== null && (
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">{t('emptyWeight')}</p>
-                  <p className="text-lg">{aircraft.empty_weight} kg</p>
-                </div>
-              )}
               {aircraft.max_mass !== null && (
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">{t('maxMass')}</p>
-                  <p className="text-lg">{aircraft.max_mass} kg</p>
+                  <p className="text-sm font-medium text-muted-foreground">Max. T/O Mass (MTOM)</p>
+                  <p className="text-lg">{aircraft.max_mass} {aircraft.mass_unit || 'kg'}</p>
                 </div>
               )}
               {aircraft.max_fuel !== null && (
@@ -143,17 +137,6 @@ export function AircraftDetailsTab({ aircraft, isBoardMember }: AircraftDetailsT
               )}
             </div>
           </div>
-
-          {aircraft.cg_limits && (
-            <div className="border-t pt-4">
-              <h3 className="text-lg font-semibold mb-4">{t('cgLimits')}</h3>
-              <div className="bg-muted p-4 rounded-lg">
-                <pre className="text-sm overflow-x-auto">
-                  {JSON.stringify(aircraft.cg_limits, null, 2)}
-                </pre>
-              </div>
-            </div>
-          )}
 
           <div className="border-t pt-4">
             <p className="text-sm text-muted-foreground">

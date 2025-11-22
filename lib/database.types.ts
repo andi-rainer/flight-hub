@@ -7,11 +7,6 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instantiate createClient with right options
-  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
-  __InternalSupabase: {
-    PostgrestVersion: "13.0.5"
-  }
   graphql_public: {
     Tables: {
       [_ in never]: never
@@ -507,6 +502,107 @@ export type Database = {
         }
         Relationships: []
       }
+      board_contact_settings: {
+        Row: {
+          contact_email: string | null
+          contact_name: string | null
+          contact_phone: string | null
+          created_at: string
+          id: string
+          office_hours: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          contact_email?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          id?: string
+          office_hours?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          contact_email?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          id?: string
+          office_hours?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "board_contact_settings_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "user_balances"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "board_contact_settings_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "board_contact_settings_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "users_with_functions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "board_contact_settings_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "users_with_functions_search"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      category_endorsements: {
+        Row: {
+          category_id: string
+          created_at: string | null
+          created_by: string | null
+          endorsement_id: string
+          id: string
+        }
+        Insert: {
+          category_id: string
+          created_at?: string | null
+          created_by?: string | null
+          endorsement_id: string
+          id?: string
+        }
+        Update: {
+          category_id?: string
+          created_at?: string | null
+          created_by?: string | null
+          endorsement_id?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "category_endorsements_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "document_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "category_endorsements_endorsement_id_fkey"
+            columns: ["endorsement_id"]
+            isOneToOne: false
+            referencedRelation: "endorsements"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       component_tbo_presets: {
         Row: {
           component_type: Database["public"]["Enums"]["component_type"]
@@ -727,74 +823,38 @@ export type Database = {
         }
         Relationships: []
       }
-      document_types: {
+      definition_endorsements: {
         Row: {
-          category: string | null
-          created_at: string
-          description: string | null
-          expires: boolean
-          id: string
-          mandatory: boolean
-          name: string
-          required_for_functions: string[] | null
-          updated_at: string
-        }
-        Insert: {
-          category?: string | null
-          created_at?: string
-          description?: string | null
-          expires?: boolean
-          id?: string
-          mandatory?: boolean
-          name: string
-          required_for_functions?: string[] | null
-          updated_at?: string
-        }
-        Update: {
-          category?: string | null
-          created_at?: string
-          description?: string | null
-          expires?: boolean
-          id?: string
-          mandatory?: boolean
-          name?: string
-          required_for_functions?: string[] | null
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      document_type_endorsements: {
-        Row: {
-          created_at: string
-          document_type_id: string
+          created_at: string | null
+          created_by: string | null
+          document_definition_id: string
           endorsement_id: string
           id: string
-          is_required: boolean
         }
         Insert: {
-          created_at?: string
-          document_type_id: string
+          created_at?: string | null
+          created_by?: string | null
+          document_definition_id: string
           endorsement_id: string
           id?: string
-          is_required?: boolean
         }
         Update: {
-          created_at?: string
-          document_type_id?: string
+          created_at?: string | null
+          created_by?: string | null
+          document_definition_id?: string
           endorsement_id?: string
           id?: string
-          is_required?: boolean
         }
         Relationships: [
           {
-            foreignKeyName: "document_type_endorsements_document_type_id_fkey"
-            columns: ["document_type_id"]
+            foreignKeyName: "definition_endorsements_document_definition_id_fkey"
+            columns: ["document_definition_id"]
             isOneToOne: false
-            referencedRelation: "document_types"
+            referencedRelation: "document_definitions"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "document_type_endorsements_endorsement_id_fkey"
+            foreignKeyName: "definition_endorsements_endorsement_id_fkey"
             columns: ["endorsement_id"]
             isOneToOne: false
             referencedRelation: "endorsements"
@@ -802,175 +862,86 @@ export type Database = {
           },
         ]
       }
-      documents: {
+      document_categories: {
         Row: {
-          approved: boolean
-          approved_at: string | null
-          approved_by: string | null
-          blocks_aircraft: boolean
-          category: string | null
-          document_type_id: string | null
-          expiry_date: string | null
-          file_url: string
+          active: boolean | null
+          created_at: string | null
+          description: string | null
+          icon: string | null
           id: string
           name: string
-          plane_id: string | null
-          subcategory_id: string | null
-          tags: string[] | null
-          uploaded_at: string
-          uploaded_by: string
-          user_id: string | null
+          sort_order: number
+          updated_at: string | null
         }
         Insert: {
-          approved?: boolean
-          approved_at?: string | null
-          approved_by?: string | null
-          blocks_aircraft?: boolean
-          category?: string | null
-          document_type_id?: string | null
-          expiry_date?: string | null
-          file_url: string
+          active?: boolean | null
+          created_at?: string | null
+          description?: string | null
+          icon?: string | null
           id?: string
           name: string
-          plane_id?: string | null
-          subcategory_id?: string | null
-          tags?: string[] | null
-          uploaded_at?: string
-          uploaded_by: string
-          user_id?: string | null
+          sort_order?: number
+          updated_at?: string | null
         }
         Update: {
-          approved?: boolean
-          approved_at?: string | null
-          approved_by?: string | null
-          blocks_aircraft?: boolean
-          category?: string | null
-          document_type_id?: string | null
-          expiry_date?: string | null
-          file_url?: string
+          active?: boolean | null
+          created_at?: string | null
+          description?: string | null
+          icon?: string | null
           id?: string
           name?: string
-          plane_id?: string | null
-          subcategory_id?: string | null
-          tags?: string[] | null
-          uploaded_at?: string
-          uploaded_by?: string
-          user_id?: string | null
+          sort_order?: number
+          updated_at?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "documents_approved_by_fkey"
-            columns: ["approved_by"]
-            isOneToOne: false
-            referencedRelation: "user_balances"
-            referencedColumns: ["user_id"]
-          },
-          {
-            foreignKeyName: "documents_approved_by_fkey"
-            columns: ["approved_by"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "documents_approved_by_fkey"
-            columns: ["approved_by"]
-            isOneToOne: false
-            referencedRelation: "users_with_functions"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "documents_approved_by_fkey"
-            columns: ["approved_by"]
-            isOneToOne: false
-            referencedRelation: "users_with_functions_search"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "documents_document_type_id_fkey"
-            columns: ["document_type_id"]
-            isOneToOne: false
-            referencedRelation: "document_types"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "documents_plane_id_fkey"
-            columns: ["plane_id"]
-            isOneToOne: false
-            referencedRelation: "aircraft_totals"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "documents_plane_id_fkey"
-            columns: ["plane_id"]
-            isOneToOne: false
-            referencedRelation: "aircraft_with_maintenance"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "documents_plane_id_fkey"
-            columns: ["plane_id"]
-            isOneToOne: false
-            referencedRelation: "planes"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "documents_uploaded_by_fkey"
-            columns: ["uploaded_by"]
-            isOneToOne: false
-            referencedRelation: "user_balances"
-            referencedColumns: ["user_id"]
-          },
-          {
-            foreignKeyName: "documents_uploaded_by_fkey"
-            columns: ["uploaded_by"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "documents_uploaded_by_fkey"
-            columns: ["uploaded_by"]
-            isOneToOne: false
-            referencedRelation: "users_with_functions"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "documents_uploaded_by_fkey"
-            columns: ["uploaded_by"]
-            isOneToOne: false
-            referencedRelation: "users_with_functions_search"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "documents_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "user_balances"
-            referencedColumns: ["user_id"]
-          },
-          {
-            foreignKeyName: "documents_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "documents_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users_with_functions"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "documents_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users_with_functions_search"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
+      }
+      document_definitions: {
+        Row: {
+          active: boolean | null
+          created_at: string | null
+          description: string | null
+          expires: boolean | null
+          has_endorsements: boolean | null
+          has_subcategories: boolean | null
+          icon: string | null
+          id: string
+          mandatory: boolean | null
+          name: string
+          required_for_functions: string[] | null
+          sort_order: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          active?: boolean | null
+          created_at?: string | null
+          description?: string | null
+          expires?: boolean | null
+          has_endorsements?: boolean | null
+          has_subcategories?: boolean | null
+          icon?: string | null
+          id?: string
+          mandatory?: boolean | null
+          name: string
+          required_for_functions?: string[] | null
+          sort_order?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          active?: boolean | null
+          created_at?: string | null
+          description?: string | null
+          expires?: boolean | null
+          has_endorsements?: boolean | null
+          has_subcategories?: boolean | null
+          icon?: string | null
+          id?: string
+          mandatory?: boolean | null
+          name?: string
+          required_for_functions?: string[] | null
+          sort_order?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       document_endorsement_privileges: {
         Row: {
@@ -1014,7 +985,28 @@ export type Database = {
             foreignKeyName: "document_endorsement_privileges_added_by_fkey"
             columns: ["added_by"]
             isOneToOne: false
+            referencedRelation: "user_balances"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "document_endorsement_privileges_added_by_fkey"
+            columns: ["added_by"]
+            isOneToOne: false
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_endorsement_privileges_added_by_fkey"
+            columns: ["added_by"]
+            isOneToOne: false
+            referencedRelation: "users_with_functions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_endorsement_privileges_added_by_fkey"
+            columns: ["added_by"]
+            isOneToOne: false
+            referencedRelation: "users_with_functions_search"
             referencedColumns: ["id"]
           },
           {
@@ -1025,10 +1017,354 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "document_endorsement_privileges_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "user_documents_with_types"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "document_endorsement_privileges_endorsement_id_fkey"
             columns: ["endorsement_id"]
             isOneToOne: false
             referencedRelation: "endorsements"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      document_subcategories: {
+        Row: {
+          active: boolean | null
+          category_id: string
+          code: string | null
+          created_at: string | null
+          description: string | null
+          document_definition_id: string | null
+          id: string
+          name: string
+          sort_order: number
+          updated_at: string | null
+        }
+        Insert: {
+          active?: boolean | null
+          category_id: string
+          code?: string | null
+          created_at?: string | null
+          description?: string | null
+          document_definition_id?: string | null
+          id?: string
+          name: string
+          sort_order?: number
+          updated_at?: string | null
+        }
+        Update: {
+          active?: boolean | null
+          category_id?: string
+          code?: string | null
+          created_at?: string | null
+          description?: string | null
+          document_definition_id?: string | null
+          id?: string
+          name?: string
+          sort_order?: number
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_subcategories_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "document_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_subcategories_document_definition_id_fkey"
+            columns: ["document_definition_id"]
+            isOneToOne: false
+            referencedRelation: "document_definitions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      document_type_endorsements: {
+        Row: {
+          created_at: string
+          document_type_id: string
+          endorsement_id: string
+          id: string
+          is_required: boolean
+        }
+        Insert: {
+          created_at?: string
+          document_type_id: string
+          endorsement_id: string
+          id?: string
+          is_required?: boolean
+        }
+        Update: {
+          created_at?: string
+          document_type_id?: string
+          endorsement_id?: string
+          id?: string
+          is_required?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_type_endorsements_document_type_id_fkey"
+            columns: ["document_type_id"]
+            isOneToOne: false
+            referencedRelation: "document_types"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_type_endorsements_endorsement_id_fkey"
+            columns: ["endorsement_id"]
+            isOneToOne: false
+            referencedRelation: "endorsements"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      document_types: {
+        Row: {
+          category: string | null
+          category_id: string | null
+          created_at: string
+          description: string | null
+          expires: boolean
+          id: string
+          mandatory: boolean
+          name: string
+          required_for_functions: string[] | null
+          subcategory_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          category?: string | null
+          category_id?: string | null
+          created_at?: string
+          description?: string | null
+          expires?: boolean
+          id?: string
+          mandatory?: boolean
+          name: string
+          required_for_functions?: string[] | null
+          subcategory_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          category?: string | null
+          category_id?: string | null
+          created_at?: string
+          description?: string | null
+          expires?: boolean
+          id?: string
+          mandatory?: boolean
+          name?: string
+          required_for_functions?: string[] | null
+          subcategory_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_types_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "document_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_types_subcategory_id_fkey"
+            columns: ["subcategory_id"]
+            isOneToOne: false
+            referencedRelation: "document_subcategories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      documents: {
+        Row: {
+          approved: boolean
+          approved_at: string | null
+          approved_by: string | null
+          blocks_aircraft: boolean
+          category: string | null
+          document_definition_id: string | null
+          document_type_id: string | null
+          expiry_date: string | null
+          file_url: string
+          id: string
+          name: string
+          plane_id: string | null
+          subcategory_id: string | null
+          tags: string[] | null
+          uploaded_at: string
+          uploaded_by: string
+          user_id: string | null
+        }
+        Insert: {
+          approved?: boolean
+          approved_at?: string | null
+          approved_by?: string | null
+          blocks_aircraft?: boolean
+          category?: string | null
+          document_definition_id?: string | null
+          document_type_id?: string | null
+          expiry_date?: string | null
+          file_url: string
+          id?: string
+          name: string
+          plane_id?: string | null
+          subcategory_id?: string | null
+          tags?: string[] | null
+          uploaded_at?: string
+          uploaded_by: string
+          user_id?: string | null
+        }
+        Update: {
+          approved?: boolean
+          approved_at?: string | null
+          approved_by?: string | null
+          blocks_aircraft?: boolean
+          category?: string | null
+          document_definition_id?: string | null
+          document_type_id?: string | null
+          expiry_date?: string | null
+          file_url?: string
+          id?: string
+          name?: string
+          plane_id?: string | null
+          subcategory_id?: string | null
+          tags?: string[] | null
+          uploaded_at?: string
+          uploaded_by?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "documents_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "user_balances"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "documents_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documents_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "users_with_functions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documents_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "users_with_functions_search"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documents_document_definition_id_fkey"
+            columns: ["document_definition_id"]
+            isOneToOne: false
+            referencedRelation: "document_definitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documents_document_type_id_fkey"
+            columns: ["document_type_id"]
+            isOneToOne: false
+            referencedRelation: "document_types"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documents_plane_id_fkey"
+            columns: ["plane_id"]
+            isOneToOne: false
+            referencedRelation: "aircraft_totals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documents_plane_id_fkey"
+            columns: ["plane_id"]
+            isOneToOne: false
+            referencedRelation: "aircraft_with_maintenance"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documents_plane_id_fkey"
+            columns: ["plane_id"]
+            isOneToOne: false
+            referencedRelation: "planes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documents_subcategory_id_fkey"
+            columns: ["subcategory_id"]
+            isOneToOne: false
+            referencedRelation: "document_subcategories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documents_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "user_balances"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "documents_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documents_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "users_with_functions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documents_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "users_with_functions_search"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documents_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_balances"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "documents_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documents_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users_with_functions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documents_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users_with_functions_search"
             referencedColumns: ["id"]
           },
         ]
@@ -2080,6 +2416,61 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "users_with_functions_search"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_document_endorsements: {
+        Row: {
+          created_at: string | null
+          document_id: string
+          endorsement_id: string
+          expiry_date: string | null
+          has_ir: boolean | null
+          id: string
+          ir_expiry_date: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          document_id: string
+          endorsement_id: string
+          expiry_date?: string | null
+          has_ir?: boolean | null
+          id?: string
+          ir_expiry_date?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          document_id?: string
+          endorsement_id?: string
+          expiry_date?: string | null
+          has_ir?: boolean | null
+          id?: string
+          ir_expiry_date?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_document_endorsements_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_document_endorsements_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "user_documents_with_types"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_document_endorsements_endorsement_id_fkey"
+            columns: ["endorsement_id"]
+            isOneToOne: false
+            referencedRelation: "endorsements"
             referencedColumns: ["id"]
           },
         ]
@@ -3517,6 +3908,26 @@ export type Database = {
           user_id: string
         }[]
       }
+      get_user_endorsement_alerts: {
+        Args: { p_user_id: string }
+        Returns: {
+          endorsement_alerts: Json
+          expired_count: number
+          expiring_count: number
+          ir_expired_count: number
+          ir_expiring_count: number
+          total_alerts: number
+        }[]
+      }
+      get_user_privilege_alerts: {
+        Args: { p_user_id: string }
+        Returns: {
+          expired_count: number
+          expiring_count: number
+          privilege_alerts: Json
+          total_alerts: number
+        }[]
+      }
       get_users_by_function: {
         Args: { p_function_codes: string[] }
         Returns: {
@@ -3526,6 +3937,10 @@ export type Database = {
           surname: string
           user_id: string
         }[]
+      }
+      has_operation_type_splits: {
+        Args: { op_type_id: string }
+        Returns: boolean
       }
       is_board_member: { Args: { user_uuid: string }; Returns: boolean }
       refresh_users_with_functions_search: { Args: never; Returns: undefined }
@@ -3709,35 +4124,3 @@ export const Constants = {
   },
 } as const
 
-// Convenient type aliases for commonly used tables
-export type User = Tables<'users'>
-export type Plane = Tables<'planes'>
-export type DocumentType = Tables<'document_types'>
-export type FunctionMaster = Tables<'functions_master'>
-export type FunctionMasterInsert = TablesInsert<'functions_master'>
-export type FunctionMasterUpdate = TablesUpdate<'functions_master'>
-export type OperationTypeInsert = TablesInsert<'operation_types'>
-export type OperationTypeUpdate = TablesUpdate<'operation_types'>
-export type Endorsement = Tables<'endorsements'>
-export type DocumentEndorsementPrivilege = Tables<'document_endorsement_privileges'>
-export type DocumentTypeEndorsement = Tables<'document_type_endorsements'>
-
-// User with function codes (commonly used in RBAC)
-export type UserProfile = User & { function_codes?: string[] }
-
-// Additional type aliases
-export type MembershipType = Tables<'membership_types'>
-export type UserMembership = Tables<'user_memberships'>
-export type Document = Tables<'documents'>
-export type FunctionWithStats = {
-  id: string
-  code: string
-  name: string
-  name_de: string | null
-  category_id: string | null
-  is_system: boolean
-  active: boolean
-  yearly_fee: number | null
-  user_count: number
-  sort_order: number | null
-}

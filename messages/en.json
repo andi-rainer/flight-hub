@@ -65,7 +65,8 @@
     "expires": "Expires",
     "approved": "Approved",
     "pending": "Pending",
-    "download": "Download"
+    "download": "Download",
+    "weightBalance": "W&B"
   },
   "nav": {
     "dashboard": "Dashboard",

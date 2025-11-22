@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { createAircraft, updateAircraft } from '../actions'
 import type { Plane, PlaneInsert } from '@/lib/database.types'
 import { useRouter } from 'next/navigation'
@@ -21,6 +22,7 @@ export function AircraftForm({ aircraft, onSuccess }: AircraftFormProps) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
+  const [massUnit, setMassUnit] = useState<'kg' | 'lbs'>(aircraft?.mass_unit || 'kg')
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -33,18 +35,6 @@ export function AircraftForm({ aircraft, onSuccess }: AircraftFormProps) {
     const navEquipmentArray = navEquipment
       ? navEquipment.split(',').map((item) => item.trim())
       : []
-
-    // Parse CG Limits (JSON)
-    const cgLimitsStr = formData.get('cg_limits') as string
-    let cgLimits = null
-    if (cgLimitsStr) {
-      try {
-        cgLimits = JSON.parse(cgLimitsStr)
-      } catch {
-        setError('Invalid JSON format for CG Limits')
-        return
-      }
-    }
 
     // Parse initial flight hours from HH:MM format
     const initialFlightHoursStr = formData.get('initial_flight_hours') as string
@@ -65,14 +55,13 @@ export function AircraftForm({ aircraft, onSuccess }: AircraftFormProps) {
       tail_number: formData.get('tail_number') as string,
       type: formData.get('type') as string,
       color: formData.get('color') as string || null,
-      empty_weight: parseFloat(formData.get('empty_weight') as string) || null,
       max_fuel: parseFloat(formData.get('max_fuel') as string) || null,
       fuel_consumption: parseFloat(formData.get('fuel_consumption') as string) || null,
       max_mass: parseFloat(formData.get('max_mass') as string) || null,
       nav_equipment: navEquipmentArray,
       xdpr_equipment: formData.get('xdpr_equipment') as string || null,
       emer_equipment: formData.get('emer_equipment') as string || null,
-      cg_limits: cgLimits,
+      mass_unit: massUnit,
       active: formData.get('active') === 'on',
       initial_flight_hours: initialFlightHours,
       initial_landings: parseInt(formData.get('initial_landings') as string) || 0,
@@ -135,15 +124,36 @@ export function AircraftForm({ aircraft, onSuccess }: AircraftFormProps) {
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="empty_weight">Empty Weight (kg)</Label>
+          <Label htmlFor="mass_unit">Mass Unit</Label>
+          <Select value={massUnit} onValueChange={(value: 'kg' | 'lbs') => setMassUnit(value)} disabled={!!aircraft}>
+            <SelectTrigger id="mass_unit">
+              <SelectValue placeholder="Select unit" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="kg">Kilograms (kg)</SelectItem>
+              <SelectItem value="lbs">Pounds (lbs)</SelectItem>
+            </SelectContent>
+          </Select>
+          {aircraft && (
+            <p className="text-xs text-muted-foreground">
+              Unit can be changed in the Weight & Balance tab
+            </p>
+          )}
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="max_mass">Max. T/O Mass - MTOM ({massUnit})</Label>
           <Input
-            id="empty_weight"
-            name="empty_weight"
+            id="max_mass"
+            name="max_mass"
             type="number"
             step="0.01"
-            defaultValue={aircraft?.empty_weight || ''}
-            placeholder="e.g., 750"
+            defaultValue={aircraft?.max_mass || ''}
+            placeholder="e.g., 1100"
           />
+          <p className="text-xs text-muted-foreground">
+            Maximum Takeoff Mass
+          </p>
         </div>
 
         <div className="space-y-2">
@@ -167,18 +177,6 @@ export function AircraftForm({ aircraft, onSuccess }: AircraftFormProps) {
             step="0.01"
             defaultValue={aircraft?.fuel_consumption || ''}
             placeholder="e.g., 35"
-          />
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="max_mass">Max Mass (kg)</Label>
-          <Input
-            id="max_mass"
-            name="max_mass"
-            type="number"
-            step="0.01"
-            defaultValue={aircraft?.max_mass || ''}
-            placeholder="e.g., 1100"
           />
         </div>
 
@@ -245,20 +243,6 @@ export function AircraftForm({ aircraft, onSuccess }: AircraftFormProps) {
           defaultValue={aircraft?.emer_equipment || ''}
           placeholder="e.g., Life jackets, ELT"
         />
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="cg_limits">CG Limits (JSON format)</Label>
-        <Textarea
-          id="cg_limits"
-          name="cg_limits"
-          defaultValue={aircraft?.cg_limits ? JSON.stringify(aircraft.cg_limits, null, 2) : ''}
-          placeholder='{"forward": 0.15, "aft": 0.35, "arms": []}'
-          rows={4}
-        />
-        <p className="text-xs text-muted-foreground">
-          Enter CG limits in JSON format. Example: {`{"forward": 0.15, "aft": 0.35}`}
-        </p>
       </div>
 
       <div className="flex items-center space-x-2">

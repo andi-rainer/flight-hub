@@ -13,6 +13,7 @@ import { AircraftFlightLogsTab } from '../components/aircraft-flight-logs-tab'
 import { AircraftBillingTab } from '../components/aircraft-billing-tab'
 import { AircraftMaintenanceTab } from '../components/aircraft-maintenance-tab'
 import { AircraftComponentsTab } from '../components/aircraft-components-tab'
+import { AircraftWeightBalanceTab } from '../components/aircraft-weight-balance-tab'
 import { getAircraftWithMaintenance, getMaintenanceHistory } from '../maintenance-actions'
 import type { Plane, Document as AircraftDocument, User, OperationType, CostCenter } from '@/lib/database.types'
 
@@ -89,6 +90,40 @@ async function getCostCenters(): Promise<CostCenter[]> {
   return costCenters || []
 }
 
+async function getCgLimits(aircraftId: string) {
+  const supabase = await createClient()
+
+  const { data: cgLimits, error } = await supabase
+    .from('aircraft_cg_limits')
+    .select('*')
+    .eq('plane_id', aircraftId)
+    .order('sort_order', { ascending: true })
+
+  if (error) {
+    console.error('Error fetching CG limits:', error)
+    return []
+  }
+
+  return cgLimits || []
+}
+
+async function getStations(aircraftId: string) {
+  const supabase = await createClient()
+
+  const { data: stations, error } = await supabase
+    .from('aircraft_stations')
+    .select('*')
+    .eq('plane_id', aircraftId)
+    .order('sort_order', { ascending: true })
+
+  if (error) {
+    console.error('Error fetching stations:', error)
+    return []
+  }
+
+  return stations || []
+}
+
 function getDocumentExpiryStatus(expiryDate: string | null) {
   if (!expiryDate) return 'none'
 
@@ -159,13 +194,15 @@ export default async function AircraftDetailPage({
   const t = await getTranslations('aircrafts')
   const tCommon = await getTranslations('common')
 
-  const [aircraft, currentUser, operationTypes, costCenters, aircraftWithMaintenance, maintenanceHistory] = await Promise.all([
+  const [aircraft, currentUser, operationTypes, costCenters, aircraftWithMaintenance, maintenanceHistory, cgLimits, stations] = await Promise.all([
     getAircraft(id),
     getCurrentUser(),
     getOperationTypesForAircraft(id),
     getCostCenters(),
     getAircraftWithMaintenance(id),
     getMaintenanceHistory(id),
+    getCgLimits(id),
+    getStations(id),
   ])
 
   const page = parseInt(pageParam || '1', 10)
@@ -282,6 +319,7 @@ export default async function AircraftDetailPage({
             )}
           </TabsTrigger>
           {isBoardMember && <TabsTrigger value="components">{t('components')}</TabsTrigger>}
+          {isBoardMember && <TabsTrigger value="weight-balance">{t('weightBalance')}</TabsTrigger>}
           <TabsTrigger value="flightlogs">{t('flightLogs')}</TabsTrigger>
           {isBoardMember && <TabsTrigger value="billing">{t('billing')}</TabsTrigger>}
         </TabsList>
@@ -326,6 +364,17 @@ export default async function AircraftDetailPage({
                 <p className="text-muted-foreground">{t('unableToLoadAircraftData')}</p>
               </div>
             )}
+          </TabsContent>
+        )}
+
+        {isBoardMember && (
+          <TabsContent value="weight-balance" className="space-y-4">
+            <AircraftWeightBalanceTab
+              aircraft={aircraft}
+              cgLimits={cgLimits}
+              stations={stations}
+              canEdit={isBoardMember}
+            />
           </TabsContent>
         )}
 
