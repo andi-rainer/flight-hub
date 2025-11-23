@@ -3,7 +3,7 @@
 **Project**: Flight Club Management System (Austrian Aviation Club)
 **Stack**: Next.js 15 + Supabase + shadcn/ui + Tailwind CSS
 **Status**: Production Ready
-**Last Updated**: November 17, 2025
+**Last Updated**: November 23, 2025
 
 ---
 
@@ -42,11 +42,11 @@ FlightHub is a production-grade web application for managing aircraft reservatio
 - **Storage**: Supabase Storage (for documents, aircraft docs, flight logs)
 
 ### Database Design
-- **Tables**: 11 core tables (users, planes, flightlog, documents, accounts, endorsements, board_contact_settings, etc.)
+- **Tables**: 16 core tables (users, planes, flightlog, documents, accounts, endorsements, manifest tables, etc.)
 - **Views**: 4 materialized views (active_reservations, flightlog_with_times, user_balances, functions_with_stats)
-- **Functions**: 5 PostgreSQL helper functions (including get_user_endorsement_alerts)
+- **Functions**: 6 PostgreSQL helper functions (including get_user_endorsement_alerts, check_slot_conflict)
 - **Security**: Row Level Security (RLS) on all tables
-- **Indexes**: 45+ strategic indexes for performance
+- **Indexes**: 50+ strategic indexes for performance
 
 ### Testing
 - **Framework**: Jest 29.x
@@ -76,6 +76,10 @@ flight-hub/
 │   │   │   └── components/               # Aircraft-related components
 │   │   ├── reservations/                 # Flight reservations (calendar-based)
 │   │   ├── flightlog/                    # Flight logging interface
+│   │   ├── manifest/                     # Skydive manifest system
+│   │   │   ├── page.tsx                  # Operation days list
+│   │   │   ├── [id]/page.tsx             # Operation day detail
+│   │   │   └── components/               # Manifest-related components
 │   │   ├── members/                      # Member management (board only)
 │   │   ├── documents/                    # Club documents library
 │   │   ├── billing/                      # Billing/cost center management
@@ -119,13 +123,14 @@ flight-hub/
 │   │   └── index.ts                      # Permission matrix, checking functions
 │   ├── constants/                        # Application constants
 │   │   └── system-functions.ts           # System function definitions + helpers
-│   ├── actions/                          # Server actions (13 files)
+│   ├── actions/                          # Server actions (14 files)
 │   │   ├── auth.ts                       # Authentication actions
 │   │   ├── members.ts                    # Member management actions
 │   │   ├── functions.ts                  # Function management
 │   │   ├── billing.ts                    # Billing operations
 │   │   ├── accounting.ts                 # Accounting transactions
 │   │   ├── aircraft-components.ts        # Aircraft maintenance components
+│   │   ├── manifest.ts                   # Skydive manifest actions
 │   │   └── [others]                      # Additional domain actions
 │   ├── hooks/                            # React hooks
 │   │   └── use-user.ts                   # useUser hook for auth state
@@ -175,11 +180,12 @@ flight-hub/
 
 ## 4. DATABASE SCHEMA & ARCHITECTURE
 
-### Core Tables (8 tables with RLS)
+### Core Tables (16 tables with RLS)
 
 #### users
 - User profiles extending Supabase auth.users
-- Fields: id (UUID), email, name, surname, role (TEXT[]), functions (legacy), phone, etc.
+- Fields: id (UUID), email, name, surname, role (TEXT[]), functions (legacy), phone, tandem_jump_completed, tandem_jump_date, etc.
+- Tandem jump tracking: Tracks if user has completed a tandem jump and when
 - Trigger auto-creates entry on auth signup
 - RLS: Users see all profiles, can edit own, board can edit any
 
@@ -202,7 +208,9 @@ flight-hub/
 
 #### planes
 - Aircraft fleet with specifications
-- Fields: id, tail_number, type, registration, manufacturer, year_built, total_hours, etc.
+- Fields: id, tail_number, type, registration, manufacturer, year_built, total_hours, max_jumpers, is_skydive_aircraft, etc.
+- Skydive support: max_jumpers field for skydive operations, is_skydive_aircraft flag
+- Constraint: Non-skydive aircraft cannot have max_jumpers set
 - Status tracking: active, maintenance_status
 - RLS: All can read, board can edit
 
@@ -237,6 +245,40 @@ flight-hub/
 - Fields: id, user_id, type, title, message, link, document_id, read, created_at
 - Used for document approvals, expiry warnings, flight approvals
 
+#### manifest_settings
+- Global configuration for skydive manifest system
+- Fields: id, payment_types (JSONB array), default_altitude_feet
+- Single-row table (enforced by CHECK constraint)
+- RLS: All can read, board can update
+
+#### skydive_operation_days
+- Daily skydiving operations
+- Fields: id, operation_date, plane_id, pilot_id, notes, status (planned/active/completed/cancelled)
+- Links aircraft and pilot for the day
+- RLS: All can read, manifest coordinators can create/edit
+
+#### skydive_flights
+- Individual loads/flights within an operation day
+- Fields: id, operation_day_id, flight_number, scheduled_time, altitude_feet, status
+- Status progression: planned → ready → boarding → in_air → completed/cancelled
+- Triggers: Auto-assign flight_number sequentially
+- RLS: All can read, manifest coordinators can create/edit
+
+#### skydive_flight_jumpers
+- Jumpers assigned to specific flights
+- Fields: id, flight_id, jumper_type (sport/tandem), slot_number, slots_occupied (1 or 2)
+- Sport jumper fields: sport_jumper_id (references users)
+- Tandem pair fields: tandem_master_id, passenger_id, payment_type, payment_received
+- Slot conflict checking via trigger (check_slot_conflict function)
+- Constraints: Enforce correct fields based on jumper_type
+- RLS: All can read, manifest coordinators can manage
+
+#### skydive_passengers
+- Tandem passenger information
+- Fields: id, name, surname, email, phone, weight_kg, notes
+- Separate table for non-member passengers
+- RLS: All can read, manifest coordinators can create/edit
+
 ### Helper Views (Materialized/Dynamic)
 
 #### users_with_functions
@@ -265,15 +307,25 @@ flight-hub/
 is_board_member(user_uuid) RETURNS BOOLEAN
   - Check if user has 'board' role
   - SECURITY DEFINER to access roles
-  
+
 calculate_block_time(block_on TIMESTAMPTZ, block_off TIMESTAMPTZ) RETURNS NUMERIC
   - Calculate flight block time in hours
-  
+
 calculate_flight_time(takeoff TIMESTAMPTZ, landing TIMESTAMPTZ) RETURNS NUMERIC
   - Calculate actual flight time in hours
-  
+
 can_reserve_aircraft(plane_id UUID) RETURNS BOOLEAN
   - Check if aircraft has expired blocking documents
+
+check_slot_conflict() RETURNS TRIGGER
+  - Validates jumper slot assignments don't overlap
+  - Accounts for multi-slot jumpers (tandem pairs = 2 slots)
+  - Raises exception if conflict detected
+  - Used as BEFORE INSERT OR UPDATE trigger on skydive_flight_jumpers
+
+get_available_pilots(operation_date DATE) RETURNS TABLE
+  - Returns users with pilot or skydive_pilot functions
+  - Filters by function validity period and user active status
 ```
 
 ### Row Level Security (RLS)
@@ -336,7 +388,7 @@ getSession() - Get current session
 **2. Function-Based** (New Granular RBAC)
 - System Functions (hardcoded in code and DB)
   - Aviation: Pilot, Flight Instructor, Chief Pilot
-  - Skydiving: Tandem Master, Skydive Instructor, Sport Jumper
+  - Skydiving: Tandem Master, Skydive Instructor, Sport Jumper, Skydive Pilot
   - Operations: Manifest Coordinator
   - Administration: Treasurer, Chairman, Secretary
 - Custom Functions: Board can create club-specific functions
@@ -491,6 +543,61 @@ if (permissionChecker.can('flight.log.lock')) { ... }
 - **Assignment**: UI for assigning functions to users
 - **Validity Periods**: Set valid_from/valid_until dates
 - **Permission Matrix**: Display which functions have which permissions
+
+### 10. Skydive Manifest System
+- **Operation Days**: Create and manage daily skydiving operations
+  - Select skydive-configured aircraft
+  - Assign pilot for the day
+  - Track operation status (planned/active/completed/cancelled)
+- **Flight Management**: Organize loads throughout the day
+  - Sequential flight numbers (Load 1, 2, 3...)
+  - Scheduled departure times
+  - Configurable jump altitudes
+  - Flight status progression: planned → ready → boarding → in_air → completed
+- **Sport Jumpers**: Add licensed skydivers (1 slot each)
+  - Select from users with sport_jumper function
+  - Assign specific slot numbers
+  - Optional notes per jumper
+- **Tandem Pairs**: Add tandem jumps (2 slots per pair)
+  - Tandem master selection (users with tandem_master function)
+  - Passenger information (name, contact, weight)
+  - Payment tracking (payment type and received status)
+  - Occupies consecutive slots (e.g., slots 3-4)
+- **Slot Management**: Visual slot grid and conflict prevention
+  - Real-time slot availability display
+  - Color-coded slots (blue=sport, purple=tandem, gray=empty)
+  - Database-level conflict checking prevents overlaps
+  - Automatic slot calculation for tandem pairs
+- **View Modes**: Dual viewing options
+  - **Board View**: Card grid with slot visualization
+  - **List View**: Collapsible table with detailed jumper info
+- **Flight Actions**: Complete flight lifecycle management
+  - Edit flight details (time, altitude)
+  - Postpone flights (shift to later time)
+  - Cancel or delete flights
+  - Complete flights (marks as done)
+  - Reactivate cancelled flights
+- **Jumper Actions**: Dynamic roster management
+  - Add jumpers mid-operation
+  - Remove jumpers with status validation
+  - View payment status for tandem pairs
+- **Settings**: Configurable manifest parameters
+  - Payment types (cash, card, bank transfer, voucher)
+  - Default jump altitudes
+  - Board-only configuration access
+- **Permissions**: RBAC-based access control
+  - manifest_coordinator: Full manifest management
+  - skydive_pilot: View-only access
+  - Board members: Full access
+- **User Tracking**: Mark users who complete tandem jumps
+  - Automatically tracked when passenger on completed flight
+  - Stored in users table for membership tracking
+- **Database**: Comprehensive data model
+  - manifest_settings: Global configuration
+  - skydive_operation_days: Daily operations
+  - skydive_flights: Individual loads
+  - skydive_flight_jumpers: Jumper assignments
+  - skydive_passengers: Tandem passenger details
 
 ---
 
@@ -701,6 +808,18 @@ Located in `lib/actions/`:
 - `chargeFlight()` - Charge flight to user
 - `updateBillingRate()` - Update function yearly fee
 
+### Manifest
+- `createOperationDay()` - Create skydiving operation day
+- `updateOperationDay()` - Update operation day details
+- `deleteOperationDay()` - Delete operation day
+- `createFlight()` - Add flight/load to operation day
+- `updateFlight()` - Update flight details
+- `deleteFlight()` - Delete or cancel flight
+- `addSportJumper()` - Add sport jumper to flight
+- `addTandemPair()` - Add tandem pair to flight
+- `removeJumper()` - Remove jumper from flight
+- `updateManifestSettings()` - Update manifest configuration
+
 ### Other
 - `updateUserPreferences()` - Save user settings
 - `updateMembershipStatus()` - Activate/deactivate membership
@@ -790,6 +909,25 @@ t('key') // Returns translated string
   - Error Scenarios
 - **Focus**: Business logic validation without complex database mocking
 
+#### Manifest System (NEW)
+- **File**: `__tests__/actions/manifest-system.test.ts`
+- **Test Count**: 58 passing tests
+- **Test Coverage**:
+  - Slot Allocation (sport jumpers, tandem pairs, mixed)
+  - Slot Conflict Detection (overlaps, edge cases)
+  - Flight Status Progression (state machine validation)
+  - Flight Postponement (time calculations)
+  - Jumper Removal Validation (status-based rules)
+  - Slot Number Assignment (finding available slots)
+  - Flight Capacity Validation (availability checks)
+  - Flight Cancellation Validation (business rules)
+  - Flight Deletion vs Cancellation logic
+  - Operation Day Status Validation
+  - Payment Type Validation
+  - Slot Display Formatting
+- **Documentation**: `MANIFEST_TESTING.md`
+- **Focus**: Business logic validation for manifest operations
+
 #### Other Test Files
 - `app/api/documents/upload/route.test.ts` - Document upload API
 - `app/api/documents/user-alerts/route.test.ts` - User alerts API
@@ -830,8 +968,14 @@ npm test
 # Run flight charging tests
 npm test -- __tests__/actions/flight-charging-simple.test.ts
 
+# Run manifest system tests
+npm test -- __tests__/actions/manifest-system.test.ts
+
 # Run with coverage
 npm test -- --coverage
+
+# Run in watch mode
+npm test -- --watch
 ```
 
 ### Testing Patterns
@@ -926,7 +1070,30 @@ if (!result.success) return { error: result.error.flatten() }
 
 ## 14. RECENT DEVELOPMENTS (November 2025)
 
-### Latest: Endorsement System Redesign & Board Contact Settings (Nov 17, 2025)
+### Latest: Skydive Manifest System (Nov 23, 2025)
+
+**Complete Load Management for Skydiving Operations**
+- **New Feature**: Full manifest system for managing skydiving operations
+- **Tables**: 5 new tables (manifest_settings, operation_days, flights, jumpers, passengers)
+- **System Functions**: Added manifest_coordinator and skydive_pilot functions
+- **Database Functions**: check_slot_conflict() trigger for slot validation
+- **User Tracking**: tandem_jump_completed and tandem_jump_date fields on users table
+- **Aircraft Support**: max_jumpers and is_skydive_aircraft fields on planes table
+- **Features**:
+  - Operation day management with aircraft and pilot assignment
+  - Flight status progression (planned → ready → boarding → in_air → completed)
+  - Sport jumper management (1 slot each)
+  - Tandem pair management (2 slots, payment tracking)
+  - Visual slot grid with conflict checking
+  - Board and list view modes
+  - Flight lifecycle actions (edit, postpone, cancel, complete, reactivate)
+  - Configurable payment types and altitudes
+  - RBAC permissions for manifest coordinators and pilots
+- **UI**: Complete CRUD interface with dual view modes
+- **Migrations**: Consolidated into 3 migrations (users tracking, manifest system, planes config)
+- **Location**: `/app/(dashboard)/manifest/`, `/lib/actions/manifest.ts`
+
+### Endorsement System Redesign & Board Contact Settings (Nov 17, 2025)
 
 **1. Endorsement System Redesign**
 - **Replaced**: `document_privileges` table → new `endorsements` system
@@ -1088,12 +1255,66 @@ DATABASE_URL=postgresql://postgres:pass@db.project.supabase.co:5432/postgres
 - **Platform**: Vercel
 - **Database**: Supabase
 - **Storage**: Supabase Storage
+- **CI/CD**: GitHub Actions
+
+### GitHub Actions Workflows
+
+#### 1. Comprehensive CI (ci.yml)
+- **Trigger**: Every push to any branch + PRs to main/develop
+- **Duration**: ~3-5 minutes
+- **What it does** (All in one unified job):
+  - **Linting** - ESLint on entire codebase
+  - **Type Check** - TypeScript compilation verification
+  - **Tests** - All 132 unit tests with coverage
+    - 21 flight charging tests
+    - 58 manifest system tests
+    - 53+ other tests
+  - **Build** - Next.js production build with Turbopack
+  - **Coverage Upload** - Optional Codecov integration
+  - **Summary Report** - Detailed pass/fail status for each check
+- **Status**: ![CI](https://github.com/andi-rainer/flight-hub/actions/workflows/ci.yml/badge.svg)
+
+#### 2. Deploy to Staging (deploy-staging.yml)
+- **Trigger**: Push to main branch
+- **Duration**: ~2-3 minutes
+- **What it does**:
+  - Runs database migrations on staging
+  - Deploys to Vercel staging
+- **Status**: ![Staging](https://github.com/andi-rainer/flight-hub/actions/workflows/deploy-staging.yml/badge.svg)
+
+#### 3. Deploy to Production (deploy-production.yml)
+- **Trigger**: Manual (workflow_dispatch)
+- **Duration**: ~3-4 minutes
+- **What it does**:
+  - Runs database migrations on production
+  - Deploys to Vercel production
 
 ### Deployment Steps
-1. Vercel connected to GitHub
-2. Vercel dashboard environment variables are set
-3. Automatic deploys on push to main
-4. Database migrations applied manually
+1. Push code to feature branch → CI runs automatically
+   - Linting, type check, tests (132), build verification
+2. Fix any CI failures
+3. Create PR → CI runs again
+4. Merge to main → Staging deployment triggered
+   - Migrations applied automatically
+   - Deployed to Vercel staging
+5. Verify staging environment
+6. Manual production deployment when ready
+   - Migrations applied to production
+   - Deployed to Vercel production
+
+### Required GitHub Secrets
+- `SUPABASE_ACCESS_TOKEN`
+- `SUPABASE_DB_PASSWORD_STAGING`
+- `SUPABASE_PROJECT_ID_STAGING`
+- `SUPABASE_DB_PASSWORD_PRODUCTION`
+- `SUPABASE_PROJECT_ID_PRODUCTION`
+- `VERCEL_TOKEN`
+- `VERCEL_ORG_ID`
+- `VERCEL_PROJECT_ID_STAGING`
+- `VERCEL_PROJECT_ID_PRODUCTION`
+
+### Workflow Documentation
+See `.github/WORKFLOWS.md` for detailed workflow documentation.
 
 ---
 
@@ -1181,6 +1402,7 @@ DATABASE_URL=postgresql://postgres:pass@db.project.supabase.co:5432/postgres
 
 #### Feature Documentation
 - `OPERATION_TYPE_COST_SPLITTING.md` - Split charging system and atomic reversals
+- `MANIFEST_TESTING.md` - Manifest system unit tests (58 tests)
 - `README.md` - Project overview and quick start guide
 
 ---

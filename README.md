@@ -7,6 +7,9 @@
 [![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL-green)](https://supabase.com/)
 [![Status](https://img.shields.io/badge/Status-Production%20Ready-success)](https://flighthub-staging.vercel.app)
 
+[![CI](https://github.com/andi-rainer/flight-hub/actions/workflows/ci.yml/badge.svg)](https://github.com/andi-rainer/flight-hub/actions/workflows/ci.yml)
+[![Deploy Staging](https://github.com/andi-rainer/flight-hub/actions/workflows/deploy-staging.yml/badge.svg)](https://github.com/andi-rainer/flight-hub/actions/workflows/deploy-staging.yml)
+
 > 📖 **Comprehensive Documentation**: See [CLAUDE.md](./CLAUDE.md) for complete codebase documentation (1300+ lines)
 
 ## ✨ Features
@@ -18,6 +21,7 @@
 - ✅ **Member Management** - User administration, document approval, function assignment
 - ✅ **Reservations** - Calendar-based booking with conflict detection
 - ✅ **Flight Logs** - Comprehensive logging with approval workflow and locking
+- ✅ **Skydive Manifest** - Complete load management with tandem and sport jumpers (NEW)
 - ✅ **Documents** - Club library with categories, search, and expiry tracking
 - ✅ **Endorsements** - Aviation ratings (SEP, MEP, IR) with separate IR expiry tracking
 - ✅ **Billing & Accounting** - Split charges, cost centers, atomic reversals
@@ -25,6 +29,7 @@
 - ✅ **Permissions** - Granular RBAC (role-based + function-based)
 
 ### Recent Additions (November 2025)
+- 🆕 **Skydive Manifest System** - Complete load management with flight status progression, tandem pairs, slot management
 - 🆕 **Endorsement System** - Centralized endorsements with IR (Instrument Rating) support
 - 🆕 **Board Contact Settings** - Configurable contact info for multi-club deployment
 - 🆕 **Split Charge Reversal** - Atomic reversal of all flight transactions
@@ -86,6 +91,7 @@ flight-hub/
 │   │   ├── members/          # Member administration
 │   │   ├── reservations/     # Flight booking calendar
 │   │   ├── flightlog/        # Flight logging
+│   │   ├── manifest/         # Skydive manifest system (NEW)
 │   │   ├── billing/          # Cost centers & rates
 │   │   ├── accounting/       # Transactions
 │   │   ├── documents/        # Club documents
@@ -107,18 +113,23 @@ flight-hub/
 
 ## 🗄️ Database
 
-**11 Core Tables:**
-- `users` - User profiles with roles
+**16 Core Tables:**
+- `users` - User profiles with roles (with tandem_jump tracking)
 - `functions_master` - System & custom functions
 - `user_functions` - User-function assignments
-- `planes` - Aircraft fleet
+- `planes` - Aircraft fleet (with skydive aircraft support)
 - `reservations` - Flight bookings
 - `flightlog` - Flight records
 - `documents` - Universal document management
-- `endorsements` - Aviation ratings (NEW)
-- `document_endorsement_privileges` - Endorsements with IR tracking (NEW)
+- `endorsements` - Aviation ratings
+- `document_endorsement_privileges` - Endorsements with IR tracking
 - `accounts` - Financial transactions
-- `board_contact_settings` - Contact information (NEW)
+- `board_contact_settings` - Contact information
+- `manifest_settings` - Skydive manifest configuration (NEW)
+- `skydive_operation_days` - Daily skydiving operations (NEW)
+- `skydive_flights` - Individual loads/flights (NEW)
+- `skydive_flight_jumpers` - Jumpers assigned to flights (NEW)
+- `skydive_passengers` - Tandem passenger information (NEW)
 
 **4 Materialized Views:**
 - `active_reservations` - Filtered future reservations
@@ -143,11 +154,18 @@ npm run test:coverage    # Coverage report
 npm run test:watch       # Watch mode
 ```
 
-**Test Coverage:**
-- Unit tests for server actions
+**Test Coverage:** 79+ business logic tests
+- Flight charging/reversal tests (21 tests)
+- Manifest system tests (58 tests) - See `MANIFEST_TESTING.md`
 - API route tests
-- Business logic tests (flight charging/reversal)
 - Component tests
+
+**Key Test Areas:**
+- Slot allocation and conflict detection
+- Flight status progression
+- Split charge calculations and reversals
+- Flight postponement logic
+- Capacity validation
 
 ## 🌍 Environment Variables
 
@@ -167,6 +185,7 @@ NEXT_PUBLIC_APP_URL=https://your-domain.com
 |----------|-------------|
 | **[CLAUDE.md](./CLAUDE.md)** | Complete codebase documentation (1300+ lines) |
 | **[PROJECT_STATUS.md](./PROJECT_STATUS.md)** | Feature implementation status |
+| **[MANIFEST_TESTING.md](./MANIFEST_TESTING.md)** | Manifest system unit tests (58 tests) |
 | **[AUTH_SETUP.md](./AUTH_SETUP.md)** | Authentication setup guide |
 | **[LOCAL_DEVELOPMENT.md](./LOCAL_DEVELOPMENT.md)** | Local development guide |
 | **[supabase/SCHEMA_DOCUMENTATION.md](./supabase/SCHEMA_DOCUMENTATION.md)** | Database schema docs |
@@ -207,6 +226,15 @@ npm test                 # Jest tests
    - **Redirect URLs**: Add your domain
 
 ## 📝 Recent Updates
+
+### November 23, 2025
+- ✅ Skydive manifest system implementation
+- ✅ Operation day management with aircraft assignment
+- ✅ Flight status progression (planned → ready → boarding → in_air → completed)
+- ✅ Tandem and sport jumper management with slot allocation
+- ✅ Tandem pairs occupying 2 slots with conflict checking
+- ✅ Board/list view modes with real-time updates
+- ✅ Manifest coordinator and skydive pilot system functions
 
 ### November 17, 2025
 - ✅ Endorsement system redesign with IR tracking

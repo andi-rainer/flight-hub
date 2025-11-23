@@ -14,20 +14,33 @@ FlightHub is a production-grade aviation club management application built with 
 - GitHub repository: https://github.com/andi-rainer/flight-hub
 - Environment configuration
 - Middleware for route protection
+- **CI/CD Pipelines:**
+  - Unified CI workflow (runs on every push)
+    - Linting with ESLint
+    - TypeScript type checking
+    - All 132 tests with coverage
+    - Next.js build verification
+    - Comprehensive summary report
+  - Automated staging deployment (on main push)
+  - Manual production deployment
+  - Documentation: `.github/WORKFLOWS.md`
 
 ### 2. **Database Schema** ✅
-- 16 tables with comprehensive RLS policies
+- 21 tables with comprehensive RLS policies
 - 5 database views (4 materialized, 1 regular) for calculated data
-- 5 helper functions (including get_user_endorsement_alerts)
-- 45+ indexes for performance
+- 6 helper functions (including get_user_endorsement_alerts, check_slot_conflict)
+- 50+ indexes for performance
 - Complete TypeScript type definitions
 - **Location:** `/supabase/migrations/`
 - **Documentation:** `/supabase/SCHEMA_DOCUMENTATION.md`
 - **Recent Additions:**
+  - Skydive manifest system (5 new tables: manifest_settings, operation_days, flights, jumpers, passengers)
   - Endorsements system (SEP, MEP, IR) with separate IR expiry tracking
   - Board contact settings for multi-club support
   - Membership types and user memberships tracking
   - Function categories and user_functions junction table
+  - Tandem jump tracking on users table
+  - Skydive aircraft configuration on planes table
 
 ### 3. **Authentication System** ✅
 - Email/password login with Supabase Auth
@@ -156,6 +169,26 @@ FlightHub is a production-grade aviation club management application built with 
 - Function categories (Aviation, Skydiving, Operations, Administration, Custom)
 **Location:** `/lib/permissions/`
 
+### 14. **Skydive Manifest System** ✅
+**Features:**
+- **Operation Days:** Create skydiving operation days with aircraft, pilot, and date
+- **Flight Management:** Manage loads with scheduled times and altitude
+- **Flight Status Progression:** planned → ready → boarding → in_air → completed
+- **Sport Jumpers:** Add sport jumpers (1 slot each)
+- **Tandem Pairs:** Add tandem pairs (tandem master + passenger, 2 slots)
+- **Slot Management:** Visual slot grid showing occupied/available slots
+- **Conflict Checking:** Database-level validation prevents slot overlaps
+- **Payment Tracking:** Track payment status and type for tandem jumps
+- **Passenger Information:** Store tandem passenger details (name, contact, weight)
+- **View Modes:** Board view (card grid) and list view (collapsible table)
+- **Flight Actions:** Edit, postpone, cancel/delete, complete flights
+- **Jumper Actions:** Add and remove jumpers with validation
+- **Settings:** Configurable payment types and default altitudes
+- **Permissions:** RBAC with manifest_coordinator and skydive_pilot functions
+- **Database:** 5 new tables (manifest_settings, operation_days, flights, jumpers, passengers)
+- **User Tracking:** Track if user has completed tandem jump
+**Location:** `/app/(dashboard)/manifest/`, `/lib/actions/manifest.ts`
+
 ---
 
 ## 🎯 Potential Future Enhancements
@@ -222,7 +255,10 @@ FlightHub is a production-grade aviation club management application built with 
      - Reservation reminders
 
 5. **Testing Coverage:**
-   - Current: 21+ business logic tests for flight charging/reversal
+   - Current: 79+ business logic tests
+     - Flight charging/reversal: 21 tests
+     - Manifest system: 58 tests (slot allocation, status progression, postponement, etc.)
+   - Documentation: `MANIFEST_TESTING.md`
    - Future: Expand to cover all server actions
    - Consider E2E tests with Playwright for critical user flows
 
@@ -276,5 +312,5 @@ UPDATE public.users SET role = ARRAY['board'] WHERE email = 'your-email@example.
 
 ---
 
-**Last Updated:** 2025-11-17
-**Status:** Production Ready - All major features complete (13/13 features implemented)
+**Last Updated:** 2025-11-23
+**Status:** Production Ready - All major features complete (14/14 features implemented)

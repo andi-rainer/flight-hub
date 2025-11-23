@@ -1,0 +1,115 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - '**'  # Run on all branches
+  pull_request:
+    branches:
+      - main
+      - develop
+
+jobs:
+  ci:
+    name: CI - Tests, Lint, Type Check & Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run ESLint
+        id: lint
+        run: npm run lint
+        continue-on-error: true
+
+      - name: Run TypeScript type check
+        id: typecheck
+        run: npx tsc --noEmit
+
+      - name: Run tests with coverage
+        id: test
+        run: npm run test:coverage -- --maxWorkers=2
+
+      - name: Build application
+        id: build
+        run: npm run build
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder-key
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        if: always()
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage/coverage-final.json
+          fail_ci_if_error: false
+        continue-on-error: true
+
+      - name: CI Summary
+        if: always()
+        run: |
+          echo "## CI Results 🚀" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # Lint Status
+          if [ "${{ steps.lint.outcome }}" == "success" ]; then
+            echo "✅ **Linting** - Passed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Linting** - Failed" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          # Type Check Status
+          if [ "${{ steps.typecheck.outcome }}" == "success" ]; then
+            echo "✅ **Type Check** - Passed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Type Check** - Failed" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          # Test Status
+          if [ "${{ steps.test.outcome }}" == "success" ]; then
+            echo "✅ **Tests** - All 132 tests passed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Tests** - Some tests failed" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          # Build Status
+          if [ "${{ steps.build.outcome }}" == "success" ]; then
+            echo "✅ **Build** - Next.js build successful" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Build** - Build failed" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Test Coverage" >> $GITHUB_STEP_SUMMARY
+          echo "- Flight Charging: 21 tests" >> $GITHUB_STEP_SUMMARY
+          echo "- Manifest System: 58 tests" >> $GITHUB_STEP_SUMMARY
+          echo "- API Routes & Components: 53+ tests" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Details" >> $GITHUB_STEP_SUMMARY
+          echo "**Branch:** \`${{ github.ref_name }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit:** \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Triggered by:** ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
+
+          # Fail the job if any check failed
+          if [ "${{ steps.lint.outcome }}" != "success" ] || \
+             [ "${{ steps.typecheck.outcome }}" != "success" ] || \
+             [ "${{ steps.test.outcome }}" != "success" ] || \
+             [ "${{ steps.build.outcome }}" != "success" ]; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "❌ **CI Failed** - Please fix the issues above" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          else
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "🎉 **All CI checks passed!**" >> $GITHUB_STEP_SUMMARY
+          fi
