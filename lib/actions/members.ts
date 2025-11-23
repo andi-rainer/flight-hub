@@ -167,6 +167,66 @@ export async function inviteUser(data: {
   }
 }
 
+export async function resendOwnInvitation(email: string) {
+  console.log('[Resend Own Invite] START - email:', email)
+
+  // This is a public action - no authentication required
+  // Users can resend their own invitation if it expired
+
+  const supabase = await createClient()
+
+  // Verify user exists with this email
+  const { data: targetUser } = await supabase
+    .from('users')
+    .select('id, email')
+    .eq('email', email)
+    .single()
+
+  if (!targetUser) {
+    console.log('[Resend Own Invite] User not found with email:', email)
+    return { success: false, error: 'No invitation found for this email address' }
+  }
+  console.log('[Resend Own Invite] User found:', targetUser.email)
+
+  // Get auth user details to check if already confirmed
+  const adminClient = createAdminClient()
+  const { data: authUser, error: getUserError } = await adminClient.auth.admin.getUserById(targetUser.id)
+
+  if (getUserError || !authUser) {
+    console.error('[Resend Own Invite] Error getting auth user:', getUserError)
+    return { success: false, error: 'Could not retrieve user information' }
+  }
+
+  // If user is already confirmed, they should use password reset instead
+  if (authUser.user.email_confirmed_at) {
+    console.log('[Resend Own Invite] User already confirmed, cannot resend invitation')
+    return {
+      success: false,
+      error: 'This account is already activated. Please use the "Forgot Password" link on the login page instead.'
+    }
+  }
+
+  // User is not confirmed, send invitation
+  const redirectTo = (process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000').replace(/\/$/, '')
+  console.log('[Resend Own Invite] Sending invitation with redirect URL:', `${redirectTo}/auth/callback`)
+
+  const { error: inviteError } = await adminClient.auth.admin.inviteUserByEmail(
+    targetUser.email,
+    { redirectTo: `${redirectTo}/auth/callback` }
+  )
+
+  if (inviteError) {
+    console.error('[Resend Own Invite] Error resending invitation:', inviteError)
+    return { success: false, error: inviteError.message }
+  }
+
+  console.log('[Resend Own Invite] Invitation sent successfully to:', targetUser.email)
+  return {
+    success: true,
+    message: 'A new invitation link has been sent to your email address'
+  }
+}
+
 export async function resendInvitation(userId: string) {
   console.log('[Resend Invite] START - userId:', userId, 'type:', typeof userId)
   const supabase = await createClient()

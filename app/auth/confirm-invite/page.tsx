@@ -3,11 +3,12 @@
 import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { resendOwnInvitation } from '@/lib/actions/members'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Loader2 } from 'lucide-react'
+import { Loader2, Mail } from 'lucide-react'
 
 function ConfirmInviteContent() {
   const router = useRouter()
@@ -19,6 +20,10 @@ function ConfirmInviteContent() {
   const MAX_OTP_LENGTH = 10 // Maximum OTP length
   const [email, setEmail] = useState('')
   const [showOtpInput, setShowOtpInput] = useState(false)
+  const [showResendForm, setShowResendForm] = useState(false)
+  const [resendEmail, setResendEmail] = useState('')
+  const [resendSuccess, setResendSuccess] = useState(false)
+  const [isResending, setIsResending] = useState(false)
 
   const tokenHash = searchParams.get('token_hash')
   const type = searchParams.get('type')
@@ -117,6 +122,35 @@ function ConfirmInviteContent() {
     }
   }
 
+  const handleResendInvitation = async (e: React.FormEvent) => {
+    e.preventDefault()
+
+    if (!resendEmail || !resendEmail.includes('@')) {
+      setError('Please enter a valid email address.')
+      return
+    }
+
+    setIsResending(true)
+    setError(null)
+
+    try {
+      const result = await resendOwnInvitation(resendEmail)
+
+      if (result.success) {
+        setResendSuccess(true)
+        setShowResendForm(false)
+        setError(null)
+      } else {
+        setError(result.error || 'Failed to resend invitation.')
+      }
+    } catch (err) {
+      console.error('Error resending invitation:', err)
+      setError('An unexpected error occurred. Please try again.')
+    } finally {
+      setIsResending(false)
+    }
+  }
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-12 dark:bg-gray-900">
       <Card className="w-full max-w-md">
@@ -127,13 +161,95 @@ function ConfirmInviteContent() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          {error && (
-            <Alert variant="destructive">
-              <AlertDescription>{error}</AlertDescription>
+          {resendSuccess && (
+            <Alert className="border-green-600 bg-green-50">
+              <Mail className="h-4 w-4 text-green-800" />
+              <AlertDescription className="text-green-700">
+                A new invitation link has been sent to your email address. Please check your inbox.
+              </AlertDescription>
             </Alert>
           )}
 
-          {!showOtpInput ? (
+          {error && (
+            <div className="space-y-3">
+              <Alert variant="destructive">
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+
+              {/* Show resend button if token is expired */}
+              {(error.toLowerCase().includes('expired') || error.toLowerCase().includes('invalid')) && !showResendForm && !resendSuccess && (
+                <Button
+                  onClick={() => setShowResendForm(true)}
+                  variant="outline"
+                  className="w-full"
+                  type="button"
+                >
+                  <Mail className="mr-2 h-4 w-4" />
+                  Request New Invitation Link
+                </Button>
+              )}
+            </div>
+          )}
+
+          {/* Resend Invitation Form */}
+          {showResendForm && (
+            <form onSubmit={handleResendInvitation} className="space-y-4 rounded-lg border p-4">
+              <div className="space-y-2">
+                <h3 className="font-medium">Request New Invitation</h3>
+                <p className="text-sm text-muted-foreground">
+                  Enter the email address from your original invitation to receive a new link.
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <label htmlFor="resend-email" className="text-sm font-medium">
+                  Email Address
+                </label>
+                <Input
+                  id="resend-email"
+                  type="email"
+                  placeholder="your.email@example.com"
+                  value={resendEmail}
+                  onChange={(e) => setResendEmail(e.target.value)}
+                  required
+                  disabled={isResending}
+                />
+              </div>
+
+              <div className="flex gap-2">
+                <Button
+                  type="submit"
+                  disabled={isResending || !resendEmail}
+                  className="flex-1"
+                >
+                  {isResending ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Sending...
+                    </>
+                  ) : (
+                    <>
+                      <Mail className="mr-2 h-4 w-4" />
+                      Send New Link
+                    </>
+                  )}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setShowResendForm(false)
+                    setResendEmail('')
+                  }}
+                  disabled={isResending}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </form>
+          )}
+
+          {!showOtpInput && !showResendForm ? (
             <>
               {/* Primary method: Accept via button */}
               <Button

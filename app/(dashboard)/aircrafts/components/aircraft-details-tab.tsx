@@ -82,6 +82,14 @@ export function AircraftDetailsTab({ aircraft, isBoardMember }: AircraftDetailsT
                 </Badge>
               </div>
             </div>
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">Aircraft Type</p>
+              <div className="mt-1">
+                <Badge variant={aircraft.is_skydive_aircraft ? 'default' : 'outline'}>
+                  {aircraft.is_skydive_aircraft ? 'Skydive Aircraft' : 'General Aviation'}
+                </Badge>
+              </div>
+            </div>
           </div>
 
           <div className="border-t pt-4">
@@ -103,6 +111,12 @@ export function AircraftDetailsTab({ aircraft, isBoardMember }: AircraftDetailsT
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">{t('fuelConsumption')}</p>
                   <p className="text-lg">{aircraft.fuel_consumption} L/h</p>
+                </div>
+              )}
+              {aircraft.max_jumpers !== null && (
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Max. Jumpers per Flight</p>
+                  <p className="text-lg">{aircraft.max_jumpers} jumpers</p>
                 </div>
               )}
             </div>

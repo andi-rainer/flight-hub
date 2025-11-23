@@ -28,21 +28,17 @@ export const PERMISSIONS = {
   'flight.log.lock': [SYSTEM_FUNCTIONS.CHIEF_PILOT, 'board'],
 
   // Skydive Manifest Permissions
-  'skydive.manifest.view': ['*'],
-  'skydive.manifest.create': [
-    SYSTEM_FUNCTIONS.TANDEM_MASTER,
-    SYSTEM_FUNCTIONS.SKYDIVE_INSTRUCTOR,
-    SYSTEM_FUNCTIONS.MANIFEST_COORDINATOR,
-    'board',
-  ],
-  'skydive.manifest.edit': [
-    SYSTEM_FUNCTIONS.TANDEM_MASTER,
-    SYSTEM_FUNCTIONS.SKYDIVE_INSTRUCTOR,
-    SYSTEM_FUNCTIONS.MANIFEST_COORDINATOR,
-    'board',
-  ],
-  'skydive.manifest.close': [SYSTEM_FUNCTIONS.MANIFEST_COORDINATOR, 'board'],
-  'skydive.manifest.delete': ['board'],
+  'manifest.view': ['*'],
+  'manifest.operation_days.create': [SYSTEM_FUNCTIONS.MANIFEST_COORDINATOR, 'board'],
+  'manifest.operation_days.edit': [SYSTEM_FUNCTIONS.MANIFEST_COORDINATOR, 'board'],
+  'manifest.operation_days.delete': ['board'],
+  'manifest.flights.create': [SYSTEM_FUNCTIONS.MANIFEST_COORDINATOR, 'board'],
+  'manifest.flights.edit': [SYSTEM_FUNCTIONS.MANIFEST_COORDINATOR, 'board'],
+  'manifest.flights.delete': [SYSTEM_FUNCTIONS.MANIFEST_COORDINATOR, 'board'],
+  'manifest.jumpers.assign': [SYSTEM_FUNCTIONS.MANIFEST_COORDINATOR, 'board'],
+  'manifest.jumpers.remove': [SYSTEM_FUNCTIONS.MANIFEST_COORDINATOR, 'board'],
+  'manifest.payments.update': [SYSTEM_FUNCTIONS.MANIFEST_COORDINATOR, SYSTEM_FUNCTIONS.TREASURER, 'board'],
+  'manifest.reports.view': [SYSTEM_FUNCTIONS.TREASURER, 'board'],
 
   // Member Management Permissions
   'members.view.all': ['board', SYSTEM_FUNCTIONS.SECRETARY],

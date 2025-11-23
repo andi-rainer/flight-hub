@@ -23,6 +23,7 @@ export function AircraftForm({ aircraft, onSuccess }: AircraftFormProps) {
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
   const [massUnit, setMassUnit] = useState<'kg' | 'lbs'>(aircraft?.mass_unit || 'kg')
+  const [isSkydiveAircraft, setIsSkydiveAircraft] = useState<boolean>(aircraft?.is_skydive_aircraft ?? false)
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -58,6 +59,8 @@ export function AircraftForm({ aircraft, onSuccess }: AircraftFormProps) {
       max_fuel: parseFloat(formData.get('max_fuel') as string) || null,
       fuel_consumption: parseFloat(formData.get('fuel_consumption') as string) || null,
       max_mass: parseFloat(formData.get('max_mass') as string) || null,
+      is_skydive_aircraft: isSkydiveAircraft,
+      max_jumpers: isSkydiveAircraft ? (parseInt(formData.get('max_jumpers') as string) || null) : null,
       nav_equipment: navEquipmentArray,
       xdpr_equipment: formData.get('xdpr_equipment') as string || null,
       emer_equipment: formData.get('emer_equipment') as string || null,
@@ -179,6 +182,37 @@ export function AircraftForm({ aircraft, onSuccess }: AircraftFormProps) {
             placeholder="e.g., 35"
           />
         </div>
+
+        <div className="space-y-4 md:col-span-2">
+          <div className="flex items-center space-x-2">
+            <Switch
+              id="is_skydive_aircraft"
+              checked={isSkydiveAircraft}
+              onCheckedChange={setIsSkydiveAircraft}
+            />
+            <Label htmlFor="is_skydive_aircraft">Skydive Aircraft?</Label>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Enable this to configure the aircraft for skydive operations and manifest planning
+          </p>
+        </div>
+
+        {isSkydiveAircraft && (
+          <div className="space-y-2">
+            <Label htmlFor="max_jumpers">Max Jumpers per Flight</Label>
+            <Input
+              id="max_jumpers"
+              name="max_jumpers"
+              type="number"
+              min="1"
+              defaultValue={aircraft?.max_jumpers || ''}
+              placeholder="e.g., 6"
+            />
+            <p className="text-xs text-muted-foreground">
+              Maximum number of skydivers per flight (for manifest planning)
+            </p>
+          </div>
+        )}
 
         <div className="space-y-2">
           <Label htmlFor="xdpr_equipment">XPDR Equipment</Label>

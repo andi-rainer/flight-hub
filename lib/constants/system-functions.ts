@@ -13,6 +13,7 @@ export const SYSTEM_FUNCTIONS = {
   CHIEF_PILOT: 'chief_pilot',
 
   // Skydiving
+  SKYDIVE_PILOT: 'skydive_pilot',
   TANDEM_MASTER: 'tandem_master',
   SKYDIVE_INSTRUCTOR: 'skydive_instructor',
   SPORT_JUMPER: 'sport_jumper',
@@ -47,14 +48,17 @@ export const PERSON_SELECTOR_CONTEXTS = {
   FLIGHT_CREW: 'flight_crew',
   PILOT_IN_COMMAND: 'pilot_in_command',
   COPILOT: 'copilot',
+  SKYDIVE_PILOT: 'skydive_pilot',
   TANDEM_MASTER: 'tandem_master',
   TANDEM_GUEST: 'tandem_guest',
+  TANDEM_PASSENGER: 'tandem_passenger',
   SPORT_JUMPER: 'sport_jumper',
   SKYDIVE_INSTRUCTOR: 'skydive_instructor',
   MANIFEST_COORDINATOR: 'manifest_coordinator',
+  ALL_USERS: 'all_users',
 } as const
 
-export type PersonSelectorContext = typeof PERSON_SELECTOR_CONTEXTS[keyof typeof PERSON_SELECTOR_CONTEXTS]
+export type PersonSelectorContext = typeof PERSON_SELECTOR_CONTEXTS[keyof typeof PERSON_SELECTOR_CONTEXTS] | string
 
 /**
  * Get function codes for a given context
@@ -66,11 +70,14 @@ export function getContextFunctionCodes(context: PersonSelectorContext): SystemF
     case PERSON_SELECTOR_CONTEXTS.COPILOT:
       return [SYSTEM_FUNCTIONS.PILOT, SYSTEM_FUNCTIONS.FLIGHT_INSTRUCTOR]
 
+    case PERSON_SELECTOR_CONTEXTS.SKYDIVE_PILOT:
+      return [SYSTEM_FUNCTIONS.SKYDIVE_PILOT]
+
     case PERSON_SELECTOR_CONTEXTS.TANDEM_MASTER:
       return [SYSTEM_FUNCTIONS.TANDEM_MASTER]
 
     case PERSON_SELECTOR_CONTEXTS.SPORT_JUMPER:
-      return [SYSTEM_FUNCTIONS.SPORT_JUMPER]
+      return [SYSTEM_FUNCTIONS.SPORT_JUMPER, SYSTEM_FUNCTIONS.SKYDIVE_INSTRUCTOR, SYSTEM_FUNCTIONS.TANDEM_MASTER]
 
     case PERSON_SELECTOR_CONTEXTS.SKYDIVE_INSTRUCTOR:
       return [SYSTEM_FUNCTIONS.SKYDIVE_INSTRUCTOR]
@@ -79,7 +86,11 @@ export function getContextFunctionCodes(context: PersonSelectorContext): SystemF
       return [SYSTEM_FUNCTIONS.MANIFEST_COORDINATOR]
 
     case PERSON_SELECTOR_CONTEXTS.TANDEM_GUEST:
-      return [] // No function required for guests
+    case PERSON_SELECTOR_CONTEXTS.TANDEM_PASSENGER:
+      return [] // No function required for guests/passengers
+
+    case PERSON_SELECTOR_CONTEXTS.ALL_USERS:
+      return [] // All users regardless of functions
 
     default:
       return []
@@ -97,16 +108,22 @@ export function getContextLabel(context: PersonSelectorContext): string {
       return 'Pilot in Command'
     case PERSON_SELECTOR_CONTEXTS.COPILOT:
       return 'Co-Pilot / Instructor'
+    case PERSON_SELECTOR_CONTEXTS.SKYDIVE_PILOT:
+      return 'Skydive Pilot'
     case PERSON_SELECTOR_CONTEXTS.TANDEM_MASTER:
       return 'Tandem Master'
     case PERSON_SELECTOR_CONTEXTS.TANDEM_GUEST:
       return 'Tandem Guest'
+    case PERSON_SELECTOR_CONTEXTS.TANDEM_PASSENGER:
+      return 'Tandem Passenger'
     case PERSON_SELECTOR_CONTEXTS.SPORT_JUMPER:
       return 'Sport Jumper'
     case PERSON_SELECTOR_CONTEXTS.SKYDIVE_INSTRUCTOR:
       return 'Skydive Instructor'
     case PERSON_SELECTOR_CONTEXTS.MANIFEST_COORDINATOR:
       return 'Manifest Coordinator'
+    case PERSON_SELECTOR_CONTEXTS.ALL_USERS:
+      return 'User'
     default:
       return 'Person'
   }

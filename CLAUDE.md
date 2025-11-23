@@ -1229,3 +1229,4 @@ FlightHub is a well-architected, production-ready aviation club management syste
 - **Scalability**: Design supports growth to thousands of members and records
 
 The codebase follows Next.js and Supabase best practices with clear patterns for extending features, adding permissions, and managing user data. All critical paths are secured with either database-level RLS or server-side permission checks.
+- Always develop for local environment, local supabase. Do not push migrations via MCP, they are added via supabase migration up and later via github actions to the staging supabase environment.

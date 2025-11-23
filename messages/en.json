@@ -79,6 +79,8 @@
     "flightLogDescription": "Track and manage flight logs",
     "reservations": "Reservations",
     "reservationsDescription": "View and manage aircraft reservations",
+    "manifest": "Manifest",
+    "manifestDescription": "Manage skydive operation days and flight schedules",
     "settings": "Settings",
     "settingsDescription": "Manage your account and preferences",
     "documents": "Documents",

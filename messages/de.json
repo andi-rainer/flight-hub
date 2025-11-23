@@ -79,6 +79,8 @@
     "flightLogDescription": "Flugprotokolle verfolgen und verwalten",
     "reservations": "Reservierungen",
     "reservationsDescription": "Flugzeugreservierungen anzeigen und verwalten",
+    "manifest": "Manifest",
+    "manifestDescription": "Fallschirmsprung-Betriebstage und Flugrosten verwalten",
     "settings": "Einstellungen",
     "settingsDescription": "Konto und Einstellungen verwalten",
     "documents": "Dokumente",
