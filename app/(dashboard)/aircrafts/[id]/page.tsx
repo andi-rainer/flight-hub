@@ -17,6 +17,10 @@ import { AircraftWeightBalanceTab } from '../components/aircraft-weight-balance-
 import { getAircraftWithMaintenance, getMaintenanceHistory } from '../maintenance-actions'
 import type { Plane, Document as AircraftDocument, User, OperationType, CostCenter } from '@/lib/database.types'
 
+// Configure route to accept larger request bodies for file uploads
+export const maxDuration = 60 // Allow up to 60 seconds for file upload
+export const dynamic = 'force-dynamic' // Required for Server Actions
+
 interface AircraftWithDocuments extends Plane {
   documents: AircraftDocument[]
 }

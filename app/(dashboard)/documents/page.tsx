@@ -8,6 +8,10 @@ import DocumentFilters from './components/document-filters'
 import DocumentRow from './components/document-row'
 import UploadDocumentDialog from './components/upload-document-dialog'
 
+// Configure route to accept larger request bodies for file uploads
+export const maxDuration = 60
+export const dynamic = 'force-dynamic'
+
 export default async function DocumentsPage({
   searchParams,
 }: {

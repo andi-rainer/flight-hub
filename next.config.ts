@@ -10,6 +10,9 @@ const nextConfig: NextConfig = {
     turbo: {
       resolveAlias: {},
     },
+    // Allow larger request bodies through middleware (for file uploads)
+    middlewareClientMaxBodySize: '25mb',
+    // Allow larger request bodies for Server Actions (file uploads)
     serverActions: {
       bodySizeLimit: '25mb',
     },

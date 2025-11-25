@@ -5,6 +5,10 @@ import { hasPermission, type PermissionUser } from '@/lib/permissions'
 import { FlightlogContent } from './flightlog-content'
 import { Loader2 } from 'lucide-react'
 
+// Configure route to accept larger request bodies for file uploads (M&B PDFs)
+export const maxDuration = 60
+export const dynamic = 'force-dynamic'
+
 interface FlightlogAircraftPageProps {
   params: Promise<{
     aircraftId: string

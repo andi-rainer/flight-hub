@@ -3,6 +3,10 @@ import { redirect } from '@/navigation'
 import { getTranslations } from 'next-intl/server'
 import { SettingsTabs } from './components/settings-tabs'
 
+// Configure route to accept larger request bodies for file uploads (e.g., pilot documents)
+export const maxDuration = 60
+export const dynamic = 'force-dynamic'
+
 export default async function SettingsPage() {
   const t = await getTranslations('settings')
   const user = await getUserProfile()
