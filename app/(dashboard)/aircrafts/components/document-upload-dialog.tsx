@@ -34,10 +34,10 @@ export function DocumentUploadDialog({ aircraftId }: DocumentUploadDialogProps) 
     const formData = new FormData(e.currentTarget)
     const file = formData.get('file') as File
 
-    // Validate file size (10MB max)
-    const maxSize = 10 * 1024 * 1024 // 10MB in bytes
+    // Validate file size (25MB max)
+    const maxSize = 25 * 1024 * 1024 // 25MB in bytes
     if (file && file.size > maxSize) {
-      setError('File size must be less than 10MB')
+      setError('File size must be less than 25MB')
       return
     }
 

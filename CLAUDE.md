@@ -1372,7 +1372,7 @@ See `.github/WORKFLOWS.md` for detailed workflow documentation.
 
 **Document upload fails**
 - Check storage buckets exist
-- Verify file size < 10MB
+- Verify file size < 25MB
 - Check MIME types are allowed
 - Ensure user has 'board' role for uploads
 

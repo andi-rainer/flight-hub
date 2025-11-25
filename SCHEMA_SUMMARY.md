@@ -257,7 +257,7 @@ WHERE email = 'your-email@example.com';
 // Create buckets via Supabase client or Dashboard
 // Bucket: 'documents'
 // - Public: false
-// - File size limit: 10MB
+// - File size limit: 25MB
 // - Allowed MIME types: application/pdf, image/*
 
 // Bucket: 'flight-logs'

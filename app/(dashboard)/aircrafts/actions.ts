@@ -86,10 +86,10 @@ export async function uploadAircraftDocument(formData: FormData) {
     return { error: 'Missing required fields' }
   }
 
-  // Validate file size (10MB max)
-  const maxSize = 10 * 1024 * 1024 // 10MB in bytes
+  // Validate file size (25MB max)
+  const maxSize = 25 * 1024 * 1024 // 25MB in bytes
   if (file.size > maxSize) {
-    return { error: 'File size must be less than 10MB' }
+    return { error: 'File size must be less than 25MB' }
   }
 
   // Upload file to Supabase Storage

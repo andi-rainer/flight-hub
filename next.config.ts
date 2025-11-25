@@ -11,7 +11,7 @@ const nextConfig: NextConfig = {
       resolveAlias: {},
     },
     serverActions: {
-      bodySizeLimit: '10mb',
+      bodySizeLimit: '25mb',
     },
   },
   // Temporarily ignore TypeScript errors during build
