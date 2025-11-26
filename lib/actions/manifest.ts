@@ -794,3 +794,150 @@ export async function updateManifestSettings(updates: {
   revalidatePath('/manifest')
   return { success: true, data }
 }
+
+// ============================================================================
+// BOOKING TIMEFRAME ACTIONS
+// ============================================================================
+
+export async function getOperationDayTimeframes(operationDayId: string) {
+  const supabase = await createClient()
+
+  const { data, error } = await supabase
+    .from('manifest_booking_timeframes')
+    .select('*')
+    .eq('operation_day_id', operationDayId)
+    .order('start_time', { ascending: true })
+
+  if (error) {
+    console.error('Error fetching timeframes:', error)
+    return { success: false, error: error.message }
+  }
+
+  return { success: true, data }
+}
+
+export async function createBookingTimeframe(data: {
+  operation_day_id: string
+  start_time: string
+  end_time: string
+  max_bookings: number
+  overbooking_allowed?: number
+}) {
+  const supabase = await createClient()
+
+  const { user, error: permError } = await requirePermission(
+    supabase,
+    'manifest.operation_days.create'
+  )
+  if (!user) return { success: false, error: permError || 'Not authenticated' }
+
+  // Validate timeframe
+  if (data.start_time >= data.end_time) {
+    return { success: false, error: 'End time must be after start time' }
+  }
+
+  if (data.max_bookings <= 0) {
+    return { success: false, error: 'Max bookings must be greater than 0' }
+  }
+
+  const { data: timeframe, error } = await supabase
+    .from('manifest_booking_timeframes')
+    .insert({
+      operation_day_id: data.operation_day_id,
+      start_time: data.start_time,
+      end_time: data.end_time,
+      max_bookings: data.max_bookings,
+      overbooking_allowed: data.overbooking_allowed || 0,
+      created_by: user.id,
+    })
+    .select()
+    .single()
+
+  if (error) {
+    console.error('Error creating timeframe:', error)
+    return { success: false, error: error.message }
+  }
+
+  revalidatePath('/manifest')
+  return { success: true, data: timeframe }
+}
+
+export async function updateBookingTimeframe(
+  timeframeId: string,
+  data: {
+    start_time?: string
+    end_time?: string
+    max_bookings?: number
+    overbooking_allowed?: number
+    active?: boolean
+  }
+) {
+  const supabase = await createClient()
+
+  const { user, error: permError } = await requirePermission(
+    supabase,
+    'manifest.operation_days.create'
+  )
+  if (!user) return { success: false, error: permError || 'Not authenticated' }
+
+  // Validate timeframe if times are being updated
+  if (data.start_time && data.end_time && data.start_time >= data.end_time) {
+    return { success: false, error: 'End time must be after start time' }
+  }
+
+  if (data.max_bookings !== undefined && data.max_bookings <= 0) {
+    return { success: false, error: 'Max bookings must be greater than 0' }
+  }
+
+  const { data: timeframe, error } = await supabase
+    .from('manifest_booking_timeframes')
+    .update(data)
+    .eq('id', timeframeId)
+    .select()
+    .single()
+
+  if (error) {
+    console.error('Error updating timeframe:', error)
+    return { success: false, error: error.message }
+  }
+
+  revalidatePath('/manifest')
+  return { success: true, data: timeframe }
+}
+
+export async function deleteBookingTimeframe(timeframeId: string) {
+  const supabase = await createClient()
+
+  const { user, error: permError} = await requirePermission(
+    supabase,
+    'manifest.operation_days.create'
+  )
+  if (!user) return { success: false, error: permError || 'Not authenticated' }
+
+  // Check if timeframe has any bookings
+  const { count } = await supabase
+    .from('ticket_bookings')
+    .select('*', { count: 'exact', head: true })
+    .eq('timeframe_id', timeframeId)
+    .in('status', ['active', 'pending'])
+
+  if (count && count > 0) {
+    return {
+      success: false,
+      error: `Cannot delete timeframe with ${count} active booking(s). Cancel bookings first.`,
+    }
+  }
+
+  const { error } = await supabase
+    .from('manifest_booking_timeframes')
+    .delete()
+    .eq('id', timeframeId)
+
+  if (error) {
+    console.error('Error deleting timeframe:', error)
+    return { success: false, error: error.message }
+  }
+
+  revalidatePath('/manifest')
+  return { success: true }
+}

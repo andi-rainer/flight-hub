@@ -16,6 +16,7 @@ import {
 } from '@/components/ui/table'
 import { EditOperationDayDialog } from './edit-operation-day-dialog'
 import { DeleteOperationDayDialog } from './delete-operation-day-dialog'
+import { ManageTimeframesDialog } from './manage-timeframes-dialog'
 
 interface OperationDay {
   id: string
@@ -131,6 +132,10 @@ export function OperationDayList({
                 <div className="flex items-center justify-end gap-2">
                   {canManage && (
                     <>
+                      <ManageTimeframesDialog
+                        operationDayId={operationDay.id}
+                        operationDate={operationDay.operation_date}
+                      />
                       <EditOperationDayDialog
                         operationDay={operationDay}
                         availablePlanes={availablePlanes}

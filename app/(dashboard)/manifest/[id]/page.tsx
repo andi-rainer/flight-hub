@@ -5,6 +5,7 @@ import { ArrowLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
 import { OperationDayHeader } from './components/operation-day-header'
+import { BookingTimeframesSection } from './components/booking-timeframes-section'
 import { FlightManagementSection } from './components/flight-management-section'
 
 export const dynamic = 'force-dynamic'
@@ -109,6 +110,13 @@ export default async function OperationDayDetailPage({
 
       {/* Operation Day Header */}
       <OperationDayHeader operationDay={operationDay as any} canManage={canManage} />
+
+      {/* Booking Timeframes Section */}
+      <BookingTimeframesSection
+        operationDayId={id}
+        operationDate={operationDay.operation_date}
+        canManage={canManage}
+      />
 
       {/* Flight Management Section */}
       <FlightManagementSection
