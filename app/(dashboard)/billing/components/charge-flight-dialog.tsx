@@ -100,7 +100,7 @@ export function ChargeFlightDialog({ flight, costCenters, userBalances, open, on
       if (feesResult.success && feesResult.fees && feesResult.fees.length > 0) {
         setAirportFeesBreakdown({
           fees: feesResult.fees,
-          totalAmount: feesResult.totalAmount
+          totalAmount: feesResult.totalAmount ?? 0
         })
 
         // Add fees to description if included
@@ -225,7 +225,7 @@ export function ChargeFlightDialog({ flight, costCenters, userBalances, open, on
         const pilotTarget: SplitTarget = {
           id: '1',
           type: 'user',
-          targetId: flight.pilot_id,
+          targetId: flight.pilot_id ?? '',
           targetName: `${flight.pilot_surname}, ${flight.pilot_name}`,
           percentage: pilotPercentage,
           description: '',
@@ -1001,7 +1001,7 @@ export function ChargeFlightDialog({ flight, costCenters, userBalances, open, on
                         </SelectTrigger>
                         <SelectContent>
                           {userBalances.map((user) => (
-                            <SelectItem key={user.user_id} value={user.user_id}>
+                            <SelectItem key={user.user_id} value={user.user_id ?? ''}>
                               {user.surname}, {user.name}
                             </SelectItem>
                           ))}
@@ -1130,9 +1130,9 @@ export function ChargeFlightDialog({ flight, costCenters, userBalances, open, on
                     {selectedUser ? (
                       <span className="flex items-center justify-between w-full">
                         <span>{selectedUser.surname}, {selectedUser.name}</span>
-                        {selectedUser.balance !== undefined && (
-                          <span className={`text-xs ml-2 ${selectedUser.balance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                            {formatCurrency(selectedUser.balance)}
+                        {(selectedUser.balance ?? 0) !== undefined && (
+                          <span className={`text-xs ml-2 ${(selectedUser.balance ?? 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                            {formatCurrency((selectedUser.balance ?? 0))}
                           </span>
                         )}
                       </span>
@@ -1153,7 +1153,7 @@ export function ChargeFlightDialog({ flight, costCenters, userBalances, open, on
                             key={user.user_id}
                             value={`${user.surname} ${user.name} ${user.email}`}
                             onSelect={() => {
-                              setSelectedUserId(user.user_id)
+                              setSelectedUserId(user.user_id ?? '')
                               setUserSelectorOpen(false)
                             }}
                           >
@@ -1168,9 +1168,9 @@ export function ChargeFlightDialog({ flight, costCenters, userBalances, open, on
                                 <span>{user.surname}, {user.name}</span>
                                 <span className="text-xs text-muted-foreground">{user.email}</span>
                               </div>
-                              {user.balance !== undefined && (
-                                <span className={`text-xs ml-2 ${user.balance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                  {formatCurrency(user.balance)}
+                              {(user.balance ?? 0) !== undefined && (
+                                <span className={`text-xs ml-2 ${(user.balance ?? 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                  {formatCurrency((user.balance ?? 0))}
                                 </span>
                               )}
                             </div>
@@ -1234,7 +1234,7 @@ export function ChargeFlightDialog({ flight, costCenters, userBalances, open, on
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isPending}>
             Cancel
           </Button>
-          <Button onClick={handleSubmit} disabled={isPending || flight.needs_board_review}>
+          <Button onClick={handleSubmit} disabled={isPending || (flight.needs_board_review ?? false)}>
             {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Charge Flight
           </Button>

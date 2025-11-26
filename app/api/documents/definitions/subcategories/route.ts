@@ -62,7 +62,8 @@ export async function POST(request: NextRequest) {
     const { data: subcategory, error } = await supabase
       .from('document_subcategories')
       .insert({
-        document_definition_id: body.document_definition_id,
+        category_id: body.category_id,
+        document_definition_id: body.document_definition_id || null,
         name: body.name,
         code: body.code || null,
         description: body.description || null,

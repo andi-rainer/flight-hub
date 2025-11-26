@@ -45,14 +45,12 @@ export function FunctionsSection({ functions }: FunctionsSectionProps) {
 
   const [formData, setFormData] = useState({
     name: '',
-    yearly_rate: '',
     description: '',
   })
 
   const resetForm = () => {
     setFormData({
       name: '',
-      yearly_rate: '',
       description: '',
     })
   }
@@ -63,7 +61,6 @@ export function FunctionsSection({ functions }: FunctionsSectionProps) {
 
     const result = await createFunction({
       name: formData.name,
-      yearly_rate: parseFloat(formData.yearly_rate) || 0,
       description: formData.description || null,
     })
 
@@ -87,7 +84,6 @@ export function FunctionsSection({ functions }: FunctionsSectionProps) {
 
     const result = await updateFunction(editingFunction.id, {
       name: formData.name,
-      yearly_rate: parseFloat(formData.yearly_rate) || 0,
       description: formData.description || null,
     })
 
@@ -118,7 +114,6 @@ export function FunctionsSection({ functions }: FunctionsSectionProps) {
     setEditingFunction(func)
     setFormData({
       name: func.name,
-      yearly_rate: func.yearly_rate.toString(),
       description: func.description || '',
     })
   }
@@ -165,19 +160,6 @@ export function FunctionsSection({ functions }: FunctionsSectionProps) {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="yearly_rate">Yearly Rate (EUR)</Label>
-                    <Input
-                      id="yearly_rate"
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      placeholder="0.00"
-                      value={formData.yearly_rate}
-                      onChange={(e) => setFormData({ ...formData, yearly_rate: e.target.value })}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
                     <Label htmlFor="description">Description (Optional)</Label>
                     <Textarea
                       id="description"
@@ -213,7 +195,6 @@ export function FunctionsSection({ functions }: FunctionsSectionProps) {
             <TableHeader>
               <TableRow>
                 <TableHead>Function Name</TableHead>
-                <TableHead>Yearly Rate</TableHead>
                 <TableHead>Description</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
@@ -221,7 +202,7 @@ export function FunctionsSection({ functions }: FunctionsSectionProps) {
             <TableBody>
               {functions.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={4} className="text-center text-muted-foreground">
+                  <TableCell colSpan={3} className="text-center text-muted-foreground">
                     No functions defined yet
                   </TableCell>
                 </TableRow>
@@ -229,7 +210,6 @@ export function FunctionsSection({ functions }: FunctionsSectionProps) {
                 functions.map((func) => (
                   <TableRow key={func.id}>
                     <TableCell className="font-medium">{func.name}</TableCell>
-                    <TableCell>EUR {func.yearly_rate.toFixed(2)}</TableCell>
                     <TableCell className="max-w-xs truncate">
                       {func.description || '-'}
                     </TableCell>
@@ -264,20 +244,6 @@ export function FunctionsSection({ functions }: FunctionsSectionProps) {
                                     value={formData.name}
                                     onChange={(e) =>
                                       setFormData({ ...formData, name: e.target.value })
-                                    }
-                                    required
-                                  />
-                                </div>
-                                <div className="space-y-2">
-                                  <Label htmlFor="edit-yearly_rate">Yearly Rate (EUR)</Label>
-                                  <Input
-                                    id="edit-yearly_rate"
-                                    type="number"
-                                    step="0.01"
-                                    min="0"
-                                    value={formData.yearly_rate}
-                                    onChange={(e) =>
-                                      setFormData({ ...formData, yearly_rate: e.target.value })
                                     }
                                     required
                                   />

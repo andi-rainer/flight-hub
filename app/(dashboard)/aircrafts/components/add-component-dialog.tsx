@@ -12,12 +12,39 @@ import { Loader2, AlertCircle, Sparkles } from 'lucide-react'
 import { addComponent, getTBOPresets } from '@/lib/actions/aircraft-components'
 import { toast } from 'sonner'
 import { format } from 'date-fns'
+import type { Database } from '@/lib/database.types'
 
-type ComponentType = 'engine' | 'propeller' | 'landing_gear' | 'constant_speed_unit' | 'magneto' | 'vacuum_pump' | 'alternator' | 'starter' | 'other'
+// UI component types (for display)
+type UIComponentType = 'engine' | 'propeller' | 'landing_gear' | 'constant_speed_unit' | 'magneto' | 'vacuum_pump' | 'alternator' | 'starter' | 'avionics' | 'other'
+
+// Database component type
+type DBComponentType = Database['public']['Enums']['component_type']
+
+// Map UI types to database types
+function mapUITypeToDBType(uiType: UIComponentType): DBComponentType {
+  switch (uiType) {
+    case 'engine':
+      return 'engine'
+    case 'propeller':
+      return 'propeller'
+    case 'landing_gear':
+      return 'landing_gear'
+    case 'constant_speed_unit':
+    case 'magneto':
+    case 'vacuum_pump':
+    case 'alternator':
+    case 'starter':
+    case 'avionics':
+      return 'avionics'
+    case 'other':
+    default:
+      return 'other'
+  }
+}
 
 interface TBOPreset {
   id: string
-  component_type: ComponentType
+  component_type: UIComponentType
   manufacturer: string | null
   model: string | null
   default_tbo_hours: number
@@ -34,7 +61,7 @@ interface AddComponentDialogProps {
   currentAircraftHours: number
 }
 
-const COMPONENT_TYPES: { value: ComponentType; label: string }[] = [
+const COMPONENT_TYPES: { value: UIComponentType; label: string }[] = [
   { value: 'engine', label: 'Engine' },
   { value: 'propeller', label: 'Propeller' },
   { value: 'landing_gear', label: 'Landing Gear' },
@@ -43,6 +70,7 @@ const COMPONENT_TYPES: { value: ComponentType; label: string }[] = [
   { value: 'vacuum_pump', label: 'Vacuum Pump' },
   { value: 'alternator', label: 'Alternator' },
   { value: 'starter', label: 'Starter' },
+  { value: 'avionics', label: 'Avionics' },
   { value: 'other', label: 'Other' },
 ]
 
@@ -58,7 +86,7 @@ export function AddComponentDialog({
   const [error, setError] = useState<string | null>(null)
 
   // Form fields
-  const [componentType, setComponentType] = useState<ComponentType>('engine')
+  const [componentType, setComponentType] = useState<UIComponentType>('engine')
   const [position, setPosition] = useState('')
   const [serialNumber, setSerialNumber] = useState('')
   const [manufacturer, setManufacturer] = useState('')
@@ -81,7 +109,7 @@ export function AddComponentDialog({
       if (!componentType) return
 
       setLoadingPresets(true)
-      const result = await getTBOPresets(componentType)
+      const result = await getTBOPresets(mapUITypeToDBType(componentType))
 
       if (result.success && result.data) {
         setPresets(result.data as TBOPreset[])
@@ -149,7 +177,7 @@ export function AddComponentDialog({
     startTransition(async () => {
       const result = await addComponent({
         planeId: aircraftId,
-        componentType,
+        componentType: mapUITypeToDBType(componentType),
         position: position || null,
         serialNumber: serialNumber || null,
         manufacturer: manufacturer || null,
@@ -186,7 +214,7 @@ export function AddComponentDialog({
           {/* Component Type */}
           <div className="space-y-2">
             <Label htmlFor="componentType">Component Type *</Label>
-            <Select value={componentType} onValueChange={(value) => setComponentType(value as ComponentType)}>
+            <Select value={componentType} onValueChange={(value) => setComponentType(value as UIComponentType)}>
               <SelectTrigger id="componentType">
                 <SelectValue />
               </SelectTrigger>

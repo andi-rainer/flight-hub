@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
     const categoryId = searchParams.get('categoryId')
 
     let query = supabase
-      .from('document_endorsements')
+      .from('endorsements')
       .select('*')
       .order('sort_order', { ascending: true })
 
@@ -69,7 +69,7 @@ export async function POST(request: NextRequest) {
     }
 
     const { data: endorsement, error } = await supabase
-      .from('document_endorsements')
+      .from('endorsements')
       .insert({
         category_id: body.category_id,
         name: body.name,
@@ -125,7 +125,7 @@ export async function PUT(request: NextRequest) {
     const body = await request.json()
 
     const { data: endorsement, error } = await supabase
-      .from('document_endorsements')
+      .from('endorsements')
       .update({
         name: body.name,
         code: body.code || null,
@@ -177,7 +177,7 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Endorsement ID is required' }, { status: 400 })
     }
 
-    const { error } = await supabase.from('document_endorsements').delete().eq('id', id)
+    const { error } = await supabase.from('endorsements').delete().eq('id', id)
 
     if (error) {
       console.error('Error deleting document endorsement:', error)

@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { requirePermission } from '@/lib/permissions'
+import type { AircraftCgLimit, AircraftStation } from '@/lib/database.types'
 
 /**
  * Server actions for Weight & Balance management

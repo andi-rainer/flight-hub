@@ -1,7 +1,7 @@
 import { createServerClient } from '@supabase/ssr'
 import { createClient as createSupabaseClient } from '@supabase/supabase-js'
 import { cookies } from 'next/headers'
-import type { Database, UserProfile } from '@/lib/database.types'
+import type { Database, UserProfile, UsersWithFunctions } from '@/lib/database.types'
 
 /**
  * Creates a Supabase client for use in Server Components, Server Actions, and Route Handlers
@@ -115,5 +115,5 @@ export async function getUserProfile(): Promise<UserProfile | null> {
     return null
   }
 
-  return profile
+  return profile as any as UserProfile
 }

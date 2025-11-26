@@ -201,7 +201,7 @@ export async function updateMaintenanceSchedule(
   }
 
   if (intervalHours !== undefined) {
-    updateData.maintenance_interval_hours = intervalHours
+    updateData.maintenance_interval_hours = intervalHours ?? undefined
   }
 
   const { data, error } = await supabase
@@ -225,19 +225,30 @@ export async function updateMaintenanceSchedule(
  * Get aircraft with maintenance status
  * @param planeId - Optional aircraft ID for single aircraft
  */
-export async function getAircraftWithMaintenance(planeId?: string) {
+export async function getAircraftWithMaintenance(planeId: string): Promise<{ data: any; error: null } | { data: null; error: string }>
+export async function getAircraftWithMaintenance(): Promise<{ data: any[]; error: null } | { data: null; error: string }>
+export async function getAircraftWithMaintenance(planeId?: string): Promise<{ data: any; error: null } | { data: null; error: string }> {
   const supabase = await createClient()
 
-  let query = supabase
+  if (planeId) {
+    const { data, error } = await supabase
+      .from('aircraft_with_maintenance')
+      .select('*')
+      .eq('id', planeId)
+      .single()
+
+    if (error) {
+      console.error('Error fetching aircraft with maintenance:', error)
+      return { data: null, error: error.message }
+    }
+
+    return { data, error: null }
+  }
+
+  const { data, error } = await supabase
     .from('aircraft_with_maintenance')
     .select('*')
     .order('tail_number', { ascending: true })
-
-  if (planeId) {
-    query = query.eq('id', planeId).single()
-  }
-
-  const { data, error } = await query
 
   if (error) {
     console.error('Error fetching aircraft with maintenance:', error)

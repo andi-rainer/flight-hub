@@ -277,6 +277,64 @@ export type Database = {
           },
         ]
       }
+      aircraft_cg_limits: {
+        Row: {
+          arm: number
+          created_at: string
+          id: string
+          limit_type: string
+          notes: string | null
+          plane_id: string
+          sort_order: number
+          updated_at: string
+          weight: number
+        }
+        Insert: {
+          arm: number
+          created_at?: string
+          id?: string
+          limit_type: string
+          notes?: string | null
+          plane_id: string
+          sort_order?: number
+          updated_at?: string
+          weight: number
+        }
+        Update: {
+          arm?: number
+          created_at?: string
+          id?: string
+          limit_type?: string
+          notes?: string | null
+          plane_id?: string
+          sort_order?: number
+          updated_at?: string
+          weight?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "aircraft_cg_limits_plane_id_fkey"
+            columns: ["plane_id"]
+            isOneToOne: false
+            referencedRelation: "aircraft_totals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "aircraft_cg_limits_plane_id_fkey"
+            columns: ["plane_id"]
+            isOneToOne: false
+            referencedRelation: "aircraft_with_maintenance"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "aircraft_cg_limits_plane_id_fkey"
+            columns: ["plane_id"]
+            isOneToOne: false
+            referencedRelation: "planes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       aircraft_components: {
         Row: {
           component_hours_offset: number | null
@@ -471,6 +529,73 @@ export type Database = {
             columns: ["removed_by"]
             isOneToOne: false
             referencedRelation: "users_with_functions_search"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      aircraft_stations: {
+        Row: {
+          active: boolean
+          arm: number
+          basic_weight: number
+          created_at: string
+          id: string
+          name: string
+          notes: string | null
+          plane_id: string
+          sort_order: number
+          station_type: string
+          updated_at: string
+          weight_limit: number
+        }
+        Insert: {
+          active?: boolean
+          arm: number
+          basic_weight?: number
+          created_at?: string
+          id?: string
+          name: string
+          notes?: string | null
+          plane_id: string
+          sort_order?: number
+          station_type: string
+          updated_at?: string
+          weight_limit: number
+        }
+        Update: {
+          active?: boolean
+          arm?: number
+          basic_weight?: number
+          created_at?: string
+          id?: string
+          name?: string
+          notes?: string | null
+          plane_id?: string
+          sort_order?: number
+          station_type?: string
+          updated_at?: string
+          weight_limit?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "aircraft_stations_plane_id_fkey"
+            columns: ["plane_id"]
+            isOneToOne: false
+            referencedRelation: "aircraft_totals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "aircraft_stations_plane_id_fkey"
+            columns: ["plane_id"]
+            isOneToOne: false
+            referencedRelation: "aircraft_with_maintenance"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "aircraft_stations_plane_id_fkey"
+            columns: ["plane_id"]
+            isOneToOne: false
+            referencedRelation: "planes"
             referencedColumns: ["id"]
           },
         ]
@@ -1801,6 +1926,77 @@ export type Database = {
           },
         ]
       }
+      manifest_settings: {
+        Row: {
+          default_flight_interval_minutes: number
+          default_jump_altitude_feet: number
+          default_operation_end_time: string
+          default_operation_start_time: string
+          default_tandem_price_eur: number | null
+          id: string
+          max_jump_altitude_feet: number
+          min_jump_altitude_feet: number
+          require_payment_before_boarding: boolean | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          default_flight_interval_minutes?: number
+          default_jump_altitude_feet?: number
+          default_operation_end_time?: string
+          default_operation_start_time?: string
+          default_tandem_price_eur?: number | null
+          id?: string
+          max_jump_altitude_feet?: number
+          min_jump_altitude_feet?: number
+          require_payment_before_boarding?: boolean | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          default_flight_interval_minutes?: number
+          default_jump_altitude_feet?: number
+          default_operation_end_time?: string
+          default_operation_start_time?: string
+          default_tandem_price_eur?: number | null
+          id?: string
+          max_jump_altitude_feet?: number
+          min_jump_altitude_feet?: number
+          require_payment_before_boarding?: boolean | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "manifest_settings_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "user_balances"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "manifest_settings_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "manifest_settings_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "users_with_functions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "manifest_settings_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "users_with_functions_search"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       membership_types: {
         Row: {
           active: boolean | null
@@ -2145,18 +2341,21 @@ export type Database = {
         Row: {
           active: boolean
           billing_unit: string | null
-          cg_limits: Json | null
           color: string | null
           created_at: string
           default_rate: number | null
           emer_equipment: string | null
+          empty_cg: number | null
           empty_weight: number | null
           fuel_consumption: number | null
           id: string
           initial_flight_hours: number | null
           initial_landings: number | null
+          is_skydive_aircraft: boolean
           maintenance_interval_hours: number | null
+          mass_unit: string
           max_fuel: number | null
+          max_jumpers: number | null
           max_mass: number | null
           nav_equipment: string[] | null
           next_maintenance_hours: number | null
@@ -2169,18 +2368,21 @@ export type Database = {
         Insert: {
           active?: boolean
           billing_unit?: string | null
-          cg_limits?: Json | null
           color?: string | null
           created_at?: string
           default_rate?: number | null
           emer_equipment?: string | null
+          empty_cg?: number | null
           empty_weight?: number | null
           fuel_consumption?: number | null
           id?: string
           initial_flight_hours?: number | null
           initial_landings?: number | null
+          is_skydive_aircraft?: boolean
           maintenance_interval_hours?: number | null
+          mass_unit?: string
           max_fuel?: number | null
+          max_jumpers?: number | null
           max_mass?: number | null
           nav_equipment?: string[] | null
           next_maintenance_hours?: number | null
@@ -2193,18 +2395,21 @@ export type Database = {
         Update: {
           active?: boolean
           billing_unit?: string | null
-          cg_limits?: Json | null
           color?: string | null
           created_at?: string
           default_rate?: number | null
           emer_equipment?: string | null
+          empty_cg?: number | null
           empty_weight?: number | null
           fuel_consumption?: number | null
           id?: string
           initial_flight_hours?: number | null
           initial_landings?: number | null
+          is_skydive_aircraft?: boolean
           maintenance_interval_hours?: number | null
+          mass_unit?: string
           max_fuel?: number | null
+          max_jumpers?: number | null
           max_mass?: number | null
           nav_equipment?: string[] | null
           next_maintenance_hours?: number | null
@@ -2301,6 +2506,340 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "users_with_functions_search"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      skydive_flight_jumpers: {
+        Row: {
+          created_at: string
+          flight_id: string
+          id: string
+          jumper_type: string
+          notes: string | null
+          passenger_id: string | null
+          payment_amount: number | null
+          payment_received: boolean | null
+          payment_type: string | null
+          slot_number: number
+          slots_occupied: number
+          sport_jumper_id: string | null
+          tandem_master_id: string | null
+          updated_at: string
+          voucher_number: string | null
+        }
+        Insert: {
+          created_at?: string
+          flight_id: string
+          id?: string
+          jumper_type: string
+          notes?: string | null
+          passenger_id?: string | null
+          payment_amount?: number | null
+          payment_received?: boolean | null
+          payment_type?: string | null
+          slot_number: number
+          slots_occupied?: number
+          sport_jumper_id?: string | null
+          tandem_master_id?: string | null
+          updated_at?: string
+          voucher_number?: string | null
+        }
+        Update: {
+          created_at?: string
+          flight_id?: string
+          id?: string
+          jumper_type?: string
+          notes?: string | null
+          passenger_id?: string | null
+          payment_amount?: number | null
+          payment_received?: boolean | null
+          payment_type?: string | null
+          slot_number?: number
+          slots_occupied?: number
+          sport_jumper_id?: string | null
+          tandem_master_id?: string | null
+          updated_at?: string
+          voucher_number?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "skydive_flight_jumpers_flight_id_fkey"
+            columns: ["flight_id"]
+            isOneToOne: false
+            referencedRelation: "manifest_flights_with_details"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "skydive_flight_jumpers_flight_id_fkey"
+            columns: ["flight_id"]
+            isOneToOne: false
+            referencedRelation: "skydive_flights"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "skydive_flight_jumpers_passenger_id_fkey"
+            columns: ["passenger_id"]
+            isOneToOne: false
+            referencedRelation: "user_balances"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "skydive_flight_jumpers_passenger_id_fkey"
+            columns: ["passenger_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "skydive_flight_jumpers_passenger_id_fkey"
+            columns: ["passenger_id"]
+            isOneToOne: false
+            referencedRelation: "users_with_functions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "skydive_flight_jumpers_passenger_id_fkey"
+            columns: ["passenger_id"]
+            isOneToOne: false
+            referencedRelation: "users_with_functions_search"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "skydive_flight_jumpers_sport_jumper_id_fkey"
+            columns: ["sport_jumper_id"]
+            isOneToOne: false
+            referencedRelation: "user_balances"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "skydive_flight_jumpers_sport_jumper_id_fkey"
+            columns: ["sport_jumper_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "skydive_flight_jumpers_sport_jumper_id_fkey"
+            columns: ["sport_jumper_id"]
+            isOneToOne: false
+            referencedRelation: "users_with_functions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "skydive_flight_jumpers_sport_jumper_id_fkey"
+            columns: ["sport_jumper_id"]
+            isOneToOne: false
+            referencedRelation: "users_with_functions_search"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "skydive_flight_jumpers_tandem_master_id_fkey"
+            columns: ["tandem_master_id"]
+            isOneToOne: false
+            referencedRelation: "user_balances"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "skydive_flight_jumpers_tandem_master_id_fkey"
+            columns: ["tandem_master_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "skydive_flight_jumpers_tandem_master_id_fkey"
+            columns: ["tandem_master_id"]
+            isOneToOne: false
+            referencedRelation: "users_with_functions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "skydive_flight_jumpers_tandem_master_id_fkey"
+            columns: ["tandem_master_id"]
+            isOneToOne: false
+            referencedRelation: "users_with_functions_search"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      skydive_flights: {
+        Row: {
+          actual_landing: string | null
+          actual_takeoff: string | null
+          altitude_feet: number | null
+          created_at: string
+          flight_number: number
+          id: string
+          notes: string | null
+          operation_day_id: string
+          pilot_id: string | null
+          scheduled_time: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          actual_landing?: string | null
+          actual_takeoff?: string | null
+          altitude_feet?: number | null
+          created_at?: string
+          flight_number: number
+          id?: string
+          notes?: string | null
+          operation_day_id: string
+          pilot_id?: string | null
+          scheduled_time: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          actual_landing?: string | null
+          actual_takeoff?: string | null
+          altitude_feet?: number | null
+          created_at?: string
+          flight_number?: number
+          id?: string
+          notes?: string | null
+          operation_day_id?: string
+          pilot_id?: string | null
+          scheduled_time?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "skydive_flights_operation_day_id_fkey"
+            columns: ["operation_day_id"]
+            isOneToOne: false
+            referencedRelation: "skydive_operation_days"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "skydive_flights_pilot_id_fkey"
+            columns: ["pilot_id"]
+            isOneToOne: false
+            referencedRelation: "user_balances"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "skydive_flights_pilot_id_fkey"
+            columns: ["pilot_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "skydive_flights_pilot_id_fkey"
+            columns: ["pilot_id"]
+            isOneToOne: false
+            referencedRelation: "users_with_functions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "skydive_flights_pilot_id_fkey"
+            columns: ["pilot_id"]
+            isOneToOne: false
+            referencedRelation: "users_with_functions_search"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      skydive_operation_days: {
+        Row: {
+          created_at: string
+          created_by: string
+          id: string
+          notes: string | null
+          operation_date: string
+          plane_id: string
+          reservation_id: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          id?: string
+          notes?: string | null
+          operation_date: string
+          plane_id: string
+          reservation_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          notes?: string | null
+          operation_date?: string
+          plane_id?: string
+          reservation_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "skydive_operation_days_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "user_balances"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "skydive_operation_days_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "skydive_operation_days_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users_with_functions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "skydive_operation_days_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users_with_functions_search"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "skydive_operation_days_plane_id_fkey"
+            columns: ["plane_id"]
+            isOneToOne: false
+            referencedRelation: "aircraft_totals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "skydive_operation_days_plane_id_fkey"
+            columns: ["plane_id"]
+            isOneToOne: false
+            referencedRelation: "aircraft_with_maintenance"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "skydive_operation_days_plane_id_fkey"
+            columns: ["plane_id"]
+            isOneToOne: false
+            referencedRelation: "planes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "skydive_operation_days_reservation_id_fkey"
+            columns: ["reservation_id"]
+            isOneToOne: false
+            referencedRelation: "active_reservations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "skydive_operation_days_reservation_id_fkey"
+            columns: ["reservation_id"]
+            isOneToOne: false
+            referencedRelation: "reservations"
             referencedColumns: ["id"]
           },
         ]
@@ -2853,6 +3392,8 @@ export type Database = {
           role: string[]
           street: string | null
           surname: string
+          tandem_jump_completed: boolean | null
+          tandem_jump_date: string | null
           telephone: string | null
           updated_at: string
           zip: string | null
@@ -2877,6 +3418,8 @@ export type Database = {
           role?: string[]
           street?: string | null
           surname: string
+          tandem_jump_completed?: boolean | null
+          tandem_jump_date?: string | null
           telephone?: string | null
           updated_at?: string
           zip?: string | null
@@ -2901,6 +3444,8 @@ export type Database = {
           role?: string[]
           street?: string | null
           surname?: string
+          tandem_jump_completed?: boolean | null
+          tandem_jump_date?: string | null
           telephone?: string | null
           updated_at?: string
           zip?: string | null
@@ -3156,7 +3701,6 @@ export type Database = {
           active: boolean | null
           billing_unit: string | null
           calculated_next_maintenance_hours: number | null
-          cg_limits: Json | null
           color: string | null
           created_at: string | null
           default_rate: number | null
@@ -3537,6 +4081,88 @@ export type Database = {
           },
         ]
       }
+      manifest_flights_with_details: {
+        Row: {
+          actual_landing: string | null
+          actual_takeoff: string | null
+          altitude_feet: number | null
+          flight_number: number | null
+          id: string | null
+          notes: string | null
+          operation_date: string | null
+          operation_day_id: string | null
+          pilot_id: string | null
+          pilot_name: string | null
+          pilot_surname: string | null
+          plane_id: string | null
+          plane_type: string | null
+          scheduled_time: string | null
+          sport_jumpers_count: number | null
+          status: string | null
+          tail_number: string | null
+          tandem_pairs_count: number | null
+          total_jumpers: number | null
+          unpaid_tandems_count: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "skydive_flights_operation_day_id_fkey"
+            columns: ["operation_day_id"]
+            isOneToOne: false
+            referencedRelation: "skydive_operation_days"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "skydive_flights_pilot_id_fkey"
+            columns: ["pilot_id"]
+            isOneToOne: false
+            referencedRelation: "user_balances"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "skydive_flights_pilot_id_fkey"
+            columns: ["pilot_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "skydive_flights_pilot_id_fkey"
+            columns: ["pilot_id"]
+            isOneToOne: false
+            referencedRelation: "users_with_functions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "skydive_flights_pilot_id_fkey"
+            columns: ["pilot_id"]
+            isOneToOne: false
+            referencedRelation: "users_with_functions_search"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "skydive_operation_days_plane_id_fkey"
+            columns: ["plane_id"]
+            isOneToOne: false
+            referencedRelation: "aircraft_totals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "skydive_operation_days_plane_id_fkey"
+            columns: ["plane_id"]
+            isOneToOne: false
+            referencedRelation: "aircraft_with_maintenance"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "skydive_operation_days_plane_id_fkey"
+            columns: ["plane_id"]
+            isOneToOne: false
+            referencedRelation: "planes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       uncharged_flights: {
         Row: {
           billing_unit: string | null
@@ -3897,6 +4523,45 @@ export type Database = {
         }
         Returns: string
       }
+      get_available_pilots: {
+        Args: { operation_date: string }
+        Returns: {
+          email: string
+          name: string
+          surname: string
+          user_id: string
+        }[]
+      }
+      get_available_sport_jumpers: {
+        Args: { operation_date: string }
+        Returns: {
+          email: string
+          function_codes: string[]
+          name: string
+          surname: string
+          user_id: string
+        }[]
+      }
+      get_available_tandem_masters: {
+        Args: { operation_date: string }
+        Returns: {
+          email: string
+          name: string
+          surname: string
+          user_id: string
+        }[]
+      }
+      get_available_tandem_passengers: {
+        Args: { show_all?: boolean }
+        Returns: {
+          email: string
+          jump_completed: boolean
+          member_number: string
+          name: string
+          surname: string
+          user_id: string
+        }[]
+      }
       get_recent_selections: {
         Args: { p_context: string; p_limit?: number; p_user_id: string }
         Returns: {
@@ -3942,7 +4607,12 @@ export type Database = {
         Args: { op_type_id: string }
         Returns: boolean
       }
+      has_secretary_function: { Args: { user_id: string }; Returns: boolean }
       is_board_member: { Args: { user_uuid: string }; Returns: boolean }
+      mark_flight_completed: {
+        Args: { flight_id_param: string }
+        Returns: boolean
+      }
       refresh_users_with_functions_search: { Args: never; Returns: undefined }
       track_user_selection: {
         Args: {
@@ -4124,3 +4794,125 @@ export const Constants = {
   },
 } as const
 
+
+// Convenience type exports for commonly used table types
+export type User = Database['public']['Tables']['users']['Row']
+export type UserInsert = Database['public']['Tables']['users']['Insert']
+export type UserUpdate = Database['public']['Tables']['users']['Update']
+export type UserProfile = User
+
+export type Plane = Database['public']['Tables']['planes']['Row']
+export type PlaneInsert = Database['public']['Tables']['planes']['Insert']
+export type PlaneUpdate = Database['public']['Tables']['planes']['Update']
+
+export type Document = Database['public']['Tables']['documents']['Row']
+export type DocumentInsert = Database['public']['Tables']['documents']['Insert']
+export type DocumentUpdate = Database['public']['Tables']['documents']['Update']
+
+export type Flightlog = Database['public']['Tables']['flightlog']['Row']
+export type FlightlogInsert = Database['public']['Tables']['flightlog']['Insert']
+export type FlightlogUpdate = Database['public']['Tables']['flightlog']['Update']
+
+export type Reservation = Database['public']['Tables']['reservations']['Row']
+export type ReservationInsert = Database['public']['Tables']['reservations']['Insert']
+export type ReservationUpdate = Database['public']['Tables']['reservations']['Update']
+
+export type OperationType = Database['public']['Tables']['operation_types']['Row']
+export type OperationTypeInsert = Database['public']['Tables']['operation_types']['Insert']
+export type OperationTypeUpdate = Database['public']['Tables']['operation_types']['Update']
+
+export type CostCenter = Database['public']['Tables']['cost_centers']['Row']
+export type CostCenterInsert = Database['public']['Tables']['cost_centers']['Insert']
+export type CostCenterUpdate = Database['public']['Tables']['cost_centers']['Update']
+
+export type Account = Database['public']['Tables']['accounts']['Row']
+export type AccountInsert = Database['public']['Tables']['accounts']['Insert']
+export type AccountUpdate = Database['public']['Tables']['accounts']['Update']
+
+export type CostCenterTransaction = Database['public']['Tables']['cost_center_transactions']['Row']
+export type CostCenterTransactionInsert = Database['public']['Tables']['cost_center_transactions']['Insert']
+export type CostCenterTransactionUpdate = Database['public']['Tables']['cost_center_transactions']['Update']
+
+export type Transaction = Account
+
+export type FunctionMaster = Database['public']['Tables']['functions_master']['Row']
+export type FunctionMasterInsert = Database['public']['Tables']['functions_master']['Insert']
+export type FunctionMasterUpdate = Database['public']['Tables']['functions_master']['Update']
+
+export type UserFunction = Database['public']['Tables']['user_functions']['Row']
+export type UserFunctionInsert = Database['public']['Tables']['user_functions']['Insert']
+export type UserFunctionUpdate = Database['public']['Tables']['user_functions']['Update']
+
+export type FunctionCategory = Database['public']['Tables']['function_categories']['Row']
+export type FunctionCategoryInsert = Database['public']['Tables']['function_categories']['Insert']
+export type FunctionCategoryUpdate = Database['public']['Tables']['function_categories']['Update']
+
+export type MembershipType = Database['public']['Tables']['membership_types']['Row']
+export type MembershipTypeInsert = Database['public']['Tables']['membership_types']['Insert']
+export type MembershipTypeUpdate = Database['public']['Tables']['membership_types']['Update']
+
+export type UserMembership = Database['public']['Tables']['user_memberships']['Row']
+export type UserMembershipInsert = Database['public']['Tables']['user_memberships']['Insert']
+export type UserMembershipUpdate = Database['public']['Tables']['user_memberships']['Update']
+
+export type MaintenanceRecord = Database['public']['Tables']['maintenance_records']['Row']
+export type MaintenanceRecordInsert = Database['public']['Tables']['maintenance_records']['Insert']
+export type MaintenanceRecordUpdate = Database['public']['Tables']['maintenance_records']['Update']
+
+export type AircraftComponent = Database['public']['Tables']['aircraft_components']['Row']
+export type AircraftComponentInsert = Database['public']['Tables']['aircraft_components']['Insert']
+export type AircraftComponentUpdate = Database['public']['Tables']['aircraft_components']['Update']
+
+export type DocumentCategory = Database['public']['Tables']['document_categories']['Row']
+export type DocumentCategoryInsert = Database['public']['Tables']['document_categories']['Insert']
+export type DocumentCategoryUpdate = Database['public']['Tables']['document_categories']['Update']
+
+export type DocumentDefinition = Database['public']['Tables']['document_definitions']['Row']
+export type DocumentDefinitionInsert = Database['public']['Tables']['document_definitions']['Insert']
+export type DocumentDefinitionUpdate = Database['public']['Tables']['document_definitions']['Update']
+
+export type Endorsement = Database['public']['Tables']['endorsements']['Row']
+export type EndorsementInsert = Database['public']['Tables']['endorsements']['Insert']
+export type EndorsementUpdate = Database['public']['Tables']['endorsements']['Update']
+
+export type DocumentEndorsementPrivilege = Database['public']['Tables']['document_endorsement_privileges']['Row']
+export type DocumentEndorsementPrivilegeInsert = Database['public']['Tables']['document_endorsement_privileges']['Insert']
+export type DocumentEndorsementPrivilegeUpdate = Database['public']['Tables']['document_endorsement_privileges']['Update']
+
+export type Notification = Database['public']['Tables']['notifications']['Row']
+export type NotificationInsert = Database['public']['Tables']['notifications']['Insert']
+export type NotificationUpdate = Database['public']['Tables']['notifications']['Update']
+
+export type AircraftCgLimit = Database['public']['Tables']['aircraft_cg_limits']['Row']
+export type AircraftCgLimitInsert = Database['public']['Tables']['aircraft_cg_limits']['Insert']
+export type AircraftCgLimitUpdate = Database['public']['Tables']['aircraft_cg_limits']['Update']
+
+export type AircraftStation = Database['public']['Tables']['aircraft_stations']['Row']
+export type AircraftStationInsert = Database['public']['Tables']['aircraft_stations']['Insert']
+export type AircraftStationUpdate = Database['public']['Tables']['aircraft_stations']['Update']
+
+export type Airport = Database['public']['Tables']['airports']['Row']
+export type AirportInsert = Database['public']['Tables']['airports']['Insert']
+export type AirportUpdate = Database['public']['Tables']['airports']['Update']
+
+export type AircraftAirportFee = Database['public']['Tables']['aircraft_airport_fees']['Row']
+export type AircraftAirportFeeInsert = Database['public']['Tables']['aircraft_airport_fees']['Insert']
+export type AircraftAirportFeeUpdate = Database['public']['Tables']['aircraft_airport_fees']['Update']
+
+// View type exports
+export type FlightlogWithTimes = Database['public']['Views']['flightlog_with_times']['Row']
+export type UnchargedFlight = Database['public']['Views']['uncharged_flights']['Row']
+export type UserBalance = Database['public']['Views']['user_balances']['Row']
+export type ActiveReservation = Database['public']['Views']['active_reservations']['Row']
+export type UsersWithFunctions = Database['public']['Views']['users_with_functions']['Row']
+export type ComponentWithStatus = Database['public']['Views']['aircraft_components_with_status']['Row']
+export type FunctionWithStats = Database['public']['Views']['functions_with_stats']['Row']
+export type AircraftTotal = Database['public']['Views']['aircraft_totals']['Row']
+
+// Additional exports
+export type ReservationStatus = Database['public']['Enums']['reservation_status']
+
+// Custom composite types
+export type AirportWithAircraftFees = Airport & {
+  aircraft_fees: (AircraftAirportFee & { plane: Plane })[]
+}

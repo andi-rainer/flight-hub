@@ -121,7 +121,7 @@ export function AircraftMaintenanceTab({
     async function loadComponents() {
       const result = await getActiveAircraftComponents(aircraft.id)
       if (result.success && result.data) {
-        setComponents(result.data as ComponentWithStatus[])
+        setComponents(result.data as any)
       }
     }
     loadComponents()

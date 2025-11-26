@@ -218,7 +218,7 @@ export async function POST(request: Request) {
       .from('payment_status_history')
       .insert({
         membership_id: newMembership.id,
-        old_status: null,
+        old_status: '',
         new_status: 'paid',
         changed_by: authData.user.id,
       })

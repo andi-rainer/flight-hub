@@ -23,7 +23,10 @@ import type {
 /**
  * Verify user has permission to manage airport fees (board members and treasurers)
  */
-async function verifyAirportFeesAccess() {
+async function verifyAirportFeesAccess(): Promise<
+  | { authorized: false; error: string; supabase?: undefined; userId?: undefined }
+  | { authorized: true; error?: undefined; supabase: Awaited<ReturnType<typeof createClient>>; userId: string }
+> {
   const supabase = await createClient()
 
   const { user, error } = await requirePermission(supabase, 'settings.airport_fees.manage')
@@ -375,8 +378,8 @@ export async function calculateAirportFeesForFlight(
 
     if (feeConfig && feeConfig.airport) {
       // Landing fees
-      if (feeConfig.landing_fee > 0) {
-        const landingAmount = feeConfig.landing_fee * landings
+      if ((feeConfig.landing_fee ?? 0) > 0) {
+        const landingAmount = (feeConfig.landing_fee ?? 0) * landings
         fees.push({
           airport: feeConfig.airport.airport_name,
           icao_code: feeConfig.airport.icao_code,
@@ -387,41 +390,44 @@ export async function calculateAirportFeesForFlight(
       }
 
       // Approach fee
-      if (feeConfig.approach_fee > 0) {
+      if ((feeConfig.approach_fee ?? 0) > 0) {
+        const approachAmount = feeConfig.approach_fee ?? 0
         fees.push({
           airport: feeConfig.airport.airport_name,
           icao_code: feeConfig.airport.icao_code,
           fee_type: 'Approach',
-          amount: feeConfig.approach_fee
+          amount: approachAmount
         })
-        totalAmount += feeConfig.approach_fee
+        totalAmount += approachAmount
       }
 
       // Parking fee
-      if (feeConfig.parking_fee > 0) {
+      if ((feeConfig.parking_fee ?? 0) > 0) {
+        const parkingAmount = feeConfig.parking_fee ?? 0
         fees.push({
           airport: feeConfig.airport.airport_name,
           icao_code: feeConfig.airport.icao_code,
           fee_type: 'Parking',
-          amount: feeConfig.parking_fee
+          amount: parkingAmount
         })
-        totalAmount += feeConfig.parking_fee
+        totalAmount += parkingAmount
       }
 
       // Noise fee
-      if (feeConfig.noise_fee > 0) {
+      if ((feeConfig.noise_fee ?? 0) > 0) {
+        const noiseAmount = feeConfig.noise_fee ?? 0
         fees.push({
           airport: feeConfig.airport.airport_name,
           icao_code: feeConfig.airport.icao_code,
           fee_type: 'Noise',
-          amount: feeConfig.noise_fee
+          amount: noiseAmount
         })
-        totalAmount += feeConfig.noise_fee
+        totalAmount += noiseAmount
       }
 
       // Passenger fees
-      if (feeConfig.passenger_fee > 0 && passengers > 0) {
-        const passengerAmount = feeConfig.passenger_fee * passengers
+      if ((feeConfig.passenger_fee ?? 0) > 0 && passengers > 0) {
+        const passengerAmount = (feeConfig.passenger_fee ?? 0) * passengers
         fees.push({
           airport: feeConfig.airport.airport_name,
           icao_code: feeConfig.airport.icao_code,

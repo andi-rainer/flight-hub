@@ -236,7 +236,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Get recent selections for this context if provided
-    let recentSelections = []
+    let recentSelections: any[] = []
     if (context) {
       const { data: recent } = await supabase.rpc('get_recent_selections', {
         p_user_id: authUser.id,

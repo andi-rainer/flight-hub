@@ -170,9 +170,9 @@ export function AddUserTransactionDialog({
                     {selectedUser ? (
                       <span className="flex items-center justify-between w-full">
                         <span>{selectedUser.surname}, {selectedUser.name}</span>
-                        {selectedUser.balance !== undefined && (
-                          <span className={`text-xs ml-2 ${selectedUser.balance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                            {formatCurrency(selectedUser.balance)}
+                        {(selectedUser.balance ?? 0) !== undefined && (
+                          <span className={`text-xs ml-2 ${(selectedUser.balance ?? 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                            {formatCurrency((selectedUser.balance ?? 0))}
                           </span>
                         )}
                       </span>
@@ -208,9 +208,9 @@ export function AddUserTransactionDialog({
                                 <span>{user.surname}, {user.name}</span>
                                 <span className="text-xs text-muted-foreground">{user.email}</span>
                               </div>
-                              {user.balance !== undefined && (
-                                <span className={`text-xs ml-2 ${user.balance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                  {formatCurrency(user.balance)}
+                              {(user.balance ?? 0) !== undefined && (
+                                <span className={`text-xs ml-2 ${(user.balance ?? 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                  {formatCurrency((user.balance ?? 0))}
                                 </span>
                               )}
                             </div>
@@ -223,8 +223,8 @@ export function AddUserTransactionDialog({
               </Popover>
               {selectedUser && (
                 <p className="text-xs text-muted-foreground">
-                  Current balance: <span className={selectedUser.balance && selectedUser.balance >= 0 ? 'text-green-600' : 'text-red-600'}>
-                    {formatCurrency(selectedUser.balance || 0)}
+                  Current balance: <span className={(selectedUser.balance ?? 0) && (selectedUser.balance ?? 0) >= 0 ? 'text-green-600' : 'text-red-600'}>
+                    {formatCurrency((selectedUser.balance ?? 0) || 0)}
                   </span>
                 </p>
               )}

@@ -13,7 +13,10 @@ import type { CostCenterTransactionInsert, AccountInsert } from '@/lib/database.
 // AUTHORIZATION HELPER
 // ============================================================================
 
-async function verifyBoardMember() {
+async function verifyBoardMember(): Promise<
+  | { authorized: false; error: string; supabase?: undefined; userId?: undefined }
+  | { authorized: true; error?: undefined; supabase: Awaited<ReturnType<typeof createClient>>; userId: string }
+> {
   const supabase = await createClient()
 
   const { data: { user } } = await supabase.auth.getUser()

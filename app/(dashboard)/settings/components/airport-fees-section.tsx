@@ -29,7 +29,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Plus, Edit, Trash2, Plane, ChevronDown, ChevronRight } from 'lucide-react'
+import { Plus, Edit, Trash2, Plane as PlaneIcon, ChevronDown, ChevronRight } from 'lucide-react'
 import { toast } from 'sonner'
 import {
   getAirports,
@@ -293,7 +293,7 @@ export function AirportFeesSection() {
             </div>
           ) : airports.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
-              <Plane className="h-12 w-12 mx-auto mb-4 opacity-50" />
+              <PlaneIcon className="h-12 w-12 mx-auto mb-4 opacity-50" />
               <p>No airports configured</p>
               <p className="text-sm">Add airports where the organization pays landing fees</p>
             </div>
@@ -517,7 +517,7 @@ export function AirportFeesSection() {
                 <SelectContent>
                   {(selectedAirport ? getAvailablePlanes(selectedAirport) : planes).map((plane) => (
                     <SelectItem key={plane.id} value={plane.id}>
-                      {plane.tail_number} - {plane.type}
+                      {(plane.tail_number ?? "")} - {(plane.type ?? "")}
                       {plane.passenger_seats && plane.passenger_seats > 0 && ` (${plane.passenger_seats} pax)`}
                     </SelectItem>
                   ))}

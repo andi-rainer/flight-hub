@@ -76,12 +76,12 @@ export function PostponeFlightDialog({
 
         if (result.success) {
           toast.success(
-            `Flight postponed and ${result.data?.updated_count || 0} following flight(s) updated`
+            `Flight postponed and ${(result as any).data?.updated_count || 0} following flight(s) updated`
           )
           setOpen(false)
           router.refresh()
         } else {
-          toast.error(result.error || 'Failed to postpone flights')
+          toast.error((result as any).error || 'Failed to postpone flights')
         }
       } else {
         // Single flight update

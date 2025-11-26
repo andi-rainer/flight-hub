@@ -46,8 +46,8 @@ export async function POST(request: NextRequest) {
       }
     } else {
       // If rejecting, clear approval fields
-      updateData.approved_by = null
-      updateData.approved_at = null
+      updateData.approved_by = undefined
+      updateData.approved_at = undefined
     }
 
     const { data: document, error } = await supabase

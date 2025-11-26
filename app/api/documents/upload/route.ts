@@ -144,7 +144,7 @@ export async function POST(request: NextRequest) {
 
       // Check if document is required (either globally mandatory or required for user's functions)
       const isRequired = documentDefinition.mandatory ||
-        (userFunctionCodes.length > 0 && documentDefinition.required_for_functions.some(
+        (userFunctionCodes.length > 0 && documentDefinition.required_for_functions?.some(
           (reqFuncCode: string) => userFunctionCodes.includes(reqFuncCode)
         ))
 
@@ -167,7 +167,7 @@ export async function POST(request: NextRequest) {
               p_message: notificationMessage,
               p_link: `/members`,
               p_document_id: document.id,
-              p_flightlog_id: null
+              p_flightlog_id: undefined
             })
 
             if (notificationError) {

@@ -371,7 +371,7 @@ async function DashboardContent({ errorParam }: { errorParam?: string }) {
                       <Plane className="h-5 w-5 mt-0.5 text-muted-foreground" />
                       <div>
                         <div className="font-medium">
-                          {reservation.plane.tail_number} - {reservation.plane.type}
+                          {reservation.plane.tail_number ?? ""} - {reservation.plane.type ?? ""}
                         </div>
                         <div className="text-sm text-muted-foreground">
                           {t('pilot')}: {reservation.user.name} {reservation.user.surname}
@@ -497,7 +497,7 @@ async function DashboardContent({ errorParam }: { errorParam?: string }) {
                           {format(new Date(flight.block_on), 'MMM d')}
                         </TableCell>
                         <TableCell className="text-sm">
-                          {flight.plane.tail_number}
+                          {flight.plane.tail_number ?? ""}
                         </TableCell>
                         <TableCell className="text-right text-sm">
                           {flight.block_time_hours.toFixed(1)}h

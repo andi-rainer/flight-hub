@@ -110,9 +110,9 @@ export function OperationDayList({
                 <div className="flex items-center gap-2">
                   <Plane className="h-4 w-4 text-muted-foreground" />
                   <div>
-                    <div className="font-medium">{operationDay.plane.tail_number}</div>
+                    <div className="font-medium">{operationDay.plane.tail_number ?? ""}</div>
                     <div className="text-xs text-muted-foreground">
-                      {operationDay.plane.type}
+                      {operationDay.plane.type ?? ""}
                     </div>
                   </div>
                 </div>

@@ -98,7 +98,7 @@ export function ReservationsContent({ userId, isBoardMember }: ReservationsConte
       toast.error(t('failedToLoadAircraft'))
       console.error(aircraftResult.error)
     } else {
-      setAircraft(aircraftResult.data || [])
+      setAircraft((aircraftResult.data || []) as any)
     }
 
     if (showLoading) {
@@ -166,7 +166,7 @@ export function ReservationsContent({ userId, isBoardMember }: ReservationsConte
                 <SelectItem value="all">{t('allAircraft')}</SelectItem>
                 {aircraft.map((plane) => (
                   <SelectItem key={plane.id} value={plane.id}>
-                    {plane.tail_number} - {plane.type}
+                    {(plane.tail_number ?? "")} - {(plane.type ?? "")}
                   </SelectItem>
                 ))}
               </SelectContent>

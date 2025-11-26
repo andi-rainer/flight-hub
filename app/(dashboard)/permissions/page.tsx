@@ -95,7 +95,7 @@ export default async function PermissionsPage() {
               <CardContent>
                 <div className="space-y-4">
                   {permissions.map((permission) => {
-                    const requiredFunctions = PERMISSIONS[permission]
+                    const requiredFunctions = PERMISSIONS[permission] as unknown as string[]
                     const isPublic = requiredFunctions.includes('*')
                     const isBoardOnly = requiredFunctions.includes('board') && requiredFunctions.length === 1
 
@@ -155,7 +155,7 @@ export default async function PermissionsPage() {
  * Get a human-readable description for a permission
  */
 function getPermissionDescription(permission: Permission): string {
-  const descriptions: Record<Permission, string> = {
+  const descriptions: Record<string, string> = {
     // Flight Log
     'flight.log.view': 'View flight log entries',
     'flight.log.create': 'Create new flight log entries',
@@ -166,11 +166,11 @@ function getPermissionDescription(permission: Permission): string {
     'flight.log.lock': 'Lock flight log entries for billing',
 
     // Skydive Manifest
-    'skydive.manifest.view': 'View skydive manifests',
-    'skydive.manifest.create': 'Create new skydive manifests',
-    'skydive.manifest.edit': 'Edit skydive manifests',
-    'skydive.manifest.close': 'Close manifests for billing',
-    'skydive.manifest.delete': 'Delete skydive manifests',
+    'manifest.view': 'View skydive manifests',
+    'manifest.operation_days.create': 'Create operation days',
+    'manifest.operation_days.edit': 'Edit operation days',
+    'manifest.flights.manage': 'Manage flights',
+    'manifest.jumpers.manage': 'Manage jumpers',
 
     // Members
     'members.view.all': 'View all member details and documents',

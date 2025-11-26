@@ -129,7 +129,7 @@ export function AircraftBillingTab({ aircraft, operationTypes, costCenters }: Ai
 
   const resetConfigData = () => {
     setConfigData({
-      billing_unit: aircraft.billing_unit || 'hour',
+      billing_unit: (aircraft.billing_unit as 'hour' | 'minute') || 'hour',
       default_rate: aircraft.default_rate?.toString() || '150.00',
     })
   }
@@ -292,7 +292,7 @@ export function AircraftBillingTab({ aircraft, operationTypes, costCenters }: Ai
       name: opType.name,
       description: opType.description || '',
       rate: opType.rate.toString(),
-      is_default: opType.is_default,
+      is_default: opType.is_default ?? false,
       color: opType.color || '#3b82f6',
       default_cost_center_id: opType.default_cost_center_id || undefined,
     })

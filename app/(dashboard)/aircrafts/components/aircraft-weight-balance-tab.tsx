@@ -222,7 +222,7 @@ export function AircraftWeightBalanceTab({
     return 'outline'
   }
 
-  const currentUnit = aircraft.mass_unit || 'kg'
+  const currentUnit = (aircraft.mass_unit as 'kg' | 'lbs') || 'kg'
 
   return (
     <div className="space-y-6">

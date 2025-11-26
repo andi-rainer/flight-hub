@@ -116,7 +116,10 @@ export async function updateFunction(functionId: string, data: {
   }
 
   // Refresh materialized view
-  await supabase.rpc('refresh_users_with_functions_search').catch(console.error)
+  const { error: refreshError } = await supabase.rpc('refresh_users_with_functions_search')
+  if (refreshError) {
+    console.error('Error refreshing users search view:', refreshError)
+  }
 
   revalidatePath('/members')
   return { success: true, data: updatedFunction }
@@ -171,7 +174,10 @@ export async function deleteFunction(functionId: string) {
   }
 
   // Refresh materialized view
-  await supabase.rpc('refresh_users_with_functions_search').catch(console.error)
+  const { error: refreshError } = await supabase.rpc('refresh_users_with_functions_search')
+  if (refreshError) {
+    console.error('Error refreshing users search view:', refreshError)
+  }
 
   revalidatePath('/members')
   return { success: true }
@@ -214,7 +220,10 @@ export async function toggleFunctionActive(functionId: string, active: boolean) 
   }
 
   // Refresh materialized view
-  await supabase.rpc('refresh_users_with_functions_search').catch(console.error)
+  const { error: refreshError } = await supabase.rpc('refresh_users_with_functions_search')
+  if (refreshError) {
+    console.error('Error refreshing users search view:', refreshError)
+  }
 
   revalidatePath('/members')
   return { success: true }

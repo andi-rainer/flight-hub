@@ -42,7 +42,7 @@ export default function DocumentRow({ document, isBoardMember, mobileView }: Doc
 
   const uploader = document.uploader
   const uploaderName = uploader
-    ? `${uploader.name || ''} ${uploader.surname || ''}`.trim() || uploader.email
+    ? `${uploader.name || ''} ${uploader.surname || ''}`.trim() || 'Unknown'
     : 'Unknown'
 
   const handleDownload = () => {
@@ -158,9 +158,9 @@ export default function DocumentRow({ document, isBoardMember, mobileView }: Doc
           </Badge>
         </TableCell>
         <TableCell>
-          {document.tags && document.tags.length > 0 && (
+          {(document.tags ?? []) && (document.tags ?? []).length > 0 && (
             <div className="flex gap-1 flex-wrap">
-              {document.tags.map((tag: string, i: number) => (
+              {(document.tags ?? []).map((tag: string, i: number) => (
                 <Badge key={i} variant="outline" className="text-xs">
                   {tag}
                 </Badge>

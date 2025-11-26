@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
     const { data: documentDefinition, error: docDefError } = await supabase
       .from('document_definitions')
       .select('*')
-      .eq('id', existingDoc.document_definition_id)
+      .eq('id', existingDoc.document_definition_id ?? '')
       .single()
 
     if (docDefError || !documentDefinition) {
@@ -161,7 +161,7 @@ export async function POST(request: NextRequest) {
 
     // Check if document is required (either globally mandatory or required for user's functions)
     const isRequired = documentDefinition.mandatory ||
-      (userFunctionCodes.length > 0 && documentDefinition.required_for_functions.some(
+      (userFunctionCodes.length > 0 && documentDefinition.required_for_functions?.some(
         (reqFuncCode: string) => userFunctionCodes.includes(reqFuncCode)
       ))
 
@@ -184,7 +184,7 @@ export async function POST(request: NextRequest) {
             p_message: notificationMessage,
             p_link: `/members`,
             p_document_id: documentId,
-            p_flightlog_id: null
+            p_flightlog_id: undefined
           })
 
           if (notificationError) {

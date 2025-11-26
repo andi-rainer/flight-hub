@@ -125,7 +125,7 @@ export function CreateOperationDayDialog({ availablePlanes }: CreateOperationDay
                   {hasPlanes ? (
                     availablePlanes.map((plane) => (
                       <SelectItem key={plane.id} value={plane.id}>
-                        {plane.tail_number} - {plane.type}
+                        {(plane.tail_number ?? "")} - {(plane.type ?? "")}
                       </SelectItem>
                     ))
                   ) : (

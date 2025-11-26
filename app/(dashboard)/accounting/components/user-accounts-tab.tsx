@@ -245,8 +245,8 @@ export function UserAccountsTab() {
                         </div>
                         <div className="text-xs text-muted-foreground truncate">{user.email}</div>
                       </div>
-                      <div className={`font-semibold text-sm tabular-nums ${getBalanceColor(user.balance || 0)}`}>
-                        {formatCurrency(user.balance || 0)}
+                      <div className={`font-semibold text-sm tabular-nums ${getBalanceColor((user.balance ?? 0) || 0)}`}>
+                        {formatCurrency((user.balance ?? 0) || 0)}
                       </div>
                     </div>
                   </div>
@@ -279,8 +279,8 @@ export function UserAccountsTab() {
                 {selectedUser && (
                   <CardDescription>
                     {selectedUser.email} • Balance:{' '}
-                    <span className={getBalanceColor(selectedUser.balance || 0)}>
-                      {formatCurrency(selectedUser.balance || 0)}
+                    <span className={getBalanceColor((selectedUser.balance ?? 0) || 0)}>
+                      {formatCurrency((selectedUser.balance ?? 0) || 0)}
                     </span>
                   </CardDescription>
                 )}

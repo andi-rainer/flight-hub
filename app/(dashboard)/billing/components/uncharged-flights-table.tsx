@@ -331,7 +331,7 @@ export function UnchargedFlightsTable({ flights, costCenters, userBalances }: Un
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-1">
                           <span className="font-medium">€ {(flight.calculated_amount || 0).toFixed(2)}</span>
-                          {flight.airport_fees && flight.airport_fees > 0 && (
+                          {(flight as any).airport_fees && (flight as any).airport_fees > 0 && (
                             <TooltipProvider>
                               <Tooltip>
                                 <TooltipTrigger asChild>
@@ -342,11 +342,11 @@ export function UnchargedFlightsTable({ flights, costCenters, userBalances }: Un
                                     <div className="font-semibold">Amount Breakdown:</div>
                                     <div className="flex justify-between gap-4">
                                       <span>Flight:</span>
-                                      <span>€ {(flight.flight_amount || 0).toFixed(2)}</span>
+                                      <span>€ {((flight as any).flight_amount || 0).toFixed(2)}</span>
                                     </div>
                                     <div className="flex justify-between gap-4">
                                       <span>Airport Fees:</span>
-                                      <span>€ {flight.airport_fees.toFixed(2)}</span>
+                                      <span>€ {((flight as any).airport_fees || 0).toFixed(2)}</span>
                                     </div>
                                     <div className="border-t pt-1 flex justify-between gap-4 font-semibold">
                                       <span>Total:</span>
@@ -427,7 +427,7 @@ export function UnchargedFlightsTable({ flights, costCenters, userBalances }: Un
                                   <div className="space-y-1">
                                     <div className="font-semibold text-xs text-green-600">Cost Splitting Requested</div>
                                     <div className="text-sm">
-                                      Pilot requested {flight.pilot_cost_percentage}% / {100 - flight.pilot_cost_percentage}% split with {flight.copilot_name} {flight.copilot_surname}
+                                      Pilot requested {flight.pilot_cost_percentage ?? 50}% / {100 - (flight.pilot_cost_percentage ?? 50)}% split with {flight.copilot_name} {flight.copilot_surname}
                                     </div>
                                   </div>
                                 </TooltipContent>

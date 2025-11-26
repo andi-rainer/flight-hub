@@ -782,7 +782,7 @@ export async function updateManifestSettings(updates: {
   const { data, error } = await supabase
     .from('manifest_settings')
     .update(updateData)
-    .eq('id', existing?.id)
+    .eq('id', existing?.id ?? '')
     .select()
     .single()
 

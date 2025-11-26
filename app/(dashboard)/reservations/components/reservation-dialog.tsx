@@ -72,10 +72,10 @@ export function ReservationDialog({
   useEffect(() => {
     if (open) {
       if (existingReservation) {
-        setPlaneId(existingReservation.plane_id)
-        setStartTime(format(new Date(existingReservation.start_time), "yyyy-MM-dd'T'HH:mm"))
-        setEndTime(format(new Date(existingReservation.end_time), "yyyy-MM-dd'T'HH:mm"))
-        setStatus(existingReservation.status)
+        setPlaneId(existingReservation.plane_id ?? '')
+        setStartTime(existingReservation.start_time ? format(new Date(existingReservation.start_time), "yyyy-MM-dd'T'HH:mm") : '')
+        setEndTime(existingReservation.end_time ? format(new Date(existingReservation.end_time), "yyyy-MM-dd'T'HH:mm") : '')
+        setStatus((existingReservation.status as 'active' | 'standby' | 'cancelled') ?? 'active')
         setPriority(existingReservation.priority || false)
         setRemarks(existingReservation.remarks || '')
       } else {
@@ -138,7 +138,7 @@ export function ReservationDialog({
 
     startTransition(async () => {
       if (isEditMode && existingReservation) {
-        const result = await updateReservation(existingReservation.id, {
+        const result = await updateReservation(existingReservation.id ?? '', {
           plane_id: planeId,
           start_time: start.toISOString(),
           end_time: end.toISOString(),
@@ -188,7 +188,7 @@ export function ReservationDialog({
 
     setIsDeleting(true)
 
-    const result = await deleteReservation(existingReservation.id)
+    const result = await deleteReservation(existingReservation.id ?? '')
 
     setIsDeleting(false)
 
@@ -238,7 +238,7 @@ export function ReservationDialog({
                   return (
                     <SelectItem key={plane.id} value={plane.id}>
                       <div className="flex items-center gap-2">
-                        <span>{plane.tail_number} - {plane.type}</span>
+                        <span>{(plane.tail_number ?? "")} - {(plane.type ?? "")}</span>
                         {maintenanceIcon}
                         {plane.hours_until_maintenance !== undefined && plane.hours_until_maintenance !== null && (
                           <span className="text-xs text-muted-foreground">
@@ -290,7 +290,7 @@ export function ReservationDialog({
                   <Wrench className="h-4 w-4 text-yellow-800" />
                   <AlertTitle className="text-yellow-800">Maintenance Due Soon</AlertTitle>
                   <AlertDescription className="text-yellow-700">
-                    {selectedAircraft.hours_until_maintenance.toFixed(0)} hours remaining until maintenance is due.
+                    {(selectedAircraft.hours_until_maintenance ?? 0).toFixed(0)} hours remaining until maintenance is due.
                   </AlertDescription>
                 </Alert>
               )

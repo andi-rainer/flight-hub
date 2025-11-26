@@ -27,7 +27,10 @@ import { requireAnyPermission } from '@/lib/permissions'
 /**
  * Verify user has accounting permissions (board members or treasurers)
  */
-async function verifyAccountingAccess() {
+async function verifyAccountingAccess(): Promise<
+  | { authorized: false; error: string; supabase?: undefined; userId?: undefined }
+  | { authorized: true; error?: undefined; supabase: Awaited<ReturnType<typeof createClient>>; userId: string }
+> {
   const supabase = await createClient()
 
   const { user, error } = await requireAnyPermission(supabase, ['billing.view.all', 'billing.manage'])
@@ -573,7 +576,7 @@ export async function getUserBalances() {
       const { data: latestTx } = await auth.supabase
         .from('accounts')
         .select('created_at')
-        .eq('user_id', user.user_id)
+        .eq('user_id', user.user_id ?? '')
         .order('created_at', { ascending: false })
         .limit(1)
         .single()

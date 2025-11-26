@@ -95,7 +95,7 @@ export async function AircraftFlightLogsTab({ aircraftId, page = 1 }: AircraftFl
                     {logs.map((log) => (
                       <TableRow key={log.id}>
                         <TableCell>
-                          {new Date(log.block_on).toLocaleDateString()}
+                          {log.block_on ? new Date(log.block_on).toLocaleDateString() : '-'}
                         </TableCell>
                         <TableCell>
                           {log.pilot_name} {log.pilot_surname}
@@ -146,7 +146,7 @@ export async function AircraftFlightLogsTab({ aircraftId, page = 1 }: AircraftFl
                   <Card key={log.id}>
                     <CardHeader className="pb-3">
                       <CardTitle className="text-base">
-                        {new Date(log.block_on).toLocaleDateString()}
+                        {log.block_on ? new Date(log.block_on).toLocaleDateString() : '-'}
                       </CardTitle>
                       <CardDescription>
                         Pilot: {log.pilot_name} {log.pilot_surname}

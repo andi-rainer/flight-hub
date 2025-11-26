@@ -145,7 +145,7 @@ export default async function ManifestPage() {
               </CardHeader>
               <CardContent>
                 <OperationDayList
-                  operationDays={operationDays || []}
+                  operationDays={(operationDays as any) || []}
                   availablePlanes={availablePlanes || []}
                   canManage={canManage}
                 />

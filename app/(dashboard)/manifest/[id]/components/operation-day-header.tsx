@@ -130,8 +130,8 @@ export function OperationDayHeader({ operationDay, canManage }: OperationDayHead
             <Plane className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{operationDay.plane.tail_number}</div>
-            <p className="text-xs text-muted-foreground">{operationDay.plane.type}</p>
+            <div className="text-2xl font-bold">{operationDay.plane.tail_number ?? ""}</div>
+            <p className="text-xs text-muted-foreground">{operationDay.plane.type ?? ""}</p>
             {operationDay.plane.max_jumpers && (
               <p className="text-xs text-muted-foreground mt-1">
                 Max {operationDay.plane.max_jumpers} jumpers/flight

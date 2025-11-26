@@ -34,7 +34,7 @@ export default async function DocumentsPage({
     .from('documents')
     .select(`
       *,
-      uploader:uploaded_by(name, surname, email)
+      uploader:users!uploaded_by(name, surname)
     `)
     .is('plane_id', null)
     .is('user_id', null)

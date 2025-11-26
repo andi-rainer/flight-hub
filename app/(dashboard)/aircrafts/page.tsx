@@ -50,7 +50,7 @@ async function getAircrafts(searchParams: { status?: string; search?: string }):
       const { data: activeReservations } = await supabase
         .from('reservations')
         .select('id')
-        .eq('plane_id', plane.id)
+        .eq('plane_id', plane.id ?? '')
         .eq('status', 'active')
         .lte('start_time', now)
         .gte('end_time', now)
@@ -59,7 +59,7 @@ async function getAircrafts(searchParams: { status?: string; search?: string }):
       return {
         ...plane,
         isAvailable: !activeReservations || activeReservations.length === 0,
-      }
+      } as unknown as AircraftWithAvailability
     })
   )
 
@@ -68,12 +68,12 @@ async function getAircrafts(searchParams: { status?: string; search?: string }):
     const searchLower = searchParams.search.toLowerCase()
     return planesWithAvailability.filter(
       (plane) =>
-        plane.tail_number.toLowerCase().includes(searchLower) ||
-        plane.type.toLowerCase().includes(searchLower)
-    )
+        (plane.tail_number ?? "").toLowerCase().includes(searchLower) ||
+        (plane.type ?? "").toLowerCase().includes(searchLower)
+    ) as AircraftWithAvailability[]
   }
 
-  return planesWithAvailability
+  return planesWithAvailability as AircraftWithAvailability[]
 }
 
 // Removed - using getUserProfile from lib/supabase/server instead

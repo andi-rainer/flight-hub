@@ -156,7 +156,7 @@ export async function deleteMembershipType(id: string) {
   // but remove the foreign key reference that would block deletion
   const { error: unlinkError } = await supabase
     .from('user_memberships')
-    .update({ membership_type_id: null })
+    .update({ membership_type_id: undefined })
     .eq('membership_type_id', id)
     .neq('status', 'active')
 
@@ -332,11 +332,11 @@ export async function assignMembership(data: {
     .from('payment_status_history')
     .insert({
       membership_id: newMembership.id,
-      old_status: null,
-      new_status: membershipData.payment_status,
+      old_status: '',
+      new_status: membershipData.payment_status ?? 'unpaid',
       changed_by: user.id,
       changed_at: new Date().toISOString(),
-      notes: `Membership created with payment status: ${membershipData.payment_status}`,
+      notes: `Membership created with payment status: ${membershipData.payment_status ?? 'unpaid'}`,
     })
 
   revalidatePath('/members')
@@ -386,7 +386,7 @@ export async function renewMembership(membershipId: string) {
     user_id: currentMembership.user_id,
     membership_type_id: currentMembership.membership_type_id,
     start_date: startDate,
-    auto_renew: currentMembership.auto_renew,
+    auto_renew: currentMembership.auto_renew ?? false,
     payment_status: 'unpaid',
     notes: 'Renewed from previous membership',
   })
@@ -645,11 +645,11 @@ export async function updateMembershipPaymentStatus(
       .from('payment_status_history')
       .insert({
         membership_id: membershipId,
-        old_status: oldStatus,
+        old_status: oldStatus ?? '',
         new_status: paymentStatus,
         changed_by: user.id,
         changed_at: new Date().toISOString(),
-        notes: `Payment status changed from ${oldStatus} to ${paymentStatus}`,
+        notes: `Payment status changed from ${oldStatus ?? ''} to ${paymentStatus}`,
       })
   }
 

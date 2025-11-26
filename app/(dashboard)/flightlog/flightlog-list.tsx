@@ -59,9 +59,9 @@ export function FlightlogList() {
               <CardHeader>
                 <div className="flex items-center gap-2">
                   <PlaneIcon className="h-5 w-5 text-primary" />
-                  <CardTitle className="text-xl">{plane.tail_number}</CardTitle>
+                  <CardTitle className="text-xl">{(plane.tail_number ?? "")}</CardTitle>
                 </div>
-                <CardDescription>{plane.type}</CardDescription>
+                <CardDescription>{(plane.type ?? "")}</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="flex items-center justify-between">

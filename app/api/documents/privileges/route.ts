@@ -18,10 +18,10 @@ export async function GET(request: NextRequest) {
     }
 
     const { data: privileges, error } = await supabase
-      .from('document_privileges')
+      .from('document_endorsement_privileges')
       .select(`
         *,
-        document_endorsements (
+        endorsements (
           id,
           name,
           code,
@@ -95,7 +95,7 @@ export async function POST(request: NextRequest) {
     }
 
     const { data: privilege, error } = await supabase
-      .from('document_privileges')
+      .from('document_endorsement_privileges')
       .insert({
         document_id: body.document_id,
         endorsement_id: body.endorsement_id || null,
@@ -106,7 +106,7 @@ export async function POST(request: NextRequest) {
       })
       .select(`
         *,
-        document_endorsements (
+        endorsements (
           id,
           name,
           code,
@@ -148,7 +148,7 @@ export async function PUT(request: NextRequest) {
 
     // Get the privilege to check document ownership
     const { data: existingPrivilege } = await supabase
-      .from('document_privileges')
+      .from('document_endorsement_privileges')
       .select(`
         document_id,
         documents (
@@ -180,7 +180,7 @@ export async function PUT(request: NextRequest) {
     }
 
     const { data: privilege, error } = await supabase
-      .from('document_privileges')
+      .from('document_endorsement_privileges')
       .update({
         expiry_date: body.expiry_date || null,
         notes: body.notes || null,
@@ -188,7 +188,7 @@ export async function PUT(request: NextRequest) {
       .eq('id', id)
       .select(`
         *,
-        document_endorsements (
+        endorsements (
           id,
           name,
           code,
@@ -228,7 +228,7 @@ export async function DELETE(request: NextRequest) {
 
     // Get the privilege to check document ownership
     const { data: existingPrivilege } = await supabase
-      .from('document_privileges')
+      .from('document_endorsement_privileges')
       .select(`
         document_id,
         documents (
@@ -259,7 +259,7 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'You do not have permission to delete this privilege' }, { status: 403 })
     }
 
-    const { error } = await supabase.from('document_privileges').delete().eq('id', id)
+    const { error } = await supabase.from('document_endorsement_privileges').delete().eq('id', id)
 
     if (error) {
       console.error('Error deleting document privilege:', error)

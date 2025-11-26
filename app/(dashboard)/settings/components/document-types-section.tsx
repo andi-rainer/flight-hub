@@ -39,7 +39,7 @@ import {
 } from '@/components/ui/select'
 import { Shield, Plus, Pencil, Trash2, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
-import type { DocumentType, FunctionMaster } from '@/lib/database.types'
+import type { DocumentDefinition, FunctionMaster } from '@/lib/database.types'
 
 interface DocumentCategory {
   id: string
@@ -48,12 +48,12 @@ interface DocumentCategory {
 }
 
 export function DocumentTypesSection() {
-  const [documentTypes, setDocumentTypes] = useState<DocumentType[]>([])
+  const [documentTypes, setDocumentTypes] = useState<DocumentDefinition[]>([])
   const [functions, setFunctions] = useState<FunctionMaster[]>([])
   const [categories, setCategories] = useState<DocumentCategory[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isCreateOpen, setIsCreateOpen] = useState(false)
-  const [editingDocType, setEditingDocType] = useState<DocumentType | null>(null)
+  const [editingDocType, setEditingDocType] = useState<DocumentDefinition | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   // Form state
@@ -191,22 +191,16 @@ export function DocumentTypesSection() {
     }
   }
 
-  const openEditDialog = async (docType: DocumentType) => {
+  const openEditDialog = async (docType: DocumentDefinition) => {
     setEditingDocType(docType)
     setFormData({
       name: docType.name,
       description: docType.description || '',
       category_id: (docType as any).category_id || null,
-      subcategory_id: (docType as any).subcategory_id || null,
-      mandatory: docType.mandatory,
-      expires: docType.expires,
+      mandatory: docType.mandatory ?? false,
+      expires: docType.expires ?? false,
       required_for_functions: docType.required_for_functions || [],
     })
-
-    // Load subcategories if category is set
-    if ((docType as any).category_id) {
-      await loadSubcategories((docType as any).category_id)
-    }
   }
 
   const closeEditDialog = () => {
@@ -418,7 +412,7 @@ export function DocumentTypesSection() {
                   {documentTypes.map((docType) => (
                     <TableRow key={docType.id}>
                       <TableCell className="font-medium">{docType.name}</TableCell>
-                      <TableCell>{docType.category || '—'}</TableCell>
+                      <TableCell>{(docType as any).category || '—'}</TableCell>
                       <TableCell>
                         {docType.mandatory ? (
                           <Badge variant="default">Yes</Badge>

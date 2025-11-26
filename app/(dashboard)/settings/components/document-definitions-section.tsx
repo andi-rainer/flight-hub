@@ -551,8 +551,8 @@ export function DocumentDefinitionsSection() {
                           <div key={func.id} className="flex items-center space-x-2">
                             <Checkbox
                               id={`func-${func.id}`}
-                              checked={formData.required_for_functions.includes(func.code)}
-                              onCheckedChange={() => toggleFunctionRequirement(func.code)}
+                              checked={formData.required_for_functions.includes(func.code ?? '')}
+                              onCheckedChange={() => toggleFunctionRequirement(func.code ?? '')}
                             />
                             <Label htmlFor={`func-${func.id}`} className="font-normal cursor-pointer text-sm">
                               {func.name}
@@ -695,8 +695,8 @@ export function DocumentDefinitionsSection() {
                                         {functions.map((func) => (
                                           <div key={func.id} className="flex items-center space-x-2">
                                             <Checkbox
-                                              checked={formData.required_for_functions.includes(func.code)}
-                                              onCheckedChange={() => toggleFunctionRequirement(func.code)}
+                                              checked={formData.required_for_functions.includes(func.code ?? '')}
+                                              onCheckedChange={() => toggleFunctionRequirement(func.code ?? '')}
                                             />
                                             <Label className="font-normal cursor-pointer text-sm">{func.name}</Label>
                                           </div>

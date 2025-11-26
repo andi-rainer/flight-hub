@@ -174,9 +174,9 @@ export function DocumentRow({ document, aircraftId, isBoardMember, mobileView = 
           </div>
         </TableCell>
         <TableCell>
-          {document.tags.length > 0 ? (
+          {(document.tags ?? []).length > 0 ? (
             <div className="flex flex-wrap gap-1">
-              {document.tags.map((tag, index) => (
+              {(document.tags ?? []).map((tag, index) => (
                 <Badge key={index} variant="secondary" className="text-xs">
                   {tag}
                 </Badge>

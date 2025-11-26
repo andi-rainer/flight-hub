@@ -17,7 +17,10 @@ type ComponentType = Database['public']['Enums']['component_type']
 // AUTHORIZATION HELPER
 // ============================================================================
 
-async function verifyBoardMember() {
+async function verifyBoardMember(): Promise<
+  | { authorized: false; error: string; supabase?: undefined; userId?: undefined }
+  | { authorized: true; error?: undefined; supabase: Awaited<ReturnType<typeof createClient>>; userId: string }
+> {
   const supabase = await createClient()
 
   const { data: { user } } = await supabase.auth.getUser()
@@ -411,11 +414,11 @@ export async function overhaulComponent(componentId: string, data: {
     return { success: false, error: 'Cannot overhaul a removed or scrapped component' }
   }
 
-  // Mark original as overhauled
+  // Mark original as removed (overhauled)
   const { error: updateError } = await auth.supabase
     .from('aircraft_components')
     .update({
-      status: 'overhauled',
+      status: 'removed',
       removed_at: data.overhaulDate,
       removed_by: auth.userId,
       removal_reason: `Overhauled and replaced with new component record`,

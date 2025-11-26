@@ -108,11 +108,11 @@ export default async function OperationDayDetailPage({
       </Button>
 
       {/* Operation Day Header */}
-      <OperationDayHeader operationDay={operationDay} canManage={canManage} />
+      <OperationDayHeader operationDay={operationDay as any} canManage={canManage} />
 
       {/* Flight Management Section */}
       <FlightManagementSection
-        operationDay={operationDay}
+        operationDay={operationDay as any}
         manifestSettings={manifestSettings}
         canManage={canManage}
         userProfile={profile}

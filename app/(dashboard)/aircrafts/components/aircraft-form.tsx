@@ -22,7 +22,7 @@ export function AircraftForm({ aircraft, onSuccess }: AircraftFormProps) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
-  const [massUnit, setMassUnit] = useState<'kg' | 'lbs'>(aircraft?.mass_unit || 'kg')
+  const [massUnit, setMassUnit] = useState<'kg' | 'lbs'>((aircraft?.mass_unit as 'kg' | 'lbs') || 'kg')
   const [isSkydiveAircraft, setIsSkydiveAircraft] = useState<boolean>(aircraft?.is_skydive_aircraft ?? false)
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {

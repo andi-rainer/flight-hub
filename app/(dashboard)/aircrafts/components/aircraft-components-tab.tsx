@@ -51,7 +51,7 @@ export function AircraftComponentsTab({
     const result = await getAircraftComponents(aircraftId)
 
     if (result.success && result.data) {
-      setComponents(result.data as ComponentWithStatus[])
+      setComponents(result.data as any)
     } else {
       toast.error(result.error || 'Failed to load components')
     }

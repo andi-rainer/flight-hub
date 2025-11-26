@@ -53,8 +53,8 @@ export function UserAccountDetailsDialog({ userId, open, onOpenChange }: UserAcc
     if (txResult.success) {
       setTransactions(txResult.data || [])
     }
-    if (balanceResult.success) {
-      setBalance(balanceResult.data)
+    if (balanceResult.success && balanceResult.data) {
+      setBalance(balanceResult.data as UserBalance)
     }
     setLoading(false)
   }
@@ -91,7 +91,7 @@ export function UserAccountDetailsDialog({ userId, open, onOpenChange }: UserAcc
                 </div>
                 <div className="text-right">
                   <p className="text-sm text-muted-foreground">Total Transactions</p>
-                  <p className="text-2xl font-bold">{balance?.transaction_count || 0}</p>
+                  <p className="text-2xl font-bold">{(balance as any)?.transaction_count || 0}</p>
                 </div>
               </div>
 
@@ -144,7 +144,7 @@ export function UserAccountDetailsDialog({ userId, open, onOpenChange }: UserAcc
                             )}
                           </TableCell>
                           <TableCell className="text-sm">
-                            {tx.created_by_user?.name} {tx.created_by_user?.surname}
+                            {(tx as any).created_by_user?.name} {(tx as any).created_by_user?.surname}
                           </TableCell>
                         </TableRow>
                       ))

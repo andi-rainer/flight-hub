@@ -27,7 +27,7 @@ import {
 import { ExternalLink, AlertCircle, FileText, Loader2, Plus } from 'lucide-react'
 import { toast } from 'sonner'
 import { format } from 'date-fns'
-import type { Document, DocumentType } from '@/lib/database.types'
+import type { Document, DocumentDefinition } from '@/lib/database.types'
 
 interface PilotDocumentsSectionProps {
   userId: string
@@ -35,7 +35,7 @@ interface PilotDocumentsSectionProps {
 
 export function PilotDocumentsSection({ userId }: PilotDocumentsSectionProps) {
   const [documents, setDocuments] = useState<Document[]>([])
-  const [documentTypes, setDocumentTypes] = useState<DocumentType[]>([])
+  const [documentTypes, setDocumentTypes] = useState<DocumentDefinition[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isUploadOpen, setIsUploadOpen] = useState(false)
   const [isUploading, setIsUploading] = useState(false)

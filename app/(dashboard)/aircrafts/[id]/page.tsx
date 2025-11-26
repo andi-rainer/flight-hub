@@ -242,8 +242,8 @@ export default async function AircraftDetailPage({
               </Badge>
               {aircraftWithMaintenance?.data && (
                 getMaintenanceStatusBadge(
-                  aircraftWithMaintenance.data.maintenance_status,
-                  aircraftWithMaintenance.data.hours_until_maintenance,
+                  (aircraftWithMaintenance.data as any)?.maintenance_status,
+                  (aircraftWithMaintenance.data as any)?.hours_until_maintenance,
                   t
                 )
               )}
@@ -251,7 +251,7 @@ export default async function AircraftDetailPage({
             <p className="text-muted-foreground">{aircraft.type}</p>
             {aircraftWithMaintenance?.data?.total_flight_hours && (
               <p className="text-sm text-muted-foreground mt-1">
-                {t('totalHours')}: {aircraftWithMaintenance.data.total_flight_hours.toFixed(1)}
+                {t('totalHours')}: {(aircraftWithMaintenance.data as any)?.total_flight_hours.toFixed(1)}
               </p>
             )}
           </div>
@@ -265,7 +265,7 @@ export default async function AircraftDetailPage({
           <AlertDescription>
             <strong>{t('maintenanceOverdue')}:</strong>{' '}
             {t('maintenanceOverdueMessage', {
-              hours: Math.abs(aircraftWithMaintenance.data.hours_until_maintenance || 0).toFixed(1)
+              hours: Math.abs((aircraftWithMaintenance.data as any)?.hours_until_maintenance || 0).toFixed(1)
             })}
           </AlertDescription>
         </Alert>
@@ -278,7 +278,7 @@ export default async function AircraftDetailPage({
           <AlertDescription className="text-orange-700">
             <strong>{t('maintenanceCritical')}:</strong>{' '}
             {t('maintenanceCriticalMessage', {
-              hours: aircraftWithMaintenance.data.hours_until_maintenance?.toFixed(1)
+              hours: (aircraftWithMaintenance.data as any)?.hours_until_maintenance?.toFixed(1)
             })}
           </AlertDescription>
         </Alert>
@@ -313,9 +313,9 @@ export default async function AircraftDetailPage({
           </TabsTrigger>
           <TabsTrigger value="maintenance">
             {t('maintenance')}
-            {aircraftWithMaintenance?.data?.maintenance_status && aircraftWithMaintenance.data.maintenance_status !== 'ok' && aircraftWithMaintenance.data.maintenance_status !== 'not_scheduled' && (
+            {aircraftWithMaintenance?.data?.maintenance_status && (aircraftWithMaintenance.data as any)?.maintenance_status !== 'ok' && (aircraftWithMaintenance.data as any)?.maintenance_status !== 'not_scheduled' && (
               <Badge
-                variant={aircraftWithMaintenance.data.maintenance_status === 'overdue' ? 'destructive' : 'secondary'}
+                variant={(aircraftWithMaintenance.data as any)?.maintenance_status === 'overdue' ? 'destructive' : 'secondary'}
                 className="ml-2"
               >
                 !
@@ -343,8 +343,8 @@ export default async function AircraftDetailPage({
         <TabsContent value="maintenance" className="space-y-4">
           {aircraftWithMaintenance?.data && maintenanceHistory?.data ? (
             <AircraftMaintenanceTab
-              aircraft={aircraftWithMaintenance.data}
-              maintenanceHistory={maintenanceHistory.data}
+              aircraft={aircraftWithMaintenance.data as any}
+              maintenanceHistory={maintenanceHistory.data as any}
               isBoardMember={isBoardMember}
             />
           ) : (
@@ -360,7 +360,7 @@ export default async function AircraftDetailPage({
               <AircraftComponentsTab
                 aircraftId={aircraft.id}
                 aircraftTailNumber={aircraft.tail_number}
-                aircraftCurrentHours={aircraftWithMaintenance.data.total_flight_hours}
+                aircraftCurrentHours={(aircraftWithMaintenance.data as any).total_flight_hours ?? 0}
                 isBoardMember={isBoardMember}
               />
             ) : (
@@ -375,8 +375,8 @@ export default async function AircraftDetailPage({
           <TabsContent value="weight-balance" className="space-y-4">
             <AircraftWeightBalanceTab
               aircraft={aircraft}
-              cgLimits={cgLimits}
-              stations={stations}
+              cgLimits={cgLimits as any}
+              stations={stations as any}
               canEdit={isBoardMember}
             />
           </TabsContent>

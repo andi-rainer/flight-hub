@@ -113,7 +113,7 @@ export function ReservationCalendar({
   const resources = useMemo<Resource[]>(() => {
     return aircraft.map(plane => ({
       id: plane.id,
-      title: `✈️ ${plane.tail_number}`,
+      title: `✈️ ${(plane.tail_number ?? "")}`,
       color: plane.color,
     }))
   }, [aircraft])
@@ -129,7 +129,7 @@ export function ReservationCalendar({
 
       if (customView === 'month') {
         // Month view: show time, tail number, and user name
-        const startTime = format(new Date(reservation.start_time), 'HH:mm')
+        const startTime = reservation.start_time ? format(new Date(reservation.start_time), 'HH:mm') : ''
         const priorityIndicator = reservation.priority ? '⭐ ' : ''
         const statusIndicator = reservation.status === 'standby' ? ' [S]' : ''
         title = `${priorityIndicator}${startTime} ${reservation.tail_number} - ${reservation.user_name}${statusIndicator}`
@@ -144,11 +144,11 @@ export function ReservationCalendar({
       // Parse the ISO string timestamps correctly
       // If the string doesn't end with 'Z', it's stored without timezone
       // and should be treated as local time, not UTC
-      let startTimeStr = reservation.start_time
-      let endTimeStr = reservation.end_time
+      let startTimeStr = reservation.start_time ?? ''
+      let endTimeStr = reservation.end_time ?? ''
 
       // If timestamps don't have timezone info, treat them as local
-      if (!startTimeStr.endsWith('Z') && !startTimeStr.includes('+') && !startTimeStr.includes('-', 10)) {
+      if (startTimeStr && !startTimeStr.endsWith('Z') && !startTimeStr.includes('+') && !startTimeStr.includes('-', 10)) {
         // No timezone info - treat as local time by removing any timezone conversion
         startTimeStr = startTimeStr.replace('T', ' ').replace(/\.\d+$/, '')
         const [datePart, timePart] = startTimeStr.split(' ')
@@ -156,28 +156,28 @@ export function ReservationCalendar({
         const [hour, minute, second = 0] = timePart.split(':').map(Number)
         var startDate = new Date(year, month - 1, day, hour, minute, second)
       } else {
-        var startDate = new Date(startTimeStr)
+        var startDate = startTimeStr ? new Date(startTimeStr) : new Date()
       }
 
-      if (!endTimeStr.endsWith('Z') && !endTimeStr.includes('+') && !endTimeStr.includes('-', 10)) {
+      if (endTimeStr && !endTimeStr.endsWith('Z') && !endTimeStr.includes('+') && !endTimeStr.includes('-', 10)) {
         endTimeStr = endTimeStr.replace('T', ' ').replace(/\.\d+$/, '')
         const [datePart, timePart] = endTimeStr.split(' ')
         const [year, month, day] = datePart.split('-').map(Number)
         const [hour, minute, second = 0] = timePart.split(':').map(Number)
         var endDate = new Date(year, month - 1, day, hour, minute, second)
       } else {
-        var endDate = new Date(endTimeStr)
+        var endDate = endTimeStr ? new Date(endTimeStr) : new Date()
       }
 
       return {
-        id: reservation.id,
+        id: reservation.id ?? '',
         title,
         start: startDate,
         end: endDate,
         resource: reservation,
-        resourceId: reservation.plane_id, // Link event to aircraft resource
+        resourceId: reservation.plane_id ?? '', // Link event to aircraft resource
       }
-    })
+    }) as CalendarEvent[]
   }, [reservations, customView])
 
   // Custom event style getter
