@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, ReactNode, useEffect } from 'react'
-import { UserPlus, Users } from 'lucide-react'
+import { UserPlus, Users, CheckCircle2, XCircle, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -26,7 +26,9 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { PersonSelector } from '@/components/person-selector'
 import { toast } from 'sonner'
 import { addSportJumper, addTandemPair } from '@/lib/actions/manifest'
+import { validateVoucherCode } from '@/lib/actions/vouchers'
 import { useRouter } from 'next/navigation'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 
 interface AddJumperDialogProps {
   flight: any
@@ -101,6 +103,19 @@ export function AddJumperDialog({
     notes: '',
   })
 
+  // Voucher validation state
+  const [voucherValidation, setVoucherValidation] = useState<{
+    isValidating: boolean
+    isValid: boolean | null
+    voucher: any | null
+    error: string | null
+  }>({
+    isValidating: false,
+    isValid: null,
+    voucher: null,
+    error: null,
+  })
+
   // Reset slot when dialog opens or jumper type changes
   useEffect(() => {
     if (open) {
@@ -108,6 +123,63 @@ export function AddJumperDialog({
       setFormData(prev => ({ ...prev, slotNumber: appropriateSlot || 1 }))
     }
   }, [open, formData.jumperType, nextSportSlot, nextTandemSlot])
+
+  // Validate voucher code when it changes
+  useEffect(() => {
+    const validateVoucher = async () => {
+      const code = formData.voucherNumber.trim()
+
+      if (!code) {
+        setVoucherValidation({
+          isValidating: false,
+          isValid: null,
+          voucher: null,
+          error: null,
+        })
+        return
+      }
+
+      setVoucherValidation(prev => ({ ...prev, isValidating: true }))
+
+      try {
+        const result = await validateVoucherCode(code)
+
+        if (result.valid && result.voucher) {
+          setVoucherValidation({
+            isValidating: false,
+            isValid: true,
+            voucher: result.voucher,
+            error: null,
+          })
+
+          // Auto-populate payment amount from voucher type
+          if (result.voucher.voucher_type?.price_eur) {
+            setFormData(prev => ({
+              ...prev,
+              paymentAmount: result.voucher.voucher_type.price_eur.toString(),
+            }))
+          }
+        } else {
+          setVoucherValidation({
+            isValidating: false,
+            isValid: false,
+            voucher: null,
+            error: result.error || 'Invalid voucher',
+          })
+        }
+      } catch (error) {
+        setVoucherValidation({
+          isValidating: false,
+          isValid: false,
+          voucher: null,
+          error: 'Failed to validate voucher',
+        })
+      }
+    }
+
+    const timeoutId = setTimeout(validateVoucher, 500)
+    return () => clearTimeout(timeoutId)
+  }, [formData.voucherNumber])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -152,11 +224,19 @@ export function AddJumperDialog({
           return
         }
 
-        // TODO: Validate voucher number against vouchers table when implemented
-        if (formData.paymentType === 'voucher' && !formData.voucherNumber) {
-          toast.error('Please enter voucher number')
-          setIsSubmitting(false)
-          return
+        // Validate voucher
+        if (formData.paymentType === 'voucher') {
+          if (!formData.voucherNumber) {
+            toast.error('Please enter voucher code')
+            setIsSubmitting(false)
+            return
+          }
+
+          if (voucherValidation.isValid !== true) {
+            toast.error(voucherValidation.error || 'Please enter a valid voucher code')
+            setIsSubmitting(false)
+            return
+          }
         }
 
         result = await addTandemPair({
@@ -185,6 +265,13 @@ export function AddJumperDialog({
           voucherNumber: '',
           paymentAmount: '',
           notes: '',
+        })
+        // Reset voucher validation
+        setVoucherValidation({
+          isValidating: false,
+          isValid: null,
+          voucher: null,
+          error: null,
         })
         router.refresh()
       } else {
@@ -336,19 +423,65 @@ export function AddJumperDialog({
 
                 {formData.paymentType === 'voucher' && (
                   <div className="grid gap-2">
-                    <Label htmlFor="voucherNumber">Voucher Number</Label>
-                    <Input
-                      id="voucherNumber"
-                      value={formData.voucherNumber}
-                      onChange={(e) =>
-                        setFormData({ ...formData, voucherNumber: e.target.value })
-                      }
-                      placeholder="Enter voucher code"
-                      required
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      TODO: Voucher validation will be implemented
-                    </p>
+                    <Label htmlFor="voucherNumber">Voucher Code</Label>
+                    <div className="relative">
+                      <Input
+                        id="voucherNumber"
+                        value={formData.voucherNumber}
+                        onChange={(e) =>
+                          setFormData({ ...formData, voucherNumber: e.target.value.toUpperCase() })
+                        }
+                        placeholder="Enter voucher code (e.g. TDM-2025-ABC123)"
+                        required
+                        className={
+                          voucherValidation.isValid === true
+                            ? 'border-green-500'
+                            : voucherValidation.isValid === false
+                            ? 'border-red-500'
+                            : ''
+                        }
+                      />
+                      {voucherValidation.isValidating && (
+                        <Loader2 className="absolute right-3 top-2.5 h-4 w-4 animate-spin text-muted-foreground" />
+                      )}
+                      {!voucherValidation.isValidating && voucherValidation.isValid === true && (
+                        <CheckCircle2 className="absolute right-3 top-2.5 h-4 w-4 text-green-500" />
+                      )}
+                      {!voucherValidation.isValidating && voucherValidation.isValid === false && (
+                        <XCircle className="absolute right-3 top-2.5 h-4 w-4 text-red-500" />
+                      )}
+                    </div>
+
+                    {voucherValidation.isValid === true && voucherValidation.voucher && (
+                      <Alert className="border-green-500 bg-green-50 dark:bg-green-950">
+                        <CheckCircle2 className="h-4 w-4 text-green-500" />
+                        <AlertDescription className="text-sm">
+                          <div className="space-y-1">
+                            <p className="font-medium">
+                              {voucherValidation.voucher.voucher_type?.name || 'Voucher Valid'}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              Purchaser: {voucherValidation.voucher.purchaser_name}
+                            </p>
+                            {voucherValidation.voucher.valid_until && (
+                              <p className="text-xs text-muted-foreground">
+                                Valid until:{' '}
+                                {new Date(voucherValidation.voucher.valid_until).toLocaleDateString()}
+                              </p>
+                            )}
+                          </div>
+                        </AlertDescription>
+                      </Alert>
+                    )}
+
+                    {voucherValidation.isValid === false && voucherValidation.error && (
+                      <Alert className="border-red-500 bg-red-50 dark:bg-red-950">
+                        <XCircle className="h-4 w-4 text-red-500" />
+                        <AlertDescription className="text-sm text-red-700 dark:text-red-300">
+                          {voucherValidation.error}
+                        </AlertDescription>
+                      </Alert>
+                    )}
                   </div>
                 )}
 

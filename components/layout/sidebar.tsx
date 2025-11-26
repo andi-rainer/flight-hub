@@ -27,6 +27,8 @@ import {
   ChevronRight,
   Shield,
   PlaneTakeoff,
+  Ticket,
+  Receipt,
 } from 'lucide-react'
 
 interface NavItem {
@@ -68,6 +70,18 @@ const navItems: NavItem[] = [
     titleKey: 'manifest',
     href: '/manifest',
     icon: PlaneTakeoff,
+    requiredPermission: 'manifest.view',
+  },
+  {
+    titleKey: 'vouchers',
+    href: '/vouchers',
+    icon: Ticket,
+    requiredPermission: 'manifest.view',
+  },
+  {
+    titleKey: 'bookings',
+    href: '/bookings',
+    icon: Receipt,
     requiredPermission: 'manifest.view',
   },
   {

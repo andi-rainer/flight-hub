@@ -627,6 +627,71 @@ export type Database = {
         }
         Relationships: []
       }
+      api_keys: {
+        Row: {
+          active: boolean | null
+          created_at: string | null
+          created_by: string | null
+          expires_at: string | null
+          id: string
+          key_hash: string
+          last_used_at: string | null
+          name: string
+          permissions: string[] | null
+        }
+        Insert: {
+          active?: boolean | null
+          created_at?: string | null
+          created_by?: string | null
+          expires_at?: string | null
+          id?: string
+          key_hash: string
+          last_used_at?: string | null
+          name: string
+          permissions?: string[] | null
+        }
+        Update: {
+          active?: boolean | null
+          created_at?: string | null
+          created_by?: string | null
+          expires_at?: string | null
+          id?: string
+          key_hash?: string
+          last_used_at?: string | null
+          name?: string
+          permissions?: string[] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "api_keys_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "user_balances"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "api_keys_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "api_keys_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users_with_functions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "api_keys_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users_with_functions_search"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       board_contact_settings: {
         Row: {
           contact_email: string | null
@@ -1926,6 +1991,84 @@ export type Database = {
           },
         ]
       }
+      manifest_booking_timeframes: {
+        Row: {
+          active: boolean | null
+          created_at: string | null
+          created_by: string | null
+          current_bookings: number | null
+          end_time: string
+          id: string
+          max_bookings: number | null
+          operation_day_id: string | null
+          overbooking_allowed: number | null
+          start_time: string
+          updated_at: string | null
+        }
+        Insert: {
+          active?: boolean | null
+          created_at?: string | null
+          created_by?: string | null
+          current_bookings?: number | null
+          end_time: string
+          id?: string
+          max_bookings?: number | null
+          operation_day_id?: string | null
+          overbooking_allowed?: number | null
+          start_time: string
+          updated_at?: string | null
+        }
+        Update: {
+          active?: boolean | null
+          created_at?: string | null
+          created_by?: string | null
+          current_bookings?: number | null
+          end_time?: string
+          id?: string
+          max_bookings?: number | null
+          operation_day_id?: string | null
+          overbooking_allowed?: number | null
+          start_time?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "manifest_booking_timeframes_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "user_balances"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "manifest_booking_timeframes_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "manifest_booking_timeframes_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users_with_functions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "manifest_booking_timeframes_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users_with_functions_search"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "manifest_booking_timeframes_operation_day_id_fkey"
+            columns: ["operation_day_id"]
+            isOneToOne: false
+            referencedRelation: "skydive_operation_days"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       manifest_settings: {
         Row: {
           default_flight_interval_minutes: number
@@ -2844,6 +2987,83 @@ export type Database = {
           },
         ]
       }
+      store_settings: {
+        Row: {
+          allow_ticket_sales: boolean | null
+          allow_voucher_sales: boolean | null
+          booking_code_prefix: string | null
+          default_max_bookings_per_timeframe: number | null
+          default_overbooking_allowed: number | null
+          id: string
+          redirect_url: string
+          stripe_public_key: string | null
+          stripe_secret_key: string | null
+          updated_at: string | null
+          updated_by: string | null
+          voucher_code_prefix: string | null
+          webhook_secret: string | null
+        }
+        Insert: {
+          allow_ticket_sales?: boolean | null
+          allow_voucher_sales?: boolean | null
+          booking_code_prefix?: string | null
+          default_max_bookings_per_timeframe?: number | null
+          default_overbooking_allowed?: number | null
+          id?: string
+          redirect_url?: string
+          stripe_public_key?: string | null
+          stripe_secret_key?: string | null
+          updated_at?: string | null
+          updated_by?: string | null
+          voucher_code_prefix?: string | null
+          webhook_secret?: string | null
+        }
+        Update: {
+          allow_ticket_sales?: boolean | null
+          allow_voucher_sales?: boolean | null
+          booking_code_prefix?: string | null
+          default_max_bookings_per_timeframe?: number | null
+          default_overbooking_allowed?: number | null
+          id?: string
+          redirect_url?: string
+          stripe_public_key?: string | null
+          stripe_secret_key?: string | null
+          updated_at?: string | null
+          updated_by?: string | null
+          voucher_code_prefix?: string | null
+          webhook_secret?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_settings_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "user_balances"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "store_settings_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_settings_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "users_with_functions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_settings_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "users_with_functions_search"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       system_settings: {
         Row: {
           description: string | null
@@ -2955,6 +3175,163 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "users_with_functions_search"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ticket_bookings: {
+        Row: {
+          assigned_at: string | null
+          assigned_by: string | null
+          assigned_to_flight_jumper_id: string | null
+          booking_code: string
+          cancellation_reason: string | null
+          cancelled_at: string | null
+          cancelled_by: string | null
+          created_at: string | null
+          id: string
+          notes: string | null
+          operation_day_id: string | null
+          payment_intent_id: string | null
+          price_paid_eur: number
+          purchase_date: string | null
+          purchaser_email: string
+          purchaser_name: string
+          purchaser_phone: string | null
+          status: string | null
+          timeframe_id: string | null
+          updated_at: string | null
+          voucher_type_id: string | null
+        }
+        Insert: {
+          assigned_at?: string | null
+          assigned_by?: string | null
+          assigned_to_flight_jumper_id?: string | null
+          booking_code: string
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          operation_day_id?: string | null
+          payment_intent_id?: string | null
+          price_paid_eur: number
+          purchase_date?: string | null
+          purchaser_email: string
+          purchaser_name: string
+          purchaser_phone?: string | null
+          status?: string | null
+          timeframe_id?: string | null
+          updated_at?: string | null
+          voucher_type_id?: string | null
+        }
+        Update: {
+          assigned_at?: string | null
+          assigned_by?: string | null
+          assigned_to_flight_jumper_id?: string | null
+          booking_code?: string
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          operation_day_id?: string | null
+          payment_intent_id?: string | null
+          price_paid_eur?: number
+          purchase_date?: string | null
+          purchaser_email?: string
+          purchaser_name?: string
+          purchaser_phone?: string | null
+          status?: string | null
+          timeframe_id?: string | null
+          updated_at?: string | null
+          voucher_type_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ticket_bookings_assigned_by_fkey"
+            columns: ["assigned_by"]
+            isOneToOne: false
+            referencedRelation: "user_balances"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "ticket_bookings_assigned_by_fkey"
+            columns: ["assigned_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ticket_bookings_assigned_by_fkey"
+            columns: ["assigned_by"]
+            isOneToOne: false
+            referencedRelation: "users_with_functions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ticket_bookings_assigned_by_fkey"
+            columns: ["assigned_by"]
+            isOneToOne: false
+            referencedRelation: "users_with_functions_search"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ticket_bookings_assigned_to_flight_jumper_id_fkey"
+            columns: ["assigned_to_flight_jumper_id"]
+            isOneToOne: false
+            referencedRelation: "skydive_flight_jumpers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ticket_bookings_cancelled_by_fkey"
+            columns: ["cancelled_by"]
+            isOneToOne: false
+            referencedRelation: "user_balances"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "ticket_bookings_cancelled_by_fkey"
+            columns: ["cancelled_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ticket_bookings_cancelled_by_fkey"
+            columns: ["cancelled_by"]
+            isOneToOne: false
+            referencedRelation: "users_with_functions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ticket_bookings_cancelled_by_fkey"
+            columns: ["cancelled_by"]
+            isOneToOne: false
+            referencedRelation: "users_with_functions_search"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ticket_bookings_operation_day_id_fkey"
+            columns: ["operation_day_id"]
+            isOneToOne: false
+            referencedRelation: "skydive_operation_days"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ticket_bookings_timeframe_id_fkey"
+            columns: ["timeframe_id"]
+            isOneToOne: false
+            referencedRelation: "manifest_booking_timeframes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ticket_bookings_voucher_type_id_fkey"
+            columns: ["voucher_type_id"]
+            isOneToOne: false
+            referencedRelation: "voucher_types"
             referencedColumns: ["id"]
           },
         ]
@@ -3451,6 +3828,260 @@ export type Database = {
           zip?: string | null
         }
         Relationships: []
+      }
+      voucher_types: {
+        Row: {
+          active: boolean | null
+          code: string
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          description_de: string | null
+          id: string
+          name: string
+          name_de: string
+          price_eur: number
+          sort_order: number | null
+          tandem_flight_type: string | null
+          updated_at: string | null
+          validity_days: number | null
+        }
+        Insert: {
+          active?: boolean | null
+          code: string
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          description_de?: string | null
+          id?: string
+          name: string
+          name_de: string
+          price_eur: number
+          sort_order?: number | null
+          tandem_flight_type?: string | null
+          updated_at?: string | null
+          validity_days?: number | null
+        }
+        Update: {
+          active?: boolean | null
+          code?: string
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          description_de?: string | null
+          id?: string
+          name?: string
+          name_de?: string
+          price_eur?: number
+          sort_order?: number | null
+          tandem_flight_type?: string | null
+          updated_at?: string | null
+          validity_days?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "voucher_types_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "user_balances"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "voucher_types_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "voucher_types_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users_with_functions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "voucher_types_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users_with_functions_search"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vouchers: {
+        Row: {
+          cancellation_reason: string | null
+          cancelled_at: string | null
+          cancelled_by: string | null
+          created_at: string | null
+          id: string
+          notes: string | null
+          payment_intent_id: string | null
+          price_paid_eur: number
+          purchase_date: string | null
+          purchaser_email: string
+          purchaser_name: string
+          purchaser_phone: string | null
+          redeemed_at: string | null
+          redeemed_by: string | null
+          redeemed_for_flight_jumper_id: string | null
+          redeemed_for_user_id: string | null
+          status: string | null
+          updated_at: string | null
+          valid_from: string | null
+          valid_until: string | null
+          voucher_code: string
+          voucher_type_id: string | null
+        }
+        Insert: {
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          payment_intent_id?: string | null
+          price_paid_eur: number
+          purchase_date?: string | null
+          purchaser_email: string
+          purchaser_name: string
+          purchaser_phone?: string | null
+          redeemed_at?: string | null
+          redeemed_by?: string | null
+          redeemed_for_flight_jumper_id?: string | null
+          redeemed_for_user_id?: string | null
+          status?: string | null
+          updated_at?: string | null
+          valid_from?: string | null
+          valid_until?: string | null
+          voucher_code: string
+          voucher_type_id?: string | null
+        }
+        Update: {
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          payment_intent_id?: string | null
+          price_paid_eur?: number
+          purchase_date?: string | null
+          purchaser_email?: string
+          purchaser_name?: string
+          purchaser_phone?: string | null
+          redeemed_at?: string | null
+          redeemed_by?: string | null
+          redeemed_for_flight_jumper_id?: string | null
+          redeemed_for_user_id?: string | null
+          status?: string | null
+          updated_at?: string | null
+          valid_from?: string | null
+          valid_until?: string | null
+          voucher_code?: string
+          voucher_type_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vouchers_cancelled_by_fkey"
+            columns: ["cancelled_by"]
+            isOneToOne: false
+            referencedRelation: "user_balances"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "vouchers_cancelled_by_fkey"
+            columns: ["cancelled_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vouchers_cancelled_by_fkey"
+            columns: ["cancelled_by"]
+            isOneToOne: false
+            referencedRelation: "users_with_functions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vouchers_cancelled_by_fkey"
+            columns: ["cancelled_by"]
+            isOneToOne: false
+            referencedRelation: "users_with_functions_search"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vouchers_redeemed_by_fkey"
+            columns: ["redeemed_by"]
+            isOneToOne: false
+            referencedRelation: "user_balances"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "vouchers_redeemed_by_fkey"
+            columns: ["redeemed_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vouchers_redeemed_by_fkey"
+            columns: ["redeemed_by"]
+            isOneToOne: false
+            referencedRelation: "users_with_functions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vouchers_redeemed_by_fkey"
+            columns: ["redeemed_by"]
+            isOneToOne: false
+            referencedRelation: "users_with_functions_search"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vouchers_redeemed_for_flight_jumper_id_fkey"
+            columns: ["redeemed_for_flight_jumper_id"]
+            isOneToOne: false
+            referencedRelation: "skydive_flight_jumpers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vouchers_redeemed_for_user_id_fkey"
+            columns: ["redeemed_for_user_id"]
+            isOneToOne: false
+            referencedRelation: "user_balances"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "vouchers_redeemed_for_user_id_fkey"
+            columns: ["redeemed_for_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vouchers_redeemed_for_user_id_fkey"
+            columns: ["redeemed_for_user_id"]
+            isOneToOne: false
+            referencedRelation: "users_with_functions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vouchers_redeemed_for_user_id_fkey"
+            columns: ["redeemed_for_user_id"]
+            isOneToOne: false
+            referencedRelation: "users_with_functions_search"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vouchers_voucher_type_id_fkey"
+            columns: ["voucher_type_id"]
+            isOneToOne: false
+            referencedRelation: "voucher_types"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
@@ -4511,6 +5142,16 @@ export type Database = {
         Returns: number
       }
       can_reserve_aircraft: { Args: { p_plane_id: string }; Returns: boolean }
+      check_timeframe_availability: {
+        Args: { timeframe_id: string }
+        Returns: {
+          available: boolean
+          current_bookings: number
+          max_bookings: number
+          overbooking_allowed: number
+          slots_remaining: number
+        }[]
+      }
       create_notification: {
         Args: {
           p_document_id?: string
@@ -4522,6 +5163,10 @@ export type Database = {
           p_user_id: string
         }
         Returns: string
+      }
+      decrement_timeframe_bookings: {
+        Args: { timeframe_id: string }
+        Returns: boolean
       }
       get_available_pilots: {
         Args: { operation_date: string }
@@ -4608,7 +5253,12 @@ export type Database = {
         Returns: boolean
       }
       has_secretary_function: { Args: { user_id: string }; Returns: boolean }
+      increment_timeframe_bookings: {
+        Args: { timeframe_id: string }
+        Returns: boolean
+      }
       is_board_member: { Args: { user_uuid: string }; Returns: boolean }
+      is_voucher_valid: { Args: { voucher_id: string }; Returns: boolean }
       mark_flight_completed: {
         Args: { flight_id_param: string }
         Returns: boolean
@@ -4795,124 +5445,36 @@ export const Constants = {
 } as const
 
 
-// Convenience type exports for commonly used table types
-export type User = Database['public']['Tables']['users']['Row']
-export type UserInsert = Database['public']['Tables']['users']['Insert']
-export type UserUpdate = Database['public']['Tables']['users']['Update']
-export type UserProfile = User
+// ============================================================================
+// VOUCHER & TICKETING SYSTEM TYPE EXPORTS
+// ============================================================================
 
-export type Plane = Database['public']['Tables']['planes']['Row']
-export type PlaneInsert = Database['public']['Tables']['planes']['Insert']
-export type PlaneUpdate = Database['public']['Tables']['planes']['Update']
+// Voucher Types
+export type VoucherType = Database['public']['Tables']['voucher_types']['Row']
+export type VoucherTypeInsert = Database['public']['Tables']['voucher_types']['Insert']
+export type VoucherTypeUpdate = Database['public']['Tables']['voucher_types']['Update']
 
-export type Document = Database['public']['Tables']['documents']['Row']
-export type DocumentInsert = Database['public']['Tables']['documents']['Insert']
-export type DocumentUpdate = Database['public']['Tables']['documents']['Update']
+// Vouchers
+export type Voucher = Database['public']['Tables']['vouchers']['Row']
+export type VoucherInsert = Database['public']['Tables']['vouchers']['Insert']
+export type VoucherUpdate = Database['public']['Tables']['vouchers']['Update']
 
-export type Flightlog = Database['public']['Tables']['flightlog']['Row']
-export type FlightlogInsert = Database['public']['Tables']['flightlog']['Insert']
-export type FlightlogUpdate = Database['public']['Tables']['flightlog']['Update']
+// Booking Timeframes
+export type ManifestBookingTimeframe = Database['public']['Tables']['manifest_booking_timeframes']['Row']
+export type ManifestBookingTimeframeInsert = Database['public']['Tables']['manifest_booking_timeframes']['Insert']
+export type ManifestBookingTimeframeUpdate = Database['public']['Tables']['manifest_booking_timeframes']['Update']
 
-export type Reservation = Database['public']['Tables']['reservations']['Row']
-export type ReservationInsert = Database['public']['Tables']['reservations']['Insert']
-export type ReservationUpdate = Database['public']['Tables']['reservations']['Update']
+// Ticket Bookings
+export type TicketBooking = Database['public']['Tables']['ticket_bookings']['Row']
+export type TicketBookingInsert = Database['public']['Tables']['ticket_bookings']['Insert']
+export type TicketBookingUpdate = Database['public']['Tables']['ticket_bookings']['Update']
 
-export type OperationType = Database['public']['Tables']['operation_types']['Row']
-export type OperationTypeInsert = Database['public']['Tables']['operation_types']['Insert']
-export type OperationTypeUpdate = Database['public']['Tables']['operation_types']['Update']
+// Store Settings
+export type StoreSettings = Database['public']['Tables']['store_settings']['Row']
+export type StoreSettingsInsert = Database['public']['Tables']['store_settings']['Insert']
+export type StoreSettingsUpdate = Database['public']['Tables']['store_settings']['Update']
 
-export type CostCenter = Database['public']['Tables']['cost_centers']['Row']
-export type CostCenterInsert = Database['public']['Tables']['cost_centers']['Insert']
-export type CostCenterUpdate = Database['public']['Tables']['cost_centers']['Update']
-
-export type Account = Database['public']['Tables']['accounts']['Row']
-export type AccountInsert = Database['public']['Tables']['accounts']['Insert']
-export type AccountUpdate = Database['public']['Tables']['accounts']['Update']
-
-export type CostCenterTransaction = Database['public']['Tables']['cost_center_transactions']['Row']
-export type CostCenterTransactionInsert = Database['public']['Tables']['cost_center_transactions']['Insert']
-export type CostCenterTransactionUpdate = Database['public']['Tables']['cost_center_transactions']['Update']
-
-export type Transaction = Account
-
-export type FunctionMaster = Database['public']['Tables']['functions_master']['Row']
-export type FunctionMasterInsert = Database['public']['Tables']['functions_master']['Insert']
-export type FunctionMasterUpdate = Database['public']['Tables']['functions_master']['Update']
-
-export type UserFunction = Database['public']['Tables']['user_functions']['Row']
-export type UserFunctionInsert = Database['public']['Tables']['user_functions']['Insert']
-export type UserFunctionUpdate = Database['public']['Tables']['user_functions']['Update']
-
-export type FunctionCategory = Database['public']['Tables']['function_categories']['Row']
-export type FunctionCategoryInsert = Database['public']['Tables']['function_categories']['Insert']
-export type FunctionCategoryUpdate = Database['public']['Tables']['function_categories']['Update']
-
-export type MembershipType = Database['public']['Tables']['membership_types']['Row']
-export type MembershipTypeInsert = Database['public']['Tables']['membership_types']['Insert']
-export type MembershipTypeUpdate = Database['public']['Tables']['membership_types']['Update']
-
-export type UserMembership = Database['public']['Tables']['user_memberships']['Row']
-export type UserMembershipInsert = Database['public']['Tables']['user_memberships']['Insert']
-export type UserMembershipUpdate = Database['public']['Tables']['user_memberships']['Update']
-
-export type MaintenanceRecord = Database['public']['Tables']['maintenance_records']['Row']
-export type MaintenanceRecordInsert = Database['public']['Tables']['maintenance_records']['Insert']
-export type MaintenanceRecordUpdate = Database['public']['Tables']['maintenance_records']['Update']
-
-export type AircraftComponent = Database['public']['Tables']['aircraft_components']['Row']
-export type AircraftComponentInsert = Database['public']['Tables']['aircraft_components']['Insert']
-export type AircraftComponentUpdate = Database['public']['Tables']['aircraft_components']['Update']
-
-export type DocumentCategory = Database['public']['Tables']['document_categories']['Row']
-export type DocumentCategoryInsert = Database['public']['Tables']['document_categories']['Insert']
-export type DocumentCategoryUpdate = Database['public']['Tables']['document_categories']['Update']
-
-export type DocumentDefinition = Database['public']['Tables']['document_definitions']['Row']
-export type DocumentDefinitionInsert = Database['public']['Tables']['document_definitions']['Insert']
-export type DocumentDefinitionUpdate = Database['public']['Tables']['document_definitions']['Update']
-
-export type Endorsement = Database['public']['Tables']['endorsements']['Row']
-export type EndorsementInsert = Database['public']['Tables']['endorsements']['Insert']
-export type EndorsementUpdate = Database['public']['Tables']['endorsements']['Update']
-
-export type DocumentEndorsementPrivilege = Database['public']['Tables']['document_endorsement_privileges']['Row']
-export type DocumentEndorsementPrivilegeInsert = Database['public']['Tables']['document_endorsement_privileges']['Insert']
-export type DocumentEndorsementPrivilegeUpdate = Database['public']['Tables']['document_endorsement_privileges']['Update']
-
-export type Notification = Database['public']['Tables']['notifications']['Row']
-export type NotificationInsert = Database['public']['Tables']['notifications']['Insert']
-export type NotificationUpdate = Database['public']['Tables']['notifications']['Update']
-
-export type AircraftCgLimit = Database['public']['Tables']['aircraft_cg_limits']['Row']
-export type AircraftCgLimitInsert = Database['public']['Tables']['aircraft_cg_limits']['Insert']
-export type AircraftCgLimitUpdate = Database['public']['Tables']['aircraft_cg_limits']['Update']
-
-export type AircraftStation = Database['public']['Tables']['aircraft_stations']['Row']
-export type AircraftStationInsert = Database['public']['Tables']['aircraft_stations']['Insert']
-export type AircraftStationUpdate = Database['public']['Tables']['aircraft_stations']['Update']
-
-export type Airport = Database['public']['Tables']['airports']['Row']
-export type AirportInsert = Database['public']['Tables']['airports']['Insert']
-export type AirportUpdate = Database['public']['Tables']['airports']['Update']
-
-export type AircraftAirportFee = Database['public']['Tables']['aircraft_airport_fees']['Row']
-export type AircraftAirportFeeInsert = Database['public']['Tables']['aircraft_airport_fees']['Insert']
-export type AircraftAirportFeeUpdate = Database['public']['Tables']['aircraft_airport_fees']['Update']
-
-// View type exports
-export type FlightlogWithTimes = Database['public']['Views']['flightlog_with_times']['Row']
-export type UnchargedFlight = Database['public']['Views']['uncharged_flights']['Row']
-export type UserBalance = Database['public']['Views']['user_balances']['Row']
-export type ActiveReservation = Database['public']['Views']['active_reservations']['Row']
-export type UsersWithFunctions = Database['public']['Views']['users_with_functions']['Row']
-export type ComponentWithStatus = Database['public']['Views']['aircraft_components_with_status']['Row']
-export type FunctionWithStats = Database['public']['Views']['functions_with_stats']['Row']
-export type AircraftTotal = Database['public']['Views']['aircraft_totals']['Row']
-
-// Additional exports
-export type ReservationStatus = Database['public']['Enums']['reservation_status']
-
-// Custom composite types
-export type AirportWithAircraftFees = Airport & {
-  aircraft_fees: (AircraftAirportFee & { plane: Plane })[]
-}
+// API Keys
+export type ApiKey = Database['public']['Tables']['api_keys']['Row']
+export type ApiKeyInsert = Database['public']['Tables']['api_keys']['Insert']
+export type ApiKeyUpdate = Database['public']['Tables']['api_keys']['Update']
