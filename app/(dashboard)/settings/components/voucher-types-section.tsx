@@ -65,7 +65,7 @@ export function VoucherTypesSection() {
       description: formData.description || null,
       description_de: formData.description_de || null,
       price_eur: parseFloat(formData.price_eur),
-      validity_days: formData.validity_days ? parseInt(formData.validity_days) : null,
+      validity_months: formData.validity_months ? parseInt(formData.validity_months) : null,
       tandem_flight_type: formData.tandem_flight_type || null,
       active: formData.active,
       sort_order: formData.sort_order ? parseInt(formData.sort_order) : 0,
@@ -187,7 +187,7 @@ export function VoucherTypesSection() {
                     </TableCell>
                     <TableCell>€{type.price_eur}</TableCell>
                     <TableCell>
-                      {type.validity_days ? `${type.validity_days} days` : 'No expiry'}
+                      {type.validity_months ? `${type.validity_months} ${type.validity_months === 1 ? 'month' : 'months'}` : 'No expiry'}
                     </TableCell>
                     <TableCell>
                       <Switch
@@ -261,7 +261,7 @@ function VoucherTypeDialog({
     description: '',
     description_de: '',
     price_eur: '',
-    validity_days: '',
+    validity_months: '',
     tandem_flight_type: '',
     active: true,
     sort_order: '0',
@@ -276,7 +276,7 @@ function VoucherTypeDialog({
         description: voucherType.description || '',
         description_de: voucherType.description_de || '',
         price_eur: voucherType.price_eur.toString(),
-        validity_days: voucherType.validity_days?.toString() || '',
+        validity_months: voucherType.validity_months?.toString() || '',
         tandem_flight_type: voucherType.tandem_flight_type || '',
         active: voucherType.active,
         sort_order: voucherType.sort_order.toString(),
@@ -347,14 +347,17 @@ function VoucherTypeDialog({
 
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
-            <Label htmlFor="validity_days">Validity (days)</Label>
+            <Label htmlFor="validity_months">Validity (months)</Label>
             <Input
-              id="validity_days"
+              id="validity_months"
               type="number"
-              value={formData.validity_days}
-              onChange={(e) => setFormData({ ...formData, validity_days: e.target.value })}
-              placeholder="365"
+              value={formData.validity_months}
+              onChange={(e) => setFormData({ ...formData, validity_months: e.target.value })}
+              placeholder="12"
             />
+            <p className="text-xs text-muted-foreground">
+              Expiry is set to last day of month
+            </p>
           </div>
           <div className="space-y-2">
             <Label htmlFor="sort_order">Sort Order</Label>

@@ -3844,7 +3844,7 @@ export type Database = {
           sort_order: number | null
           tandem_flight_type: string | null
           updated_at: string | null
-          validity_days: number | null
+          validity_months: number | null
         }
         Insert: {
           active?: boolean | null
@@ -3860,7 +3860,7 @@ export type Database = {
           sort_order?: number | null
           tandem_flight_type?: string | null
           updated_at?: string | null
-          validity_days?: number | null
+          validity_months?: number | null
         }
         Update: {
           active?: boolean | null
@@ -3876,7 +3876,7 @@ export type Database = {
           sort_order?: number | null
           tandem_flight_type?: string | null
           updated_at?: string | null
-          validity_days?: number | null
+          validity_months?: number | null
         }
         Relationships: [
           {
@@ -5444,37 +5444,3 @@ export const Constants = {
   },
 } as const
 
-
-// ============================================================================
-// VOUCHER & TICKETING SYSTEM TYPE EXPORTS
-// ============================================================================
-
-// Voucher Types
-export type VoucherType = Database['public']['Tables']['voucher_types']['Row']
-export type VoucherTypeInsert = Database['public']['Tables']['voucher_types']['Insert']
-export type VoucherTypeUpdate = Database['public']['Tables']['voucher_types']['Update']
-
-// Vouchers
-export type Voucher = Database['public']['Tables']['vouchers']['Row']
-export type VoucherInsert = Database['public']['Tables']['vouchers']['Insert']
-export type VoucherUpdate = Database['public']['Tables']['vouchers']['Update']
-
-// Booking Timeframes
-export type ManifestBookingTimeframe = Database['public']['Tables']['manifest_booking_timeframes']['Row']
-export type ManifestBookingTimeframeInsert = Database['public']['Tables']['manifest_booking_timeframes']['Insert']
-export type ManifestBookingTimeframeUpdate = Database['public']['Tables']['manifest_booking_timeframes']['Update']
-
-// Ticket Bookings
-export type TicketBooking = Database['public']['Tables']['ticket_bookings']['Row']
-export type TicketBookingInsert = Database['public']['Tables']['ticket_bookings']['Insert']
-export type TicketBookingUpdate = Database['public']['Tables']['ticket_bookings']['Update']
-
-// Store Settings
-export type StoreSettings = Database['public']['Tables']['store_settings']['Row']
-export type StoreSettingsInsert = Database['public']['Tables']['store_settings']['Insert']
-export type StoreSettingsUpdate = Database['public']['Tables']['store_settings']['Update']
-
-// API Keys
-export type ApiKey = Database['public']['Tables']['api_keys']['Row']
-export type ApiKeyInsert = Database['public']['Tables']['api_keys']['Insert']
-export type ApiKeyUpdate = Database['public']['Tables']['api_keys']['Update']
