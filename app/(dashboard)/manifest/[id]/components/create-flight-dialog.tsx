@@ -162,17 +162,19 @@ export function CreateFlightDialog({
           </Button>
         )}
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[500px]">
-        <form onSubmit={handleSubmit}>
-          <DialogHeader>
-            <DialogTitle>Create Flight</DialogTitle>
-            <DialogDescription>
-              Add a new flight (load) to this operation day. You can assign jumpers after creating
-              the flight.
-            </DialogDescription>
-          </DialogHeader>
+      <DialogContent className="sm:max-w-[500px] max-h-[90vh] flex flex-col p-0">
+        <form onSubmit={handleSubmit} className="flex flex-col h-full overflow-hidden">
+          <div className="px-6 pt-6">
+            <DialogHeader>
+              <DialogTitle>Create Flight</DialogTitle>
+              <DialogDescription>
+                Add a new flight (load) to this operation day. You can assign jumpers after creating
+                the flight.
+              </DialogDescription>
+            </DialogHeader>
+          </div>
 
-          <div className="grid gap-4 py-4">
+          <div className="grid gap-4 py-4 px-6 overflow-y-auto flex-1">
             {/* Create Series Option */}
             <div className="flex items-center space-x-2 p-3 border rounded-md bg-muted/50">
               <Checkbox
@@ -306,7 +308,8 @@ export function CreateFlightDialog({
             </div>
           </div>
 
-          <DialogFooter>
+          <div className="px-6 pb-6 border-t pt-4">
+            <DialogFooter>
             <Button
               type="button"
               variant="outline"
@@ -322,7 +325,8 @@ export function CreateFlightDialog({
                 ? `Create ${seriesCount} Flights`
                 : 'Create Flight'}
             </Button>
-          </DialogFooter>
+            </DialogFooter>
+          </div>
         </form>
       </DialogContent>
     </Dialog>

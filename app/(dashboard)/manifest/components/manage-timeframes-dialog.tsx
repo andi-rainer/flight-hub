@@ -35,10 +35,10 @@ interface Timeframe {
   id: string
   start_time: string
   end_time: string
-  max_bookings: number
-  overbooking_allowed: number
-  current_bookings: number
-  active: boolean
+  max_bookings: number | null
+  overbooking_allowed: number | null
+  current_bookings: number | null
+  active: boolean | null
 }
 
 interface ManageTimeframesDialogProps {
@@ -122,8 +122,8 @@ export function ManageTimeframesDialog({
     setFormData({
       start_time: timeframe.start_time,
       end_time: timeframe.end_time,
-      max_bookings: timeframe.max_bookings,
-      overbooking_allowed: timeframe.overbooking_allowed,
+      max_bookings: timeframe.max_bookings ?? 4,
+      overbooking_allowed: timeframe.overbooking_allowed ?? 0,
     })
     setEditingId(timeframe.id)
     setShowAddForm(true)
@@ -142,11 +142,12 @@ export function ManageTimeframesDialog({
   }
 
   const handleToggleActive = async (timeframe: Timeframe) => {
+    const currentActive = timeframe.active ?? false
     const result = await updateBookingTimeframe(timeframe.id, {
-      active: !timeframe.active,
+      active: !currentActive,
     })
     if (result.success) {
-      toast.success(timeframe.active ? 'Timeframe disabled' : 'Timeframe enabled')
+      toast.success(currentActive ? 'Timeframe disabled' : 'Timeframe enabled')
       loadTimeframes()
     } else {
       toast.error('Failed to update timeframe')
@@ -176,7 +177,7 @@ export function ManageTimeframesDialog({
           Booking Slots
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-6xl max-h-[80vh] flex flex-col">
+      <DialogContent className="!w-[95vw] !max-w-[1400px] max-h-[80vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>Manage Booking Timeframes</DialogTitle>
           <DialogDescription>
@@ -218,16 +219,16 @@ export function ManageTimeframesDialog({
                           <TableCell className="font-medium">
                             {timeframe.start_time} - {timeframe.end_time}
                           </TableCell>
-                          <TableCell>{timeframe.max_bookings}</TableCell>
-                          <TableCell>+{timeframe.overbooking_allowed}</TableCell>
+                          <TableCell>{timeframe.max_bookings ?? 0}</TableCell>
+                          <TableCell>+{timeframe.overbooking_allowed ?? 0}</TableCell>
                           <TableCell>
-                            <span className={timeframe.current_bookings >= timeframe.max_bookings ? 'text-orange-600 font-medium' : ''}>
-                              {timeframe.current_bookings}
+                            <span className={(timeframe.current_bookings ?? 0) >= (timeframe.max_bookings ?? 0) ? 'text-orange-600 font-medium' : ''}>
+                              {timeframe.current_bookings ?? 0}
                             </span>
                           </TableCell>
                           <TableCell>
                             <Switch
-                              checked={timeframe.active}
+                              checked={timeframe.active ?? false}
                               onCheckedChange={() => handleToggleActive(timeframe)}
                             />
                           </TableCell>
@@ -244,7 +245,7 @@ export function ManageTimeframesDialog({
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => handleDelete(timeframe.id)}
-                                disabled={timeframe.current_bookings > 0}
+                                disabled={(timeframe.current_bookings ?? 0) > 0}
                               >
                                 <Trash2 className="h-4 w-4" />
                               </Button>
