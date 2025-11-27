@@ -2987,6 +2987,215 @@ export type Database = {
           },
         ]
       }
+      store_content: {
+        Row: {
+          booking_card_description: string
+          booking_card_description_de: string
+          booking_card_features: Json
+          booking_card_subtitle: string
+          booking_card_subtitle_de: string
+          booking_card_title: string
+          booking_card_title_de: string
+          bookings_card_header: string
+          bookings_card_header_de: string
+          bookings_info_section1_features: Json | null
+          bookings_info_section1_title: string
+          bookings_info_section1_title_de: string
+          bookings_info_section2_features: Json | null
+          bookings_info_section2_title: string
+          bookings_info_section2_title_de: string
+          bookings_info_title: string
+          bookings_info_title_de: string
+          bookings_page_subtitle: string
+          bookings_page_subtitle_de: string
+          bookings_page_title: string
+          bookings_page_title_de: string
+          created_at: string | null
+          footer_contact: string
+          footer_contact_de: string
+          footer_pricing: string
+          footer_pricing_de: string
+          home_footer: string
+          home_footer_de: string
+          home_subtitle: string
+          home_subtitle_de: string
+          home_title: string
+          home_title_de: string
+          id: string
+          show_terms_on_checkout: boolean | null
+          terms_url: string | null
+          terms_url_de: string | null
+          updated_at: string | null
+          updated_by: string | null
+          voucher_card_description: string
+          voucher_card_description_de: string
+          voucher_card_features: Json
+          voucher_card_subtitle: string
+          voucher_card_subtitle_de: string
+          voucher_card_title: string
+          voucher_card_title_de: string
+          voucher_info_section1_features: Json | null
+          voucher_info_section1_title: string
+          voucher_info_section1_title_de: string
+          voucher_info_section2_features: Json | null
+          voucher_info_section2_title: string
+          voucher_info_section2_title_de: string
+          voucher_info_title: string
+          voucher_info_title_de: string
+          vouchers_page_subtitle: string
+          vouchers_page_subtitle_de: string
+          vouchers_page_title: string
+          vouchers_page_title_de: string
+        }
+        Insert: {
+          booking_card_description?: string
+          booking_card_description_de?: string
+          booking_card_features?: Json
+          booking_card_subtitle?: string
+          booking_card_subtitle_de?: string
+          booking_card_title?: string
+          booking_card_title_de?: string
+          bookings_card_header?: string
+          bookings_card_header_de?: string
+          bookings_info_section1_features?: Json | null
+          bookings_info_section1_title?: string
+          bookings_info_section1_title_de?: string
+          bookings_info_section2_features?: Json | null
+          bookings_info_section2_title?: string
+          bookings_info_section2_title_de?: string
+          bookings_info_title?: string
+          bookings_info_title_de?: string
+          bookings_page_subtitle?: string
+          bookings_page_subtitle_de?: string
+          bookings_page_title?: string
+          bookings_page_title_de?: string
+          created_at?: string | null
+          footer_contact?: string
+          footer_contact_de?: string
+          footer_pricing?: string
+          footer_pricing_de?: string
+          home_footer?: string
+          home_footer_de?: string
+          home_subtitle?: string
+          home_subtitle_de?: string
+          home_title?: string
+          home_title_de?: string
+          id?: string
+          show_terms_on_checkout?: boolean | null
+          terms_url?: string | null
+          terms_url_de?: string | null
+          updated_at?: string | null
+          updated_by?: string | null
+          voucher_card_description?: string
+          voucher_card_description_de?: string
+          voucher_card_features?: Json
+          voucher_card_subtitle?: string
+          voucher_card_subtitle_de?: string
+          voucher_card_title?: string
+          voucher_card_title_de?: string
+          voucher_info_section1_features?: Json | null
+          voucher_info_section1_title?: string
+          voucher_info_section1_title_de?: string
+          voucher_info_section2_features?: Json | null
+          voucher_info_section2_title?: string
+          voucher_info_section2_title_de?: string
+          voucher_info_title?: string
+          voucher_info_title_de?: string
+          vouchers_page_subtitle?: string
+          vouchers_page_subtitle_de?: string
+          vouchers_page_title?: string
+          vouchers_page_title_de?: string
+        }
+        Update: {
+          booking_card_description?: string
+          booking_card_description_de?: string
+          booking_card_features?: Json
+          booking_card_subtitle?: string
+          booking_card_subtitle_de?: string
+          booking_card_title?: string
+          booking_card_title_de?: string
+          bookings_card_header?: string
+          bookings_card_header_de?: string
+          bookings_info_section1_features?: Json | null
+          bookings_info_section1_title?: string
+          bookings_info_section1_title_de?: string
+          bookings_info_section2_features?: Json | null
+          bookings_info_section2_title?: string
+          bookings_info_section2_title_de?: string
+          bookings_info_title?: string
+          bookings_info_title_de?: string
+          bookings_page_subtitle?: string
+          bookings_page_subtitle_de?: string
+          bookings_page_title?: string
+          bookings_page_title_de?: string
+          created_at?: string | null
+          footer_contact?: string
+          footer_contact_de?: string
+          footer_pricing?: string
+          footer_pricing_de?: string
+          home_footer?: string
+          home_footer_de?: string
+          home_subtitle?: string
+          home_subtitle_de?: string
+          home_title?: string
+          home_title_de?: string
+          id?: string
+          show_terms_on_checkout?: boolean | null
+          terms_url?: string | null
+          terms_url_de?: string | null
+          updated_at?: string | null
+          updated_by?: string | null
+          voucher_card_description?: string
+          voucher_card_description_de?: string
+          voucher_card_features?: Json
+          voucher_card_subtitle?: string
+          voucher_card_subtitle_de?: string
+          voucher_card_title?: string
+          voucher_card_title_de?: string
+          voucher_info_section1_features?: Json | null
+          voucher_info_section1_title?: string
+          voucher_info_section1_title_de?: string
+          voucher_info_section2_features?: Json | null
+          voucher_info_section2_title?: string
+          voucher_info_section2_title_de?: string
+          voucher_info_title?: string
+          voucher_info_title_de?: string
+          vouchers_page_subtitle?: string
+          vouchers_page_subtitle_de?: string
+          vouchers_page_title?: string
+          vouchers_page_title_de?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_content_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "user_balances"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "store_content_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_content_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "users_with_functions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_content_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "users_with_functions_search"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       store_settings: {
         Row: {
           allow_ticket_sales: boolean | null
@@ -3837,6 +4046,7 @@ export type Database = {
           created_by: string | null
           description: string | null
           description_de: string | null
+          features: Json | null
           id: string
           name: string
           name_de: string
@@ -3853,6 +4063,7 @@ export type Database = {
           created_by?: string | null
           description?: string | null
           description_de?: string | null
+          features?: Json | null
           id?: string
           name: string
           name_de: string
@@ -3869,6 +4080,7 @@ export type Database = {
           created_by?: string | null
           description?: string | null
           description_de?: string | null
+          features?: Json | null
           id?: string
           name?: string
           name_de?: string

@@ -94,6 +94,8 @@
     "accounting": "Accounting",
     "billing": "Billing",
     "permissions": "Permissions",
+    "storeManagement": "Store Management",
+    "storeManagementDescription": "Manage online store settings and content",
     "toggleMenu": "Toggle menu",
     "expandSidebar": "Expand sidebar",
     "collapseSidebar": "Collapse sidebar"

@@ -29,6 +29,7 @@ import {
   PlaneTakeoff,
   Ticket,
   Receipt,
+  Store,
 } from 'lucide-react'
 
 interface NavItem {
@@ -131,6 +132,12 @@ const navItems: NavItem[] = [
     href: '/permissions',
     icon: Shield,
     requiredPermission: 'functions.view', // Board members only
+  },
+  {
+    titleKey: 'storeManagement',
+    href: '/store-management',
+    icon: Store,
+    requiresBoard: true, // Board members only
   },
 ]
 
