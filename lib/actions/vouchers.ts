@@ -28,21 +28,25 @@ async function verifyBoardOrManifest() {
   const isBoard = profile?.role?.includes('board')
 
   // Check if user is manifest coordinator
-  const { data: manifestFunc } = await supabase
-    .from('user_functions')
-    .select('function_id')
-    .eq('user_id', user.id)
-    .in('function_id', [
-      supabase
-        .from('functions_master')
-        .select('id')
-        .eq('code', 'manifest_coordinator')
-        .single()
-        .then(r => r.data?.id)
-    ])
+  const { data: manifestCoordFunc } = await supabase
+    .from('functions_master')
+    .select('id')
+    .eq('code', 'manifest_coordinator')
     .single()
 
-  const isManifest = !!manifestFunc
+  const manifestFuncId = manifestCoordFunc?.id
+
+  let isManifest = false
+  if (manifestFuncId) {
+    const { data: manifestFunc } = await supabase
+      .from('user_functions')
+      .select('function_id')
+      .eq('user_id', user.id)
+      .eq('function_id', manifestFuncId)
+      .single()
+
+    isManifest = !!manifestFunc
+  }
 
   if (!isBoard && !isManifest) {
     return { authorized: false, error: 'Not authorized - board or manifest coordinator only', supabase: null, userId: null }

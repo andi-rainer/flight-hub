@@ -3022,6 +3022,13 @@ export type Database = {
           home_title: string
           home_title_de: string
           id: string
+          redeem_card_description: string
+          redeem_card_description_de: string
+          redeem_card_features: Json
+          redeem_card_subtitle: string | null
+          redeem_card_subtitle_de: string | null
+          redeem_card_title: string
+          redeem_card_title_de: string
           show_terms_on_checkout: boolean | null
           terms_url: string | null
           terms_url_de: string | null
@@ -3081,6 +3088,13 @@ export type Database = {
           home_title?: string
           home_title_de?: string
           id?: string
+          redeem_card_description?: string
+          redeem_card_description_de?: string
+          redeem_card_features?: Json
+          redeem_card_subtitle?: string | null
+          redeem_card_subtitle_de?: string | null
+          redeem_card_title?: string
+          redeem_card_title_de?: string
           show_terms_on_checkout?: boolean | null
           terms_url?: string | null
           terms_url_de?: string | null
@@ -3140,6 +3154,13 @@ export type Database = {
           home_title?: string
           home_title_de?: string
           id?: string
+          redeem_card_description?: string
+          redeem_card_description_de?: string
+          redeem_card_features?: Json
+          redeem_card_subtitle?: string | null
+          redeem_card_subtitle_de?: string | null
+          redeem_card_title?: string
+          redeem_card_title_de?: string
           show_terms_on_checkout?: boolean | null
           terms_url?: string | null
           terms_url_de?: string | null
@@ -3198,6 +3219,7 @@ export type Database = {
       }
       store_settings: {
         Row: {
+          allow_redeem_bookings: boolean | null
           allow_ticket_sales: boolean | null
           allow_voucher_sales: boolean | null
           booking_code_prefix: string | null
@@ -3213,6 +3235,7 @@ export type Database = {
           webhook_secret: string | null
         }
         Insert: {
+          allow_redeem_bookings?: boolean | null
           allow_ticket_sales?: boolean | null
           allow_voucher_sales?: boolean | null
           booking_code_prefix?: string | null
@@ -3228,6 +3251,7 @@ export type Database = {
           webhook_secret?: string | null
         }
         Update: {
+          allow_redeem_bookings?: boolean | null
           allow_ticket_sales?: boolean | null
           allow_voucher_sales?: boolean | null
           booking_code_prefix?: string | null
@@ -3402,14 +3426,16 @@ export type Database = {
           notes: string | null
           operation_day_id: string | null
           payment_intent_id: string | null
-          price_paid_eur: number
+          price_paid_eur: number | null
           purchase_date: string | null
           purchaser_email: string
           purchaser_name: string
           purchaser_phone: string | null
           status: string | null
+          ticket_type_id: string | null
           timeframe_id: string | null
           updated_at: string | null
+          voucher_id: string | null
           voucher_type_id: string | null
         }
         Insert: {
@@ -3425,14 +3451,16 @@ export type Database = {
           notes?: string | null
           operation_day_id?: string | null
           payment_intent_id?: string | null
-          price_paid_eur: number
+          price_paid_eur?: number | null
           purchase_date?: string | null
           purchaser_email: string
           purchaser_name: string
           purchaser_phone?: string | null
           status?: string | null
+          ticket_type_id?: string | null
           timeframe_id?: string | null
           updated_at?: string | null
+          voucher_id?: string | null
           voucher_type_id?: string | null
         }
         Update: {
@@ -3448,14 +3476,16 @@ export type Database = {
           notes?: string | null
           operation_day_id?: string | null
           payment_intent_id?: string | null
-          price_paid_eur?: number
+          price_paid_eur?: number | null
           purchase_date?: string | null
           purchaser_email?: string
           purchaser_name?: string
           purchaser_phone?: string | null
           status?: string | null
+          ticket_type_id?: string | null
           timeframe_id?: string | null
           updated_at?: string | null
+          voucher_id?: string | null
           voucher_type_id?: string | null
         }
         Relationships: [
@@ -3530,10 +3560,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "ticket_bookings_ticket_type_id_fkey"
+            columns: ["ticket_type_id"]
+            isOneToOne: false
+            referencedRelation: "ticket_types"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "ticket_bookings_timeframe_id_fkey"
             columns: ["timeframe_id"]
             isOneToOne: false
             referencedRelation: "manifest_booking_timeframes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ticket_bookings_voucher_id_fkey"
+            columns: ["voucher_id"]
+            isOneToOne: false
+            referencedRelation: "vouchers"
             referencedColumns: ["id"]
           },
           {
@@ -3544,6 +3588,54 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      ticket_types: {
+        Row: {
+          active: boolean | null
+          code: string
+          code_prefix: string
+          created_at: string | null
+          description: string | null
+          description_de: string | null
+          features: Json | null
+          id: string
+          name: string
+          name_de: string | null
+          price_eur: number
+          sort_order: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          active?: boolean | null
+          code: string
+          code_prefix?: string
+          created_at?: string | null
+          description?: string | null
+          description_de?: string | null
+          features?: Json | null
+          id?: string
+          name: string
+          name_de?: string | null
+          price_eur: number
+          sort_order?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          active?: boolean | null
+          code?: string
+          code_prefix?: string
+          created_at?: string | null
+          description?: string | null
+          description_de?: string | null
+          features?: Json | null
+          id?: string
+          name?: string
+          name_de?: string | null
+          price_eur?: number
+          sort_order?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       user_document_endorsements: {
         Row: {
@@ -4042,6 +4134,7 @@ export type Database = {
         Row: {
           active: boolean | null
           code: string
+          code_prefix: string
           created_at: string | null
           created_by: string | null
           description: string | null
@@ -4059,6 +4152,7 @@ export type Database = {
         Insert: {
           active?: boolean | null
           code: string
+          code_prefix?: string
           created_at?: string | null
           created_by?: string | null
           description?: string | null
@@ -4076,6 +4170,7 @@ export type Database = {
         Update: {
           active?: boolean | null
           code?: string
+          code_prefix?: string
           created_at?: string | null
           created_by?: string | null
           description?: string | null
@@ -4139,6 +4234,8 @@ export type Database = {
           redeemed_by: string | null
           redeemed_for_flight_jumper_id: string | null
           redeemed_for_user_id: string | null
+          reserved_at: string | null
+          reserved_booking_id: string | null
           status: string | null
           updated_at: string | null
           valid_from: string | null
@@ -4163,6 +4260,8 @@ export type Database = {
           redeemed_by?: string | null
           redeemed_for_flight_jumper_id?: string | null
           redeemed_for_user_id?: string | null
+          reserved_at?: string | null
+          reserved_booking_id?: string | null
           status?: string | null
           updated_at?: string | null
           valid_from?: string | null
@@ -4187,6 +4286,8 @@ export type Database = {
           redeemed_by?: string | null
           redeemed_for_flight_jumper_id?: string | null
           redeemed_for_user_id?: string | null
+          reserved_at?: string | null
+          reserved_booking_id?: string | null
           status?: string | null
           updated_at?: string | null
           valid_from?: string | null
@@ -4284,6 +4385,13 @@ export type Database = {
             columns: ["redeemed_for_user_id"]
             isOneToOne: false
             referencedRelation: "users_with_functions_search"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vouchers_reserved_booking_id_fkey"
+            columns: ["reserved_booking_id"]
+            isOneToOne: false
+            referencedRelation: "ticket_bookings"
             referencedColumns: ["id"]
           },
           {
@@ -5470,12 +5578,27 @@ export type Database = {
         Returns: boolean
       }
       is_board_member: { Args: { user_uuid: string }; Returns: boolean }
+      is_voucher_available_for_booking: {
+        Args: { voucher_code_param: string }
+        Returns: {
+          available: boolean
+          error_message: string
+          status: string
+          valid_until: string
+          voucher_id: string
+          voucher_type_name: string
+        }[]
+      }
       is_voucher_valid: { Args: { voucher_id: string }; Returns: boolean }
       mark_flight_completed: {
         Args: { flight_id_param: string }
         Returns: boolean
       }
       refresh_users_with_functions_search: { Args: never; Returns: undefined }
+      reserve_voucher_for_booking: {
+        Args: { booking_id_param: string; voucher_id_param: string }
+        Returns: boolean
+      }
       track_user_selection: {
         Args: {
           p_context: string
@@ -5483,6 +5606,10 @@ export type Database = {
           p_user_id: string
         }
         Returns: undefined
+      }
+      unreserve_voucher: {
+        Args: { voucher_id_param: string }
+        Returns: boolean
       }
       user_has_any_function: {
         Args: { p_function_codes: string[]; p_user_id: string }
@@ -5656,3 +5783,33 @@ export const Constants = {
   },
 } as const
 
+
+// Helper type aliases for commonly used tables
+export type User = Database['public']['Tables']['users']['Row']
+export type Plane = Database['public']['Tables']['planes']['Row']
+export type Reservation = Database['public']['Tables']['reservations']['Row']
+export type FlightLog = Database['public']['Tables']['flightlog']['Row']
+export type Document = Database['public']['Tables']['documents']['Row']
+export type Voucher = Database['public']['Tables']['vouchers']['Row']
+export type VoucherType = Database['public']['Tables']['voucher_types']['Row']
+export type TicketType = Database['public']['Tables']['ticket_types']['Row']
+export type TicketBooking = Database['public']['Tables']['ticket_bookings']['Row']
+export type Endorsement = Database['public']['Tables']['endorsements']['Row']
+export type FunctionMaster = Database['public']['Tables']['functions_master']['Row']
+export type AircraftCgLimit = Database['public']['Tables']['aircraft_cg_limits']['Row']
+export type AircraftStation = Database['public']['Tables']['aircraft_stations']['Row']
+export type UsersWithFunctions = Database['public']['Views']['users_with_functions']['Row']
+export type UserProfile = User & { function_codes?: string[] }
+
+// Additional type aliases for views and commonly used types
+export type FlightlogWithTimes = Database['public']['Views']['flightlog_with_times']['Row']
+export type UserBalance = Database['public']['Views']['user_balances']['Row']
+export type CostCenter = Database['public']['Tables']['cost_centers']['Row']
+export type OperationType = Database['public']['Tables']['operation_types']['Row']
+export type PlaneInsert = Database['public']['Tables']['planes']['Insert']
+export type PlaneUpdate = Database['public']['Tables']['planes']['Update']
+export type FlightlogInsert = Database['public']['Tables']['flightlog']['Insert']
+export type FlightlogUpdate = Database['public']['Tables']['flightlog']['Update']
+export type UnchargedFlight = FlightlogWithTimes & { plane: Plane }
+export type ComponentWithStatus = Database['public']['Tables']['aircraft_components']['Row']
+export type FunctionWithStats = FunctionMaster & { user_count?: number }

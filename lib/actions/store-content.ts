@@ -88,7 +88,7 @@ export async function getStoreContent(): Promise<{
       return { success: false, error: error.message }
     }
 
-    return { success: true, data: data as StoreContent }
+    return { success: true, data: data as unknown as StoreContent }
   } catch (error) {
     console.error('Error in getStoreContent:', error)
     return { success: false, error: 'Failed to fetch store content' }
@@ -136,7 +136,7 @@ export async function updateStoreContent(
       .update({
         ...updates,
         updated_by: user.id,
-      })
+      } as any)
       .eq('id', existing.id)
 
     if (error) {
