@@ -21,14 +21,16 @@
 - ✅ **Member Management** - User administration, document approval, function assignment
 - ✅ **Reservations** - Calendar-based booking with conflict detection
 - ✅ **Flight Logs** - Comprehensive logging with approval workflow and locking
-- ✅ **Skydive Manifest** - Complete load management with tandem and sport jumpers (NEW)
+- ✅ **Skydive Manifest** - Complete load management with tandem and sport jumpers
+- ✅ **Store Management** - CMS for tandem store with voucher customization (NEW)
 - ✅ **Documents** - Club library with categories, search, and expiry tracking
 - ✅ **Endorsements** - Aviation ratings (SEP, MEP, IR) with separate IR expiry tracking
 - ✅ **Billing & Accounting** - Split charges, cost centers, atomic reversals
 - ✅ **Settings** - Functions, membership types, fees, board contact information
 - ✅ **Permissions** - Granular RBAC (role-based + function-based)
 
-### Recent Additions (November 2025)
+### Recent Additions (November-December 2025)
+- 🆕 **Store CMS** - Full content management for tandem store with custom voucher features
 - 🆕 **Skydive Manifest System** - Complete load management with flight status progression, tandem pairs, slot management
 - 🆕 **Endorsement System** - Centralized endorsements with IR (Instrument Rating) support
 - 🆕 **Board Contact Settings** - Configurable contact info for multi-club deployment

@@ -2,8 +2,7 @@
 
 **Project**: Flight Club Management System (Austrian Aviation Club)
 **Stack**: Next.js 15 + Supabase + shadcn/ui + Tailwind CSS
-**Status**: Production Ready
-**Last Updated**: November 23, 2025
+**Last Updated**: December 1, 2025
 
 ---
 
@@ -42,11 +41,11 @@ FlightHub is a production-grade web application for managing aircraft reservatio
 - **Storage**: Supabase Storage (for documents, aircraft docs, flight logs)
 
 ### Database Design
-- **Tables**: 16 core tables (users, planes, flightlog, documents, accounts, endorsements, manifest tables, etc.)
-- **Views**: 4 materialized views (active_reservations, flightlog_with_times, user_balances, functions_with_stats)
-- **Functions**: 6 PostgreSQL helper functions (including get_user_endorsement_alerts, check_slot_conflict)
+- **Tables**: Core tables (users, planes, flightlog, documents, accounts, endorsements, manifest tables, etc.)
+- **Views**: Materialized views (active_reservations, flightlog_with_times, user_balances, functions_with_stats)
+- **Functions**: PostgreSQL helper functions (including get_user_endorsement_alerts, check_slot_conflict)
 - **Security**: Row Level Security (RLS) on all tables
-- **Indexes**: 50+ strategic indexes for performance
+- **Indexes**: Strategic indexes for performance
 
 ### Testing
 - **Framework**: Jest 29.x
@@ -55,10 +54,10 @@ FlightHub is a production-grade web application for managing aircraft reservatio
 - **Coverage**: Targets app/ and lib/ directories
 
 ### Development Tools
-- **Build Tool**: Turbopack (experimental in Next.js 15)
+- **Build Tool**: Turbopack
 - **Linting**: ESLint 9 (with Next.js config)
 - **Task Running**: npm scripts
-- **Version Control**: Git + GitHub
+- **Version Control**: GitHub
 
 ---
 
@@ -84,6 +83,9 @@ flight-hub/
 │   │   ├── documents/                    # Club documents library
 │   │   ├── billing/                      # Billing/cost center management
 │   │   ├── accounting/                   # Accounting transactions (board)
+│   │   ├── store-management/             # Tandem store CMS (board only)
+│   │   │   ├── page.tsx                  # Store management tabs
+│   │   │   └── components/               # Voucher types, settings, content CMS
 │   │   ├── settings/                     # Settings (board only)
 │   │   └── permissions/                  # Function/permission management
 │   ├── auth/                             # Authentication pages
@@ -1068,9 +1070,31 @@ if (!result.success) return { error: result.error.flatten() }
 
 ---
 
-## 14. RECENT DEVELOPMENTS (November 2025)
+## 14. RECENT DEVELOPMENTS (November-December 2025)
 
-### Latest: Skydive Manifest System (Nov 23, 2025)
+### Latest: Store CMS & Voucher Customization (Dec 1, 2025)
+
+**Comprehensive Content Management System for Tandem Store**
+- **New Feature**: Full CMS for managing tandem store content and voucher types
+- **Tables Updated**: `store_content` (16 new fields), `voucher_types` (features field)
+- **Migration**: `20251127120000_add_voucher_customization.sql`
+- **Features**:
+  - 5-tab CMS interface (Home, Voucher Cards, Booking Cards, Vouchers Page, Bookings Page)
+  - Customizable page headers, subtitles, and footer text (bilingual EN/DE)
+  - Custom voucher type descriptions and bullet-point features
+  - Customizable "What's Included?" sections for vouchers and bookings
+  - Dynamic feature lists with add/remove functionality
+  - Individual voucher customization through voucher type editor
+- **UI Components**:
+  - `/app/(dashboard)/store-management/components/content-management-section.tsx` - Tabbed CMS
+  - `/app/(dashboard)/store-management/components/voucher-types-section.tsx` - Voucher editor with features
+- **Store Integration**:
+  - Vouchers page displays custom content from CMS
+  - Bookings page displays custom content from CMS
+  - Graceful fallbacks to translations if CMS not configured
+- **Result**: Fully customizable store without code changes
+
+### Skydive Manifest System (Nov 23, 2025)
 
 **Complete Load Management for Skydiving Operations**
 - **New Feature**: Full manifest system for managing skydiving operations

@@ -189,6 +189,25 @@ FlightHub is a production-grade aviation club management application built with 
 - **User Tracking:** Track if user has completed tandem jump
 **Location:** `/app/(dashboard)/manifest/`, `/lib/actions/manifest.ts`
 
+### 15. **Store CMS & Voucher Customization** ✅
+**Features:**
+- **Content Management:** 5-tab CMS interface for managing tandem store content
+  - Home page customization (hero text, features, CTAs)
+  - Voucher card customization (names, descriptions)
+  - Booking card customization (names, descriptions)
+  - Vouchers page info sections (2 customizable sections with features)
+  - Bookings page info sections (2 customizable sections with features)
+- **Voucher Type Customization:**
+  - Individual voucher descriptions (EN/DE)
+  - Custom feature bullet points per voucher (JSONB array)
+  - All text fields support bilingual content
+- **Dynamic Feature Management:** Add/remove custom features with drag-and-drop interface
+- **Bilingual Support:** All fields have EN/DE variants with graceful fallbacks
+- **Database:** Extended store_content table with 16 new fields, features JSONB on voucher_types
+- **Integration:** Tandem store pages fetch and display CMS content
+**Location:** `/app/(dashboard)/store-management/`, `/lib/actions/store-content.ts`
+**Migration:** `20251127120000_add_voucher_customization.sql`
+
 ---
 
 ## 🎯 Potential Future Enhancements
@@ -312,5 +331,5 @@ UPDATE public.users SET role = ARRAY['board'] WHERE email = 'your-email@example.
 
 ---
 
-**Last Updated:** 2025-11-23
-**Status:** Production Ready - All major features complete (14/14 features implemented)
+**Last Updated:** 2025-12-01
+**Status:** Production Ready - All major features complete (15/15 features implemented)
