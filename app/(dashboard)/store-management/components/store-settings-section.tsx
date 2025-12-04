@@ -21,8 +21,7 @@ export function StoreSettingsSection() {
     stripe_secret_key: '',
     allow_voucher_sales: true,
     allow_ticket_sales: true,
-    voucher_code_prefix: 'TDM',
-    booking_code_prefix: 'TKT',
+    allow_redeem_bookings: true,
     default_overbooking_allowed: '0',
   })
 
@@ -43,8 +42,7 @@ export function StoreSettingsSection() {
         stripe_secret_key: data.stripe_secret_key || '',
         allow_voucher_sales: data.allow_voucher_sales ?? true,
         allow_ticket_sales: data.allow_ticket_sales ?? true,
-        voucher_code_prefix: data.voucher_code_prefix || 'TDM',
-        booking_code_prefix: data.booking_code_prefix || 'TKT',
+        allow_redeem_bookings: data.allow_redeem_bookings ?? true,
         default_overbooking_allowed: data.default_overbooking_allowed?.toString() || '0',
       })
     }
@@ -64,8 +62,7 @@ export function StoreSettingsSection() {
       stripe_secret_key: formData.stripe_secret_key,
       allow_voucher_sales: formData.allow_voucher_sales,
       allow_ticket_sales: formData.allow_ticket_sales,
-      voucher_code_prefix: formData.voucher_code_prefix,
-      booking_code_prefix: formData.booking_code_prefix,
+      allow_redeem_bookings: formData.allow_redeem_bookings,
       default_overbooking_allowed: parseInt(formData.default_overbooking_allowed) || 0,
     }
 
@@ -144,34 +141,6 @@ export function StoreSettingsSection() {
             </p>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="voucher_code_prefix">Voucher Code Prefix</Label>
-              <Input
-                id="voucher_code_prefix"
-                value={formData.voucher_code_prefix}
-                onChange={(e) => setFormData({ ...formData, voucher_code_prefix: e.target.value.toUpperCase() })}
-                placeholder="TDM"
-              />
-              <p className="text-xs text-muted-foreground">
-                E.g., TDM-2025-ABC123
-              </p>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="booking_code_prefix">Booking Code Prefix</Label>
-              <Input
-                id="booking_code_prefix"
-                value={formData.booking_code_prefix}
-                onChange={(e) => setFormData({ ...formData, booking_code_prefix: e.target.value.toUpperCase() })}
-                placeholder="TKT"
-              />
-              <p className="text-xs text-muted-foreground">
-                E.g., TKT-2025-XYZ789
-              </p>
-            </div>
-          </div>
-
           <div className="space-y-2">
             <Label htmlFor="default_overbooking_allowed">Default Overbooking Slots</Label>
             <Input
@@ -219,6 +188,20 @@ export function StoreSettingsSection() {
               id="allow_ticket_sales"
               checked={formData.allow_ticket_sales}
               onCheckedChange={(checked) => setFormData({ ...formData, allow_ticket_sales: checked })}
+            />
+          </div>
+
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5">
+              <Label htmlFor="allow_redeem_bookings">Allow Voucher Redemption</Label>
+              <p className="text-sm text-muted-foreground">
+                Enable voucher holders to redeem and book dates (prices hidden)
+              </p>
+            </div>
+            <Switch
+              id="allow_redeem_bookings"
+              checked={formData.allow_redeem_bookings}
+              onCheckedChange={(checked) => setFormData({ ...formData, allow_redeem_bookings: checked })}
             />
           </div>
         </div>

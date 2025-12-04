@@ -83,13 +83,8 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Get store settings for voucher code prefix
-    const { data: settings } = await supabase
-      .from('store_settings')
-      .select('voucher_code_prefix')
-      .single()
-
-    const prefix = settings?.voucher_code_prefix || 'TDM'
+    // Use voucher type's code prefix
+    const prefix = voucherType.code_prefix || 'TDM'
 
     // Generate unique voucher code
     let voucherCode = generateVoucherCode(prefix)

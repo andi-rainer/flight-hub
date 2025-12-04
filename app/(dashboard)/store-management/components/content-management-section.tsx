@@ -8,9 +8,9 @@ import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Switch } from '@/components/ui/switch'
-import { Plus, Trash2 } from 'lucide-react'
+import { Plus, Trash2, Upload, FileText, X } from 'lucide-react'
 import { toast } from 'sonner'
-import { getStoreContent, updateStoreContent, type StoreContent } from '@/lib/actions/store-content'
+import { getStoreContent, updateStoreContent, uploadTermsPDF, deleteTermsPDF, type StoreContent } from '@/lib/actions/store-content'
 
 interface Feature {
   text: string
@@ -21,6 +21,7 @@ export function ContentManagementSection() {
   const [content, setContent] = useState<StoreContent | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
+  const [isUploadingTerms, setIsUploadingTerms] = useState<'en' | 'de' | null>(null)
 
   useEffect(() => {
     loadContent()
@@ -50,6 +51,12 @@ export function ContentManagementSection() {
         booking_card_subtitle_de: result.data.booking_card_subtitle_de ?? '',
         booking_card_description: result.data.booking_card_description ?? '',
         booking_card_description_de: result.data.booking_card_description_de ?? '',
+        redeem_card_title: result.data.redeem_card_title ?? '',
+        redeem_card_title_de: result.data.redeem_card_title_de ?? '',
+        redeem_card_subtitle: result.data.redeem_card_subtitle ?? '',
+        redeem_card_subtitle_de: result.data.redeem_card_subtitle_de ?? '',
+        redeem_card_description: result.data.redeem_card_description ?? '',
+        redeem_card_description_de: result.data.redeem_card_description_de ?? '',
         vouchers_page_title: result.data.vouchers_page_title ?? '',
         vouchers_page_title_de: result.data.vouchers_page_title_de ?? '',
         vouchers_page_subtitle: result.data.vouchers_page_subtitle ?? '',
@@ -119,6 +126,70 @@ export function ContentManagementSection() {
     setContent({ ...content, [key]: features })
   }
 
+  const handleTermsUpload = async (event: React.ChangeEvent<HTMLInputElement>, language: 'en' | 'de') => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    // Validate file type
+    if (file.type !== 'application/pdf') {
+      toast.error('Only PDF files are allowed')
+      return
+    }
+
+    // Validate file size (max 10MB)
+    const maxSize = 10 * 1024 * 1024
+    if (file.size > maxSize) {
+      toast.error('File size must be less than 10MB')
+      return
+    }
+
+    setIsUploadingTerms(language)
+
+    try {
+      const result = await uploadTermsPDF(file, language)
+
+      if (result.success && result.url) {
+        toast.success(`Terms & Conditions (${language.toUpperCase()}) uploaded successfully`)
+        // Reload content to get updated URL
+        await loadContent()
+      } else {
+        toast.error(result.error || 'Failed to upload PDF')
+      }
+    } catch (error) {
+      console.error('Upload error:', error)
+      toast.error('Failed to upload PDF')
+    } finally {
+      setIsUploadingTerms(null)
+      // Reset file input
+      event.target.value = ''
+    }
+  }
+
+  const handleTermsDelete = async (language: 'en' | 'de') => {
+    if (!confirm(`Are you sure you want to delete the ${language.toUpperCase()} Terms & Conditions PDF?`)) {
+      return
+    }
+
+    setIsUploadingTerms(language)
+
+    try {
+      const result = await deleteTermsPDF(language)
+
+      if (result.success) {
+        toast.success(`Terms & Conditions (${language.toUpperCase()}) deleted successfully`)
+        // Reload content to get updated state
+        await loadContent()
+      } else {
+        toast.error(result.error || 'Failed to delete PDF')
+      }
+    } catch (error) {
+      console.error('Delete error:', error)
+      toast.error('Failed to delete PDF')
+    } finally {
+      setIsUploadingTerms(null)
+    }
+  }
+
   const renderFeatureList = (section: string, title: string) => {
     if (!content) return null
     const key = `${section}_features` as keyof StoreContent
@@ -185,10 +256,11 @@ export function ContentManagementSection() {
   return (
     <div className="space-y-6">
       <Tabs defaultValue="home" className="w-full">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="home">Home</TabsTrigger>
           <TabsTrigger value="voucher-cards">Voucher Cards</TabsTrigger>
           <TabsTrigger value="booking-cards">Booking Cards</TabsTrigger>
+          <TabsTrigger value="redeem-cards">Redeem Cards</TabsTrigger>
           <TabsTrigger value="vouchers-page">Vouchers Page</TabsTrigger>
           <TabsTrigger value="bookings-page">Bookings Page</TabsTrigger>
         </TabsList>
@@ -403,6 +475,78 @@ export function ContentManagementSection() {
               </div>
 
               {renderFeatureList('booking_card', 'Card Features')}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* REDEEM CARDS TAB */}
+        <TabsContent value="redeem-cards" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Redeem Card Content (Home Page)</CardTitle>
+              <CardDescription>Content for the redeem voucher card on the homepage</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Card Title (English)</Label>
+                  <Input
+                    value={content.redeem_card_title}
+                    onChange={(e) => setContent({ ...content, redeem_card_title: e.target.value })}
+                    placeholder="Redeem Voucher"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Card Title (German)</Label>
+                  <Input
+                    value={content.redeem_card_title_de}
+                    onChange={(e) => setContent({ ...content, redeem_card_title_de: e.target.value })}
+                    placeholder="Gutschein einlösen"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Card Subtitle (English)</Label>
+                  <Input
+                    value={content.redeem_card_subtitle}
+                    onChange={(e) => setContent({ ...content, redeem_card_subtitle: e.target.value })}
+                    placeholder="Already have a voucher?"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Card Subtitle (German)</Label>
+                  <Input
+                    value={content.redeem_card_subtitle_de}
+                    onChange={(e) => setContent({ ...content, redeem_card_subtitle_de: e.target.value })}
+                    placeholder="Haben Sie bereits einen Gutschein?"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Card Description (English)</Label>
+                  <Textarea
+                    value={content.redeem_card_description}
+                    onChange={(e) => setContent({ ...content, redeem_card_description: e.target.value })}
+                    placeholder="Book your jump date here..."
+                    rows={3}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Card Description (German)</Label>
+                  <Textarea
+                    value={content.redeem_card_description_de}
+                    onChange={(e) => setContent({ ...content, redeem_card_description_de: e.target.value })}
+                    placeholder="Buchen Sie hier Ihr Sprungdatum..."
+                    rows={3}
+                  />
+                </div>
+              </div>
+
+              {renderFeatureList('redeem_card', 'Card Features')}
             </CardContent>
           </Card>
         </TabsContent>
@@ -674,6 +818,107 @@ export function ContentManagementSection() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Terms & Conditions Upload */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Terms & Conditions</CardTitle>
+          <CardDescription>
+            Upload PDF documents that customers must accept before purchasing
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {/* English Terms */}
+          <div className="space-y-3">
+            <Label>Terms & Conditions (English)</Label>
+            {content.terms_url ? (
+              <div className="flex items-center gap-2 p-3 border rounded-md bg-muted/50">
+                <FileText className="h-5 w-5 text-blue-600" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium truncate">Terms & Conditions (EN)</p>
+                  <a
+                    href={content.terms_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-blue-600 hover:underline truncate block"
+                  >
+                    View PDF
+                  </a>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => handleTermsDelete('en')}
+                  disabled={isUploadingTerms === 'en'}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <Input
+                  type="file"
+                  accept=".pdf,application/pdf"
+                  onChange={(e) => handleTermsUpload(e, 'en')}
+                  disabled={isUploadingTerms === 'en'}
+                  className="flex-1"
+                />
+                {isUploadingTerms === 'en' && (
+                  <div className="text-sm text-muted-foreground">Uploading...</div>
+                )}
+              </div>
+            )}
+            <p className="text-xs text-muted-foreground">
+              PDF file, max 10MB. This will be presented to English-speaking customers.
+            </p>
+          </div>
+
+          {/* German Terms */}
+          <div className="space-y-3">
+            <Label>Terms & Conditions (German)</Label>
+            {content.terms_url_de ? (
+              <div className="flex items-center gap-2 p-3 border rounded-md bg-muted/50">
+                <FileText className="h-5 w-5 text-blue-600" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium truncate">Terms & Conditions (DE)</p>
+                  <a
+                    href={content.terms_url_de}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-blue-600 hover:underline truncate block"
+                  >
+                    View PDF
+                  </a>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => handleTermsDelete('de')}
+                  disabled={isUploadingTerms === 'de'}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <Input
+                  type="file"
+                  accept=".pdf,application/pdf"
+                  onChange={(e) => handleTermsUpload(e, 'de')}
+                  disabled={isUploadingTerms === 'de'}
+                  className="flex-1"
+                />
+                {isUploadingTerms === 'de' && (
+                  <div className="text-sm text-muted-foreground">Uploading...</div>
+                )}
+              </div>
+            )}
+            <p className="text-xs text-muted-foreground">
+              PDF file, max 10MB. This will be presented to German-speaking customers (falls back to English if not set).
+            </p>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Save Button (Fixed at bottom) */}
       <Card>

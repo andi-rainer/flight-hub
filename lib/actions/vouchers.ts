@@ -74,7 +74,13 @@ export async function getVouchers(filters?: {
       *,
       voucher_type:voucher_types(*),
       redeemed_by_user:users!vouchers_redeemed_by_fkey(id, name, surname),
-      redeemed_for_user:users!vouchers_redeemed_for_user_id_fkey(id, name, surname)
+      redeemed_for_user:users!vouchers_redeemed_for_user_id_fkey(id, name, surname),
+      reserved_booking:ticket_bookings!vouchers_reserved_booking_id_fkey(
+        id,
+        booking_code,
+        operation_day:skydive_operation_days(operation_date),
+        timeframe:manifest_booking_timeframes(start_time, end_time)
+      )
     `)
 
   if (filters?.status) {
@@ -252,13 +258,18 @@ export async function createManualVoucher(data: {
     return { success: false, error: 'Not authorized - board members only' }
   }
 
-  // Get settings for prefix
-  const { data: settings } = await supabase
-    .from('store_settings')
-    .select('voucher_code_prefix')
+  // Get voucher type to use its code prefix
+  const { data: voucherType } = await supabase
+    .from('voucher_types')
+    .select('code_prefix')
+    .eq('id', data.voucherTypeId)
     .single()
 
-  const prefix = settings?.voucher_code_prefix || 'TDM'
+  if (!voucherType) {
+    return { success: false, error: 'Voucher type not found' }
+  }
+
+  const prefix = voucherType.code_prefix || 'TDM'
 
   // Generate voucher code
   const year = new Date().getFullYear()

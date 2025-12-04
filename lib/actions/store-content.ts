@@ -30,6 +30,13 @@ export interface StoreContent {
   booking_card_description: string
   booking_card_description_de: string
   booking_card_features: StoreContentFeature[]
+  redeem_card_title: string
+  redeem_card_title_de: string
+  redeem_card_subtitle: string
+  redeem_card_subtitle_de: string
+  redeem_card_description: string
+  redeem_card_description_de: string
+  redeem_card_features: StoreContentFeature[]
   vouchers_page_title: string
   vouchers_page_title_de: string
   vouchers_page_subtitle: string
@@ -144,5 +151,189 @@ export async function updateStoreContent(
   } catch (error) {
     console.error('Error in updateStoreContent:', error)
     return { success: false, error: 'Failed to update store content' }
+  }
+}
+
+export async function uploadTermsPDF(
+  file: File,
+  language: 'en' | 'de'
+): Promise<{
+  success: boolean
+  url?: string
+  error?: string
+}> {
+  try {
+    const supabase = await createClient()
+
+    // Check permissions
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      return { success: false, error: 'Not authenticated' }
+    }
+
+    const { data: profile } = await supabase
+      .from('users')
+      .select('role')
+      .eq('id', user.id)
+      .single()
+
+    if (!profile || !profile.role?.includes('board')) {
+      return { success: false, error: 'Unauthorized' }
+    }
+
+    // Validate file type
+    if (file.type !== 'application/pdf') {
+      return { success: false, error: 'Only PDF files are allowed' }
+    }
+
+    // Validate file size (max 10MB)
+    const maxSize = 10 * 1024 * 1024
+    if (file.size > maxSize) {
+      return { success: false, error: 'File size must be less than 10MB' }
+    }
+
+    // Create file path
+    const timestamp = Date.now()
+    const fileName = `terms-${language}-${timestamp}.pdf`
+    const filePath = `terms/${fileName}`
+
+    // Upload to tandem-documents bucket (public)
+    const { error: uploadError } = await supabase.storage
+      .from('tandem-documents')
+      .upload(filePath, file, {
+        contentType: 'application/pdf',
+        upsert: false,
+      })
+
+    if (uploadError) {
+      console.error('Error uploading file:', uploadError)
+      return { success: false, error: uploadError.message }
+    }
+
+    // Get public URL
+    const { data: { publicUrl } } = supabase.storage
+      .from('tandem-documents')
+      .getPublicUrl(filePath)
+
+    // Update store content with the URL
+    const { data: existing } = await supabase
+      .from('store_content')
+      .select('id')
+      .single()
+
+    if (!existing) {
+      return { success: false, error: 'Store content not found' }
+    }
+
+    const updateField = language === 'en' ? 'terms_url' : 'terms_url_de'
+    const { error: updateError } = await supabase
+      .from('store_content')
+      .update({
+        [updateField]: publicUrl,
+        updated_by: user.id,
+      })
+      .eq('id', existing.id)
+
+    if (updateError) {
+      console.error('Error updating store content:', updateError)
+      return { success: false, error: updateError.message }
+    }
+
+    // Revalidate cache
+    revalidatePath('/store-management')
+
+    return { success: true, url: publicUrl }
+  } catch (error) {
+    console.error('Error in uploadTermsPDF:', error)
+    return { success: false, error: 'Failed to upload terms PDF' }
+  }
+}
+
+export async function deleteTermsPDF(
+  language: 'en' | 'de'
+): Promise<{
+  success: boolean
+  error?: string
+}> {
+  try {
+    const supabase = await createClient()
+
+    // Check permissions
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      return { success: false, error: 'Not authenticated' }
+    }
+
+    const { data: profile } = await supabase
+      .from('users')
+      .select('role')
+      .eq('id', user.id)
+      .single()
+
+    if (!profile || !profile.role?.includes('board')) {
+      return { success: false, error: 'Unauthorized' }
+    }
+
+    // Get current URL to extract file path
+    const { data: storeContent } = await supabase
+      .from('store_content')
+      .select('terms_url, terms_url_de')
+      .single()
+
+    if (!storeContent) {
+      return { success: false, error: 'Store content not found' }
+    }
+
+    const currentUrl = language === 'en' ? storeContent.terms_url : storeContent.terms_url_de
+
+    if (currentUrl) {
+      // Extract file path from URL
+      const urlParts = currentUrl.split('/tandem-documents/')
+      if (urlParts.length > 1) {
+        const filePath = urlParts[1]
+
+        // Delete file from storage
+        const { error: deleteError } = await supabase.storage
+          .from('tandem-documents')
+          .remove([filePath])
+
+        if (deleteError) {
+          console.error('Error deleting file:', deleteError)
+          // Continue anyway to clear the URL
+        }
+      }
+    }
+
+    // Clear the URL in store_content
+    const { data: existing } = await supabase
+      .from('store_content')
+      .select('id')
+      .single()
+
+    if (!existing) {
+      return { success: false, error: 'Store content not found' }
+    }
+
+    const updateField = language === 'en' ? 'terms_url' : 'terms_url_de'
+    const { error: updateError } = await supabase
+      .from('store_content')
+      .update({
+        [updateField]: null,
+        updated_by: user.id,
+      })
+      .eq('id', existing.id)
+
+    if (updateError) {
+      console.error('Error updating store content:', updateError)
+      return { success: false, error: updateError.message }
+    }
+
+    // Revalidate cache
+    revalidatePath('/store-management')
+
+    return { success: true }
+  } catch (error) {
+    console.error('Error in deleteTermsPDF:', error)
+    return { success: false, error: 'Failed to delete terms PDF' }
   }
 }

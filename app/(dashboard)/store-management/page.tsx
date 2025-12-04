@@ -2,6 +2,7 @@ import { Metadata } from 'next'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Store } from 'lucide-react'
 import { VoucherTypesSection } from './components/voucher-types-section'
+import { TicketTypesSection } from './components/ticket-types-section'
 import { StoreSettingsSection } from './components/store-settings-section'
 import { ContentManagementSection } from './components/content-management-section'
 
@@ -27,6 +28,7 @@ export default function StoreManagementPage() {
         <TabsList>
           <TabsTrigger value="settings">Store Settings</TabsTrigger>
           <TabsTrigger value="vouchers">Voucher Types</TabsTrigger>
+          <TabsTrigger value="tickets">Ticket Types</TabsTrigger>
           <TabsTrigger value="content">Content Management</TabsTrigger>
         </TabsList>
 
@@ -37,6 +39,11 @@ export default function StoreManagementPage() {
         <TabsContent value="vouchers" className="space-y-4">
           <VoucherTypesSection />
         </TabsContent>
+
+        <TabsContent value="tickets" className="space-y-4">
+          <TicketTypesSection />
+        </TabsContent>
+
         <TabsContent value="content" className="space-y-4">
           <ContentManagementSection />
         </TabsContent>

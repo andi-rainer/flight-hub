@@ -56,6 +56,7 @@ export async function POST(request: NextRequest) {
       operationDayId,
       timeframeId,
       voucherTypeId,
+      ticketTypeId,
       purchaserName,
       purchaserEmail,
       purchaserPhone,
@@ -66,13 +67,20 @@ export async function POST(request: NextRequest) {
     if (
       !operationDayId ||
       !timeframeId ||
-      !voucherTypeId ||
       !purchaserName ||
       !purchaserEmail ||
       !pricePaid
     ) {
       return NextResponse.json(
         { error: 'Missing required fields' },
+        { status: 400 }
+      )
+    }
+
+    // Must have either ticketTypeId or voucherTypeId
+    if (!ticketTypeId && !voucherTypeId) {
+      return NextResponse.json(
+        { error: 'Either ticketTypeId or voucherTypeId is required' },
         { status: 400 }
       )
     }
@@ -89,27 +97,25 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Get voucher type details
-    const { data: voucherType, error: typeError } = await supabase
-      .from('voucher_types')
-      .select('*')
-      .eq('id', voucherTypeId)
-      .single()
+    // Get prefix from ticket type or voucher type
+    let prefix = 'TKT'
+    if (ticketTypeId) {
+      const { data: ticketType } = await supabase
+        .from('ticket_types')
+        .select('code_prefix')
+        .eq('id', ticketTypeId)
+        .single()
 
-    if (typeError || !voucherType) {
-      return NextResponse.json(
-        { error: 'Voucher type not found' },
-        { status: 404 }
-      )
+      prefix = ticketType?.code_prefix || 'TKT'
+    } else if (voucherTypeId) {
+      const { data: voucherType } = await supabase
+        .from('voucher_types')
+        .select('code_prefix')
+        .eq('id', voucherTypeId)
+        .single()
+
+      prefix = voucherType?.code_prefix || 'TDM'
     }
-
-    // Get store settings for booking code prefix
-    const { data: settings } = await supabase
-      .from('store_settings')
-      .select('booking_code_prefix')
-      .single()
-
-    const prefix = settings?.booking_code_prefix || 'TKT'
 
     // Generate unique booking code
     let bookingCode = generateBookingCode(prefix)
@@ -133,7 +139,8 @@ export async function POST(request: NextRequest) {
         booking_code: bookingCode,
         operation_day_id: operationDayId,
         timeframe_id: timeframeId,
-        voucher_type_id: voucherTypeId,
+        voucher_type_id: voucherTypeId || null,
+        ticket_type_id: ticketTypeId || null,
         purchaser_name: purchaserName,
         purchaser_email: purchaserEmail,
         purchaser_phone: purchaserPhone || null,
@@ -144,6 +151,7 @@ export async function POST(request: NextRequest) {
       .select(`
         *,
         voucher_type:voucher_types(*),
+        ticket_type:ticket_types(*),
         timeframe:manifest_booking_timeframes(*),
         operation_day:skydive_operation_days(*)
       `)

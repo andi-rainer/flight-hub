@@ -21,8 +21,6 @@ export function StoreSettingsSection() {
     stripe_secret_key: '',
     allow_voucher_sales: true,
     allow_ticket_sales: true,
-    voucher_code_prefix: 'TDM',
-    booking_code_prefix: 'TKT',
     default_overbooking_allowed: '0',
   })
 
@@ -43,8 +41,6 @@ export function StoreSettingsSection() {
         stripe_secret_key: data.stripe_secret_key || '',
         allow_voucher_sales: data.allow_voucher_sales ?? true,
         allow_ticket_sales: data.allow_ticket_sales ?? true,
-        voucher_code_prefix: data.voucher_code_prefix || 'TDM',
-        booking_code_prefix: data.booking_code_prefix || 'TKT',
         default_overbooking_allowed: data.default_overbooking_allowed?.toString() || '0',
       })
     }
@@ -64,8 +60,6 @@ export function StoreSettingsSection() {
       stripe_secret_key: formData.stripe_secret_key,
       allow_voucher_sales: formData.allow_voucher_sales,
       allow_ticket_sales: formData.allow_ticket_sales,
-      voucher_code_prefix: formData.voucher_code_prefix,
-      booking_code_prefix: formData.booking_code_prefix,
       default_overbooking_allowed: parseInt(formData.default_overbooking_allowed) || 0,
     }
 
@@ -142,34 +136,6 @@ export function StoreSettingsSection() {
             <p className="text-xs text-muted-foreground">
               URL to redirect customers after completing a purchase
             </p>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="voucher_code_prefix">Voucher Code Prefix</Label>
-              <Input
-                id="voucher_code_prefix"
-                value={formData.voucher_code_prefix}
-                onChange={(e) => setFormData({ ...formData, voucher_code_prefix: e.target.value.toUpperCase() })}
-                placeholder="TDM"
-              />
-              <p className="text-xs text-muted-foreground">
-                E.g., TDM-2025-ABC123
-              </p>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="booking_code_prefix">Booking Code Prefix</Label>
-              <Input
-                id="booking_code_prefix"
-                value={formData.booking_code_prefix}
-                onChange={(e) => setFormData({ ...formData, booking_code_prefix: e.target.value.toUpperCase() })}
-                placeholder="TKT"
-              />
-              <p className="text-xs text-muted-foreground">
-                E.g., TKT-2025-XYZ789
-              </p>
-            </div>
           </div>
 
           <div className="space-y-2">

@@ -9,11 +9,13 @@ import {
 } from '@/components/ui/table'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { VoucherStatusBadge } from './voucher-status-badge'
 import { CancelVoucherDialog } from './cancel-voucher-dialog'
 import { formatCurrency } from '@/lib/format'
 import { format } from 'date-fns'
-import { FileText, User, Calendar, CreditCard } from 'lucide-react'
+import { FileText, User, Calendar, CreditCard, ExternalLink } from 'lucide-react'
+import Link from 'next/link'
 
 interface VoucherListProps {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>
@@ -80,7 +82,7 @@ export async function VoucherList({ searchParams }: VoucherListProps) {
                 <TableHead>Price</TableHead>
                 <TableHead>Purchase Date</TableHead>
                 <TableHead>Valid Until</TableHead>
-                <TableHead>Redeemed</TableHead>
+                <TableHead>Reserved / Redeemed</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -144,7 +146,31 @@ export async function VoucherList({ searchParams }: VoucherListProps) {
                     )}
                   </TableCell>
                   <TableCell>
-                    {voucher.status === 'redeemed' && voucher.redeemed_at ? (
+                    {voucher.status === 'reserved' && voucher.reserved_booking ? (
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <Calendar className="h-3 w-3 text-muted-foreground" />
+                          <div className="text-sm">
+                            {format(
+                              new Date(voucher.reserved_booking.operation_day.operation_date),
+                              'dd.MM.yyyy'
+                            )}
+                          </div>
+                        </div>
+                        {voucher.reserved_booking.timeframe && (
+                          <div className="text-xs text-muted-foreground">
+                            {voucher.reserved_booking.timeframe.start_time} - {voucher.reserved_booking.timeframe.end_time}
+                          </div>
+                        )}
+                        <Link
+                          href={`/manifest?booking=${voucher.reserved_booking.id}`}
+                          className="text-xs text-primary hover:underline flex items-center gap-1"
+                        >
+                          {voucher.reserved_booking.booking_code}
+                          <ExternalLink className="h-3 w-3" />
+                        </Link>
+                      </div>
+                    ) : voucher.status === 'redeemed' && voucher.redeemed_at ? (
                       <div className="space-y-1">
                         <div className="text-sm">
                           {format(
@@ -164,9 +190,18 @@ export async function VoucherList({ searchParams }: VoucherListProps) {
                     )}
                   </TableCell>
                   <TableCell className="text-right">
-                    {voucher.status === 'active' && (
-                      <CancelVoucherDialog voucherId={voucher.id} />
-                    )}
+                    <div className="flex items-center justify-end gap-2">
+                      {voucher.status === 'reserved' && voucher.reserved_booking && (
+                        <Link href={`/manifest?booking=${voucher.reserved_booking.id}`}>
+                          <Button variant="outline" size="sm">
+                            View Booking
+                          </Button>
+                        </Link>
+                      )}
+                      {(voucher.status === 'active' || voucher.status === 'reserved') && (
+                        <CancelVoucherDialog voucherId={voucher.id} />
+                      )}
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}

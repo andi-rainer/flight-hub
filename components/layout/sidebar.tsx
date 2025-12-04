@@ -263,7 +263,7 @@ function SidebarContent({ user, onNavigate, collapsed, onToggle }: { user: User;
       </div>
 
       {/* Navigation */}
-      <ScrollArea className="flex-1 px-1 py-4">
+      <ScrollArea className="flex-1 py-4">
         <nav className="space-y-1">
           {filteredNavItems.map((item) => {
             const Icon = item.icon
