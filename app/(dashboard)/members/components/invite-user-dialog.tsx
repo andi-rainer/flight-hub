@@ -27,7 +27,7 @@ import { getMembershipTypes } from '@/lib/actions/memberships'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { Link } from '@/navigation'
-import type { FunctionWithStats, MembershipType } from '@/lib/database.types'
+import type { FunctionWithStats, MembershipType } from '@/lib/types'
 import { Checkbox } from '@/components/ui/checkbox'
 
 interface InviteUserDialogProps {

@@ -1,6 +1,6 @@
 import { createAdminClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
-import type { UserMembershipInsert } from '@/lib/database.types'
+import type { UserMembershipInsert } from '@/lib/types'
 
 export async function POST(request: Request) {
   try {

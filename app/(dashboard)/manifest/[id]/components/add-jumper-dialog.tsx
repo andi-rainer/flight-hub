@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, ReactNode, useEffect } from 'react'
-import { UserPlus, Users, CheckCircle2, XCircle, Loader2 } from 'lucide-react'
+import { UserPlus, CheckCircle2, XCircle, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -153,10 +153,11 @@ export function AddJumperDialog({
           })
 
           // Auto-populate payment amount from voucher type
-          if (result.voucher.voucher_type?.price_eur) {
+          const voucherType = result.voucher.voucher_type
+          if (voucherType?.price_eur) {
             setFormData(prev => ({
               ...prev,
-              paymentAmount: result.voucher.voucher_type.price_eur.toString(),
+              paymentAmount: voucherType.price_eur.toString(),
             }))
           }
         } else {

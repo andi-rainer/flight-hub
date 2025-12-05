@@ -1,7 +1,7 @@
 'use client'
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import type { Plane } from '@/lib/database.types'
+import type { Plane } from '@/lib/types'
 import {Table, TableBody, TableCell, TableHeader, TableRow} from "@/components/ui/table";
 import {ReactNode} from "react";
 import {Input} from "@/components/ui/input";

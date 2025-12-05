@@ -43,7 +43,7 @@ import {
 } from '@/lib/actions/operation-types'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
-import type { Plane, OperationType } from '@/lib/database.types'
+import type { Plane, OperationType } from '@/lib/types'
 import { Badge } from '@/components/ui/badge'
 
 interface OperationTypesSectionProps {

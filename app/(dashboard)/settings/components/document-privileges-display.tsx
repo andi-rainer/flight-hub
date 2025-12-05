@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { AlertTriangle } from 'lucide-react'
-import type { DocumentEndorsementPrivilege, Endorsement } from '@/lib/database.types'
+import type { DocumentEndorsementPrivilege, Endorsement } from '@/lib/types'
 
 type EndorsementPrivilege = DocumentEndorsementPrivilege & {
   endorsement: Endorsement

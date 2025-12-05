@@ -16,7 +16,7 @@ import { getUserInitials, getUserFullName } from '@/lib/utils/user'
 import { signOut } from '@/lib/actions/auth'
 import { LogOut, Settings, KeyRound, User } from 'lucide-react'
 import { useTransition } from 'react'
-import type { User as UserType } from '@/lib/database.types'
+import type { User as UserType } from '@/lib/types'
 import { LanguageSwitcher } from '@/components/language-switcher'
 
 interface UserMenuProps {

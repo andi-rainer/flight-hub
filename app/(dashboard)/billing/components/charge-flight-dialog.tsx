@@ -18,7 +18,7 @@ import { chargeFlightToUser, chargeFlightToCostCenter, splitChargeFlight } from 
 import { calculateAirportFeesForFlight } from '@/lib/actions/airport-fees'
 import { Checkbox } from '@/components/ui/checkbox'
 import { cn } from '@/lib/utils'
-import type { UnchargedFlight, CostCenter, UserBalance } from '@/lib/database.types'
+import type { UnchargedFlight, CostCenter, UserBalance } from '@/lib/types'
 
 type SplitTarget = {
   id: string

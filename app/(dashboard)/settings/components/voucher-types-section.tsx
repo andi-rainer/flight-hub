@@ -22,12 +22,11 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
-import { Badge } from '@/components/ui/badge'
 import { Switch } from '@/components/ui/switch'
 import { Plus, Pencil, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { createClient } from '@/lib/supabase/client'
-import type { VoucherType } from '@/lib/database.types'
+import type { VoucherType } from '@/lib/types'
 
 export function VoucherTypesSection() {
   const [voucherTypes, setVoucherTypes] = useState<VoucherType[]>([])
@@ -46,7 +45,7 @@ export function VoucherTypesSection() {
       console.error('Error loading voucher types:', error)
       toast.error('Failed to load voucher types')
     } else {
-      setVoucherTypes(data || [])
+      setVoucherTypes((data as unknown as VoucherType[]) || [])
     }
     setIsLoading(false)
   }
@@ -191,7 +190,7 @@ export function VoucherTypesSection() {
                     </TableCell>
                     <TableCell>
                       <Switch
-                        checked={type.active}
+                        checked={type.active ?? false}
                         onCheckedChange={() => handleToggleActive(type)}
                       />
                     </TableCell>
@@ -278,8 +277,8 @@ function VoucherTypeDialog({
         price_eur: voucherType.price_eur.toString(),
         validity_months: voucherType.validity_months?.toString() || '',
         tandem_flight_type: voucherType.tandem_flight_type || '',
-        active: voucherType.active,
-        sort_order: voucherType.sort_order.toString(),
+        active: voucherType.active ?? false,
+        sort_order: voucherType.sort_order?.toString() ?? "",
       })
     }
   }, [voucherType])

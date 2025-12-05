@@ -27,7 +27,7 @@ import {
 import { ExternalLink, AlertCircle, FileText, Loader2, Plus } from 'lucide-react'
 import { toast } from 'sonner'
 import { format } from 'date-fns'
-import type { Document, DocumentDefinition } from '@/lib/database.types'
+import type { Document, DocumentDefinition } from '@/lib/types'
 
 interface PilotDocumentsSectionProps {
   userId: string

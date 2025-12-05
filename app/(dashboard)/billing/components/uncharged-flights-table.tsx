@@ -12,7 +12,7 @@ import { format } from 'date-fns'
 import { CreditCard, User, Building2, CheckCircle2, Loader2, Info, MessageSquare, AlertTriangle, Split } from 'lucide-react'
 import { ChargeFlightDialog } from './charge-flight-dialog'
 import { batchChargeFlights, splitChargeFlight } from '@/lib/actions/billing'
-import type { UnchargedFlight, CostCenter, UserBalance } from '@/lib/database.types'
+import type { UnchargedFlight, CostCenter, UserBalance } from '@/lib/types'
 
 interface UnchargedFlightsTableProps {
   flights: UnchargedFlight[]

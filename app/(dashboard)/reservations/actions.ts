@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient, getUserProfile } from '@/lib/supabase/server'
-import type { ReservationInsert, ReservationUpdate } from '@/lib/database.types'
+import type { ReservationInsert, ReservationUpdate } from '@/lib/types'
 
 /**
  * Check if user has all mandatory documents required for their functions

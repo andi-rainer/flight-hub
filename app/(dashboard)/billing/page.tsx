@@ -8,7 +8,7 @@ import { CreditCard, Users, Building2 } from 'lucide-react'
 import { UnchargedFlightsTable } from './components/uncharged-flights-table'
 import { UserAccountsTable } from './components/user-accounts-table'
 import { CostCentersTable } from './components/cost-centers-table'
-import type { UnchargedFlight, UserBalance, CostCenter } from '@/lib/database.types'
+import type { UnchargedFlight, UserBalance, CostCenter } from '@/lib/types'
 
 async function getUnchargedFlights(): Promise<UnchargedFlight[]> {
   const supabase = await createClient()
@@ -23,7 +23,7 @@ async function getUnchargedFlights(): Promise<UnchargedFlight[]> {
     return []
   }
 
-  return data || []
+  return (data as unknown as UnchargedFlight[]) || []
 }
 
 async function getUserBalances(): Promise<UserBalance[]> {

@@ -5,7 +5,7 @@ import { ChevronDown, ChevronRight, AlertTriangle, Clock, CheckCircle2, XCircle 
 import { Badge } from '@/components/ui/badge'
 import { Card } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
-import type { DocumentEndorsementPrivilege, Endorsement } from '@/lib/database.types'
+import type { DocumentEndorsementPrivilege, Endorsement } from '@/lib/types'
 
 type EndorsementPrivilege = DocumentEndorsementPrivilege & {
   endorsement: Endorsement

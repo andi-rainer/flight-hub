@@ -2,7 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
-import type { FunctionMasterInsert, FunctionMasterUpdate } from '@/lib/database.types'
+import type { FunctionMasterInsert, FunctionMasterUpdate } from '@/lib/types'
 
 /**
  * Server actions for Settings page

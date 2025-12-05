@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react'
 import { Clock } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import {
   Table,
@@ -45,7 +44,7 @@ export function BookingTimeframesSection({
     setIsLoading(true)
     const result = await getOperationDayTimeframes(operationDayId)
     if (result.success && result.data) {
-      setTimeframes(result.data)
+      setTimeframes(result.data as Timeframe[])
     } else {
       toast.error('Failed to load timeframes')
     }

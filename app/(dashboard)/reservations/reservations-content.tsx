@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react'
 import { useTranslations } from 'next-intl'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import {
   Select,
   SelectContent,
@@ -15,7 +14,7 @@ import { ReservationCalendar } from './components/reservation-calendar'
 import { ReservationDialog } from './components/reservation-dialog'
 import { getReservations, getActiveAircraft } from './actions'
 import { createClient } from '@/lib/supabase/client'
-import type { ActiveReservation, Plane } from '@/lib/database.types'
+import type { ActiveReservation, Plane } from '@/lib/types'
 import { Plus, Filter, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 

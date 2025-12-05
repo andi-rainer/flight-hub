@@ -2,7 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
-import type { Database } from '@/lib/database.types'
+import type { Database } from '@/lib/types'
 
 type ComponentInsert = Database['public']['Tables']['aircraft_components']['Insert']
 type ComponentUpdate = Database['public']['Tables']['aircraft_components']['Update']

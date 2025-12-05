@@ -6,7 +6,7 @@ import type {
   MembershipTypeInsert,
   MembershipTypeUpdate,
   UserMembershipInsert
-} from '@/lib/database.types'
+} from '@/lib/types'
 
 /**
  * Server actions for Membership Management

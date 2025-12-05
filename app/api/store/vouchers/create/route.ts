@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/server'
 
 /**
@@ -103,10 +102,15 @@ export async function POST(request: NextRequest) {
 
     // Calculate validity period
     let validUntil = null
-    if (voucherType.validity_days) {
-      const validFrom = new Date()
-      validUntil = new Date(validFrom)
-      validUntil.setDate(validUntil.getDate() + voucherType.validity_days)
+    if (voucherType.validity_months != null) {
+      // Validate and coerce to non-negative integer
+      const months = Math.max(0, Math.floor(Number(voucherType.validity_months)))
+      if (!isNaN(months) && months > 0) {
+        const validFrom = new Date()
+        validUntil = new Date(validFrom)
+        // Add months using setMonth to handle calendar month overflow correctly
+        validUntil.setMonth(validUntil.getMonth() + months)
+      }
     }
 
     // Create voucher

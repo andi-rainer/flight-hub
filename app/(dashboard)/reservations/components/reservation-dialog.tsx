@@ -25,7 +25,7 @@ import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { toast } from 'sonner'
 import { createReservation, updateReservation, deleteReservation } from '../actions'
-import { type ActiveReservation, type Plane, type ReservationStatus } from '@/lib/database.types'
+import { type ActiveReservation, type Plane, type ReservationStatus } from '@/lib/types'
 import { Loader2, Plane as PlaneIcon, Clock, User, MessageSquare, AlertCircle, AlertTriangle, Wrench } from 'lucide-react'
 
 type AircraftWithMaintenance = Pick<Plane, 'id' | 'tail_number' | 'type' | 'color'> & {

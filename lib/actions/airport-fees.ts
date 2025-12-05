@@ -9,7 +9,7 @@ import type {
   AirportWithAircraftFees,
   AircraftAirportFeeInsert,
   AircraftAirportFeeUpdate
-} from '@/lib/database.types'
+} from '@/lib/types'
 
 /**
  * Server actions for Airport Fees management with aircraft-specific pricing

@@ -12,7 +12,7 @@ import { Loader2, AlertCircle, Sparkles } from 'lucide-react'
 import { addComponent, getTBOPresets } from '@/lib/actions/aircraft-components'
 import { toast } from 'sonner'
 import { format } from 'date-fns'
-import type { Database } from '@/lib/database.types'
+import type { Database } from '@/lib/types'
 
 // UI component types (for display)
 type UIComponentType = 'engine' | 'propeller' | 'landing_gear' | 'constant_speed_unit' | 'magneto' | 'vacuum_pump' | 'alternator' | 'starter' | 'avionics' | 'other'

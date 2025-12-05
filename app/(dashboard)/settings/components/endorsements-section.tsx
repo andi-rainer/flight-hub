@@ -36,7 +36,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
 import { toast } from 'sonner'
-import type { Endorsement } from '@/lib/database.types'
+import type { Endorsement } from '@/lib/types'
 
 export function EndorsementsSection() {
   const [endorsements, setEndorsements] = useState<Endorsement[]>([])

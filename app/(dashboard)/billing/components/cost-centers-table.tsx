@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Building2, Plus } from 'lucide-react'
 import { CreateCostCenterDialog } from './create-cost-center-dialog'
 import { EditCostCenterDialog } from './edit-cost-center-dialog'
-import type { CostCenter } from '@/lib/database.types'
+import type { CostCenter } from '@/lib/types'
 
 interface CostCentersTableProps {
   costCenters: CostCenter[]

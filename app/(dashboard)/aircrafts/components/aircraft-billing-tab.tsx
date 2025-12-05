@@ -45,7 +45,7 @@ import {
 } from '@/lib/actions/operation-types'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
-import type { Plane, OperationType, CostCenter } from '@/lib/database.types'
+import type { Plane, OperationType, CostCenter } from '@/lib/types'
 import { Badge } from '@/components/ui/badge'
 
 interface AircraftBillingTabProps {

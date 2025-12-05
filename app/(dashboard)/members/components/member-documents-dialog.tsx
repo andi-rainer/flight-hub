@@ -25,7 +25,7 @@ import { FileText, Download, Check, X, Trash2, AlertTriangle } from 'lucide-reac
 import { approveUserDocument, unapproveUserDocument, deleteUserDocument } from '@/lib/actions/members'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
-import type { Document, User } from '@/lib/database.types'
+import type { Document, User } from '@/lib/types'
 import { EndorsementSelector, type EndorsementSelection } from '@/components/endorsement-selector'
 
 interface MemberDocumentsDialogProps {

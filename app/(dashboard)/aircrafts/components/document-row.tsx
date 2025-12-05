@@ -15,7 +15,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Download, Trash2, Edit2, AlertTriangle } from 'lucide-react'
-import type { Document as AircraftDocument } from '@/lib/database.types'
+import type { Document as AircraftDocument } from '@/lib/types'
 import { deleteAircraftDocument, updateDocumentName } from '../actions'
 import { useRouter } from 'next/navigation'
 import {

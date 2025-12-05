@@ -15,7 +15,7 @@ import { AircraftMaintenanceTab } from '../components/aircraft-maintenance-tab'
 import { AircraftComponentsTab } from '../components/aircraft-components-tab'
 import { AircraftWeightBalanceTab } from '../components/aircraft-weight-balance-tab'
 import { getAircraftWithMaintenance, getMaintenanceHistory } from '../maintenance-actions'
-import type { Plane, Document as AircraftDocument, User, OperationType, CostCenter } from '@/lib/database.types'
+import type { Plane, Document as AircraftDocument, User, OperationType, CostCenter } from '@/lib/types'
 
 // Configure route to accept larger request bodies for file uploads
 export const maxDuration = 60 // Allow up to 60 seconds for file upload

@@ -22,7 +22,7 @@ import { Plus, Pencil, Trash2, Loader2, Shield, Users, AlertCircle } from 'lucid
 import { createFunction, updateFunction, deleteFunction, toggleFunctionActive } from '@/lib/actions/functions'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
-import type { FunctionWithStats } from '@/lib/database.types'
+import type { FunctionWithStats } from '@/lib/types'
 import {
   AlertDialog,
   AlertDialogAction,
