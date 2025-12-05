@@ -5,6 +5,22 @@ import { TextEncoder, TextDecoder } from 'util'
 global.TextEncoder = TextEncoder as any
 global.TextDecoder = TextDecoder as any
 
+// Polyfill for File class (needed for file upload tests in Node.js environment)
+if (typeof File === 'undefined') {
+  class FilePolyfill extends Blob {
+    public name: string
+    public lastModified: number
+
+    constructor(bits: BlobPart[], name: string, options?: FilePropertyBag) {
+      super(bits, options)
+      this.name = name
+      this.lastModified = options?.lastModified || Date.now()
+    }
+  }
+
+  global.File = FilePolyfill as any
+}
+
 // Mock Next.js navigation
 jest.mock('next/navigation', () => ({
   useRouter: () => ({
