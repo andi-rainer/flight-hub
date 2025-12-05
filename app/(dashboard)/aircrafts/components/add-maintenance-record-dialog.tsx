@@ -20,7 +20,7 @@ import { toast } from 'sonner'
 import { Loader2, Wrench } from 'lucide-react'
 import { createMaintenanceRecord } from '../maintenance-actions'
 import { getActiveAircraftComponents, overhaulComponent, updateComponent } from '@/lib/actions/aircraft-components'
-import type { ComponentWithStatus } from '@/lib/types'
+import type { ComponentWithStatus } from './component-status-card'
 
 interface AddMaintenanceRecordDialogProps {
   open: boolean
@@ -67,7 +67,7 @@ export function AddMaintenanceRecordDialog({
   async function loadComponents() {
     const result = await getActiveAircraftComponents(aircraftId)
     if (result.success && result.data) {
-      setComponents(result.data as unknown as ComponentWithStatus[])
+      setComponents(result.data as any)
     }
   }
 

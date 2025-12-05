@@ -219,7 +219,8 @@ export interface ComponentWithStatus {
   component_type_name: string | null
   aircraft_total_hours: number | null
   component_current_hours: number | null
-  position: string | null}
+  position: string | null
+}
 
 /**
  * Aircraft with availability information
