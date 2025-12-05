@@ -2480,6 +2480,99 @@ export type Database = {
           },
         ]
       }
+      pdf_design_templates: {
+        Row: {
+          active: boolean | null
+          background_image_url: string | null
+          background_opacity: number | null
+          background_position: string | null
+          border_config: Json | null
+          code: string
+          content_zones: Json | null
+          created_at: string | null
+          decorative_images: Json | null
+          description: string | null
+          description_de: string | null
+          font_config: Json | null
+          id: string
+          layout_config: Json
+          layout_type: string | null
+          logo_enabled: boolean | null
+          logo_position: Json | null
+          logo_url: string | null
+          name: string
+          name_de: string
+          page_config: Json | null
+          preview_image_url: string | null
+          qr_config: Json | null
+          sort_order: number | null
+          text_overlay_color: string | null
+          text_overlay_enabled: boolean | null
+          text_overlay_position: Json | null
+          updated_at: string | null
+        }
+        Insert: {
+          active?: boolean | null
+          background_image_url?: string | null
+          background_opacity?: number | null
+          background_position?: string | null
+          border_config?: Json | null
+          code: string
+          content_zones?: Json | null
+          created_at?: string | null
+          decorative_images?: Json | null
+          description?: string | null
+          description_de?: string | null
+          font_config?: Json | null
+          id?: string
+          layout_config?: Json
+          layout_type?: string | null
+          logo_enabled?: boolean | null
+          logo_position?: Json | null
+          logo_url?: string | null
+          name: string
+          name_de: string
+          page_config?: Json | null
+          preview_image_url?: string | null
+          qr_config?: Json | null
+          sort_order?: number | null
+          text_overlay_color?: string | null
+          text_overlay_enabled?: boolean | null
+          text_overlay_position?: Json | null
+          updated_at?: string | null
+        }
+        Update: {
+          active?: boolean | null
+          background_image_url?: string | null
+          background_opacity?: number | null
+          background_position?: string | null
+          border_config?: Json | null
+          code?: string
+          content_zones?: Json | null
+          created_at?: string | null
+          decorative_images?: Json | null
+          description?: string | null
+          description_de?: string | null
+          font_config?: Json | null
+          id?: string
+          layout_config?: Json
+          layout_type?: string | null
+          logo_enabled?: boolean | null
+          logo_position?: Json | null
+          logo_url?: string | null
+          name?: string
+          name_de?: string
+          page_config?: Json | null
+          preview_image_url?: string | null
+          qr_config?: Json | null
+          sort_order?: number | null
+          text_overlay_color?: string | null
+          text_overlay_enabled?: boolean | null
+          text_overlay_position?: Json | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       planes: {
         Row: {
           active: boolean
@@ -3022,6 +3115,28 @@ export type Database = {
           home_title: string
           home_title_de: string
           id: string
+          pdf_contact_address: string | null
+          pdf_contact_address_de: string | null
+          pdf_contact_email: string | null
+          pdf_contact_email_de: string | null
+          pdf_contact_phone: string | null
+          pdf_contact_phone_de: string | null
+          pdf_contact_website: string | null
+          pdf_contact_website_de: string | null
+          pdf_label_booking_code: string | null
+          pdf_label_booking_code_de: string | null
+          pdf_label_from: string | null
+          pdf_label_from_de: string | null
+          pdf_label_personal_message: string | null
+          pdf_label_personal_message_de: string | null
+          pdf_label_redeem_instructions: string | null
+          pdf_label_redeem_instructions_de: string | null
+          pdf_label_terms: string | null
+          pdf_label_terms_de: string | null
+          pdf_label_valid_until: string | null
+          pdf_label_valid_until_de: string | null
+          pdf_label_voucher_code: string | null
+          pdf_label_voucher_code_de: string | null
           redeem_card_description: string
           redeem_card_description_de: string
           redeem_card_features: Json
@@ -3030,6 +3145,47 @@ export type Database = {
           redeem_card_title: string
           redeem_card_title_de: string
           show_terms_on_checkout: boolean | null
+          success_back_to_home_button: string
+          success_back_to_home_button_de: string
+          success_booking_code_label: string
+          success_booking_code_label_de: string
+          success_contact_email: string
+          success_download_pdf_button: string
+          success_download_pdf_button_de: string
+          success_help_message: string
+          success_help_message_de: string
+          success_help_title: string
+          success_help_title_de: string
+          success_payment_check_email: string
+          success_payment_check_email_de: string
+          success_payment_description: string
+          success_payment_description_de: string
+          success_payment_email_message: string
+          success_payment_email_message_de: string
+          success_payment_steps: Json
+          success_payment_title: string
+          success_payment_title_de: string
+          success_purchase_another_button: string
+          success_purchase_another_button_de: string
+          success_reservation_booking_confirmed: string
+          success_reservation_booking_confirmed_de: string
+          success_reservation_check_email: string
+          success_reservation_check_email_de: string
+          success_reservation_description: string
+          success_reservation_description_de: string
+          success_reservation_email_message: string
+          success_reservation_email_message_de: string
+          success_reservation_scheduled_for: string
+          success_reservation_scheduled_for_de: string
+          success_reservation_steps: Json
+          success_reservation_title: string
+          success_reservation_title_de: string
+          success_reservation_voucher_used: string
+          success_reservation_voucher_used_de: string
+          success_voucher_code_label: string
+          success_voucher_code_label_de: string
+          success_whats_next_title: string
+          success_whats_next_title_de: string
           terms_url: string | null
           terms_url_de: string | null
           updated_at: string | null
@@ -3088,6 +3244,28 @@ export type Database = {
           home_title?: string
           home_title_de?: string
           id?: string
+          pdf_contact_address?: string | null
+          pdf_contact_address_de?: string | null
+          pdf_contact_email?: string | null
+          pdf_contact_email_de?: string | null
+          pdf_contact_phone?: string | null
+          pdf_contact_phone_de?: string | null
+          pdf_contact_website?: string | null
+          pdf_contact_website_de?: string | null
+          pdf_label_booking_code?: string | null
+          pdf_label_booking_code_de?: string | null
+          pdf_label_from?: string | null
+          pdf_label_from_de?: string | null
+          pdf_label_personal_message?: string | null
+          pdf_label_personal_message_de?: string | null
+          pdf_label_redeem_instructions?: string | null
+          pdf_label_redeem_instructions_de?: string | null
+          pdf_label_terms?: string | null
+          pdf_label_terms_de?: string | null
+          pdf_label_valid_until?: string | null
+          pdf_label_valid_until_de?: string | null
+          pdf_label_voucher_code?: string | null
+          pdf_label_voucher_code_de?: string | null
           redeem_card_description?: string
           redeem_card_description_de?: string
           redeem_card_features?: Json
@@ -3096,6 +3274,47 @@ export type Database = {
           redeem_card_title?: string
           redeem_card_title_de?: string
           show_terms_on_checkout?: boolean | null
+          success_back_to_home_button?: string
+          success_back_to_home_button_de?: string
+          success_booking_code_label?: string
+          success_booking_code_label_de?: string
+          success_contact_email?: string
+          success_download_pdf_button?: string
+          success_download_pdf_button_de?: string
+          success_help_message?: string
+          success_help_message_de?: string
+          success_help_title?: string
+          success_help_title_de?: string
+          success_payment_check_email?: string
+          success_payment_check_email_de?: string
+          success_payment_description?: string
+          success_payment_description_de?: string
+          success_payment_email_message?: string
+          success_payment_email_message_de?: string
+          success_payment_steps?: Json
+          success_payment_title?: string
+          success_payment_title_de?: string
+          success_purchase_another_button?: string
+          success_purchase_another_button_de?: string
+          success_reservation_booking_confirmed?: string
+          success_reservation_booking_confirmed_de?: string
+          success_reservation_check_email?: string
+          success_reservation_check_email_de?: string
+          success_reservation_description?: string
+          success_reservation_description_de?: string
+          success_reservation_email_message?: string
+          success_reservation_email_message_de?: string
+          success_reservation_scheduled_for?: string
+          success_reservation_scheduled_for_de?: string
+          success_reservation_steps?: Json
+          success_reservation_title?: string
+          success_reservation_title_de?: string
+          success_reservation_voucher_used?: string
+          success_reservation_voucher_used_de?: string
+          success_voucher_code_label?: string
+          success_voucher_code_label_de?: string
+          success_whats_next_title?: string
+          success_whats_next_title_de?: string
           terms_url?: string | null
           terms_url_de?: string | null
           updated_at?: string | null
@@ -3154,6 +3373,28 @@ export type Database = {
           home_title?: string
           home_title_de?: string
           id?: string
+          pdf_contact_address?: string | null
+          pdf_contact_address_de?: string | null
+          pdf_contact_email?: string | null
+          pdf_contact_email_de?: string | null
+          pdf_contact_phone?: string | null
+          pdf_contact_phone_de?: string | null
+          pdf_contact_website?: string | null
+          pdf_contact_website_de?: string | null
+          pdf_label_booking_code?: string | null
+          pdf_label_booking_code_de?: string | null
+          pdf_label_from?: string | null
+          pdf_label_from_de?: string | null
+          pdf_label_personal_message?: string | null
+          pdf_label_personal_message_de?: string | null
+          pdf_label_redeem_instructions?: string | null
+          pdf_label_redeem_instructions_de?: string | null
+          pdf_label_terms?: string | null
+          pdf_label_terms_de?: string | null
+          pdf_label_valid_until?: string | null
+          pdf_label_valid_until_de?: string | null
+          pdf_label_voucher_code?: string | null
+          pdf_label_voucher_code_de?: string | null
           redeem_card_description?: string
           redeem_card_description_de?: string
           redeem_card_features?: Json
@@ -3162,6 +3403,47 @@ export type Database = {
           redeem_card_title?: string
           redeem_card_title_de?: string
           show_terms_on_checkout?: boolean | null
+          success_back_to_home_button?: string
+          success_back_to_home_button_de?: string
+          success_booking_code_label?: string
+          success_booking_code_label_de?: string
+          success_contact_email?: string
+          success_download_pdf_button?: string
+          success_download_pdf_button_de?: string
+          success_help_message?: string
+          success_help_message_de?: string
+          success_help_title?: string
+          success_help_title_de?: string
+          success_payment_check_email?: string
+          success_payment_check_email_de?: string
+          success_payment_description?: string
+          success_payment_description_de?: string
+          success_payment_email_message?: string
+          success_payment_email_message_de?: string
+          success_payment_steps?: Json
+          success_payment_title?: string
+          success_payment_title_de?: string
+          success_purchase_another_button?: string
+          success_purchase_another_button_de?: string
+          success_reservation_booking_confirmed?: string
+          success_reservation_booking_confirmed_de?: string
+          success_reservation_check_email?: string
+          success_reservation_check_email_de?: string
+          success_reservation_description?: string
+          success_reservation_description_de?: string
+          success_reservation_email_message?: string
+          success_reservation_email_message_de?: string
+          success_reservation_scheduled_for?: string
+          success_reservation_scheduled_for_de?: string
+          success_reservation_steps?: Json
+          success_reservation_title?: string
+          success_reservation_title_de?: string
+          success_reservation_voucher_used?: string
+          success_reservation_voucher_used_de?: string
+          success_voucher_code_label?: string
+          success_voucher_code_label_de?: string
+          success_whats_next_title?: string
+          success_whats_next_title_de?: string
           terms_url?: string | null
           terms_url_de?: string | null
           updated_at?: string | null
@@ -3222,7 +3504,6 @@ export type Database = {
           allow_redeem_bookings: boolean | null
           allow_ticket_sales: boolean | null
           allow_voucher_sales: boolean | null
-          booking_code_prefix: string | null
           default_max_bookings_per_timeframe: number | null
           default_overbooking_allowed: number | null
           id: string
@@ -3231,14 +3512,12 @@ export type Database = {
           stripe_secret_key: string | null
           updated_at: string | null
           updated_by: string | null
-          voucher_code_prefix: string | null
           webhook_secret: string | null
         }
         Insert: {
           allow_redeem_bookings?: boolean | null
           allow_ticket_sales?: boolean | null
           allow_voucher_sales?: boolean | null
-          booking_code_prefix?: string | null
           default_max_bookings_per_timeframe?: number | null
           default_overbooking_allowed?: number | null
           id?: string
@@ -3247,14 +3526,12 @@ export type Database = {
           stripe_secret_key?: string | null
           updated_at?: string | null
           updated_by?: string | null
-          voucher_code_prefix?: string | null
           webhook_secret?: string | null
         }
         Update: {
           allow_redeem_bookings?: boolean | null
           allow_ticket_sales?: boolean | null
           allow_voucher_sales?: boolean | null
-          booking_code_prefix?: string | null
           default_max_bookings_per_timeframe?: number | null
           default_overbooking_allowed?: number | null
           id?: string
@@ -3263,7 +3540,6 @@ export type Database = {
           stripe_secret_key?: string | null
           updated_at?: string | null
           updated_by?: string | null
-          voucher_code_prefix?: string | null
           webhook_secret?: string | null
         }
         Relationships: [
@@ -3352,6 +3628,57 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      template_assets: {
+        Row: {
+          asset_type: string
+          created_at: string | null
+          description: string | null
+          file_size: number | null
+          file_type: string | null
+          file_url: string
+          height: number | null
+          id: string
+          name: string
+          tags: string[] | null
+          thumbnail_url: string | null
+          updated_at: string | null
+          uploaded_by: string | null
+          width: number | null
+        }
+        Insert: {
+          asset_type: string
+          created_at?: string | null
+          description?: string | null
+          file_size?: number | null
+          file_type?: string | null
+          file_url: string
+          height?: number | null
+          id?: string
+          name: string
+          tags?: string[] | null
+          thumbnail_url?: string | null
+          updated_at?: string | null
+          uploaded_by?: string | null
+          width?: number | null
+        }
+        Update: {
+          asset_type?: string
+          created_at?: string | null
+          description?: string | null
+          file_size?: number | null
+          file_type?: string | null
+          file_url?: string
+          height?: number | null
+          id?: string
+          name?: string
+          tags?: string[] | null
+          thumbnail_url?: string | null
+          updated_at?: string | null
+          uploaded_by?: string | null
+          width?: number | null
+        }
+        Relationships: []
       }
       terms_and_conditions: {
         Row: {
@@ -4222,7 +4549,11 @@ export type Database = {
           cancelled_at: string | null
           cancelled_by: string | null
           created_at: string | null
+          custom_message: string | null
+          custom_message_from: string | null
+          design_template_id: string | null
           id: string
+          language: string | null
           notes: string | null
           payment_intent_id: string | null
           price_paid_eur: number
@@ -4248,7 +4579,11 @@ export type Database = {
           cancelled_at?: string | null
           cancelled_by?: string | null
           created_at?: string | null
+          custom_message?: string | null
+          custom_message_from?: string | null
+          design_template_id?: string | null
           id?: string
+          language?: string | null
           notes?: string | null
           payment_intent_id?: string | null
           price_paid_eur: number
@@ -4274,7 +4609,11 @@ export type Database = {
           cancelled_at?: string | null
           cancelled_by?: string | null
           created_at?: string | null
+          custom_message?: string | null
+          custom_message_from?: string | null
+          design_template_id?: string | null
           id?: string
+          language?: string | null
           notes?: string | null
           payment_intent_id?: string | null
           price_paid_eur?: number
@@ -4322,6 +4661,13 @@ export type Database = {
             columns: ["cancelled_by"]
             isOneToOne: false
             referencedRelation: "users_with_functions_search"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vouchers_design_template_id_fkey"
+            columns: ["design_template_id"]
+            isOneToOne: false
+            referencedRelation: "pdf_design_templates"
             referencedColumns: ["id"]
           },
           {
@@ -5527,6 +5873,7 @@ export type Database = {
           user_id: string
         }[]
       }
+      get_default_pdf_template: { Args: never; Returns: string }
       get_recent_selections: {
         Args: { p_context: string; p_limit?: number; p_user_id: string }
         Returns: {
@@ -5783,33 +6130,3 @@ export const Constants = {
   },
 } as const
 
-
-// Helper type aliases for commonly used tables
-export type User = Database['public']['Tables']['users']['Row']
-export type Plane = Database['public']['Tables']['planes']['Row']
-export type Reservation = Database['public']['Tables']['reservations']['Row']
-export type FlightLog = Database['public']['Tables']['flightlog']['Row']
-export type Document = Database['public']['Tables']['documents']['Row']
-export type Voucher = Database['public']['Tables']['vouchers']['Row']
-export type VoucherType = Database['public']['Tables']['voucher_types']['Row']
-export type TicketType = Database['public']['Tables']['ticket_types']['Row']
-export type TicketBooking = Database['public']['Tables']['ticket_bookings']['Row']
-export type Endorsement = Database['public']['Tables']['endorsements']['Row']
-export type FunctionMaster = Database['public']['Tables']['functions_master']['Row']
-export type AircraftCgLimit = Database['public']['Tables']['aircraft_cg_limits']['Row']
-export type AircraftStation = Database['public']['Tables']['aircraft_stations']['Row']
-export type UsersWithFunctions = Database['public']['Views']['users_with_functions']['Row']
-export type UserProfile = User & { function_codes?: string[] }
-
-// Additional type aliases for views and commonly used types
-export type FlightlogWithTimes = Database['public']['Views']['flightlog_with_times']['Row']
-export type UserBalance = Database['public']['Views']['user_balances']['Row']
-export type CostCenter = Database['public']['Tables']['cost_centers']['Row']
-export type OperationType = Database['public']['Tables']['operation_types']['Row']
-export type PlaneInsert = Database['public']['Tables']['planes']['Insert']
-export type PlaneUpdate = Database['public']['Tables']['planes']['Update']
-export type FlightlogInsert = Database['public']['Tables']['flightlog']['Insert']
-export type FlightlogUpdate = Database['public']['Tables']['flightlog']['Update']
-export type UnchargedFlight = FlightlogWithTimes & { plane: Plane }
-export type ComponentWithStatus = Database['public']['Tables']['aircraft_components']['Row']
-export type FunctionWithStats = FunctionMaster & { user_count?: number }

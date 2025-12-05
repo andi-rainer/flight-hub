@@ -229,3 +229,104 @@ export interface AircraftWithAvailability extends RowType<'planes'> {
   has_upcoming_reservations: boolean
   blocking_documents_count: number
 }
+
+/**
+ * PDF Design Template - Enhanced with Visual Designer
+ */
+export interface PDFTemplate extends RowType<'pdf_design_templates'> {
+  layout_type?: 'ticket' | 'full-photo' | 'certificate' | 'minimal'
+  background_image_url?: string | null
+  background_opacity?: number | null
+  background_position?: 'center' | 'top' | 'bottom' | 'left' | 'right' | 'stretch' | null
+  logo_url?: string | null
+  logo_position?: {
+    x: number
+    y: number
+    width: number
+    height: number
+  }
+  logo_enabled?: boolean | null
+  text_overlay_enabled?: boolean | null
+  text_overlay_color?: string | null
+  text_overlay_position?: {
+    x: number
+    y: number
+    width: string | number
+    height: number
+  }
+  decorative_images?: Array<{
+    url: string
+    x: number
+    y: number
+    width: number
+    height: number
+    name?: string
+  }>
+  qr_config?: {
+    position: string
+    x: number
+    y: number
+    size: number
+    backgroundColor: string
+    foregroundColor: string
+    includeMargin: boolean
+  }
+  font_config?: {
+    titleFont: string
+    titleSize: number
+    titleColor: string
+    bodyFont: string
+    bodySize: number
+    bodyColor: string
+    labelFont: string
+    labelSize: number
+    labelColor: string
+  }
+  border_config?: {
+    enabled: boolean
+    style: string
+    width: number
+    color: string
+    cornerRadius: number
+    decorative: boolean
+  }
+  content_zones?: {
+    header: { x: number; y: number; width: number; height: number }
+    body: { x: number; y: number; width: number; height: number }
+    footer: { x: number; y: number; width: number; height: number }
+  }
+  page_config?: {
+    width: number
+    height: number
+    orientation: 'portrait' | 'landscape'
+    margins: { top: number; right: number; bottom: number; left: number }
+  }
+  layout_config: {
+    primaryColor?: string
+    secondaryColor?: string
+    accentColor?: string
+    textColor?: string
+    backgroundColor?: string
+    headerHeight?: number
+    qrPosition?: 'right' | 'bottom' | 'center'
+    qrSize?: number
+    fontFamily?: string
+    headerFont?: string
+  }
+}
+
+/**
+ * Template Asset for designer
+ */
+export interface TemplateAsset extends RowType<'template_assets'> {
+  asset_type: 'background' | 'decorative' | 'logo' | 'border'
+  tags?: string[]
+}
+
+/**
+ * Voucher with related data
+ */
+export interface VoucherWithDetails extends RowType<'vouchers'> {
+  voucher_type: VoucherType | null
+  design_template: PDFTemplate | null
+}
