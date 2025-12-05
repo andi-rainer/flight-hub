@@ -19,7 +19,7 @@ import { Download, Edit2, Trash2, Check, X } from 'lucide-react'
 import { formatDate } from '@/lib/utils/format'
 import { deleteDocument, updateDocumentName } from '../actions'
 import { toast } from 'sonner'
-import type { Document } from '@/lib/database.types'
+import type { Document } from '@/lib/types'
 
 interface DocumentWithUploader extends Document {
   uploader?: {

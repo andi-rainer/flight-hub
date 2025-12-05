@@ -2,7 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
-import type { CostCenterInsert, CostCenterUpdate } from '@/lib/database.types'
+import type { CostCenterInsert, CostCenterUpdate } from '@/lib/types'
 
 /**
  * Server actions for Cost Centers management

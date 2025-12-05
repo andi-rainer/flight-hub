@@ -46,7 +46,7 @@ import {
 import { deleteMember } from '@/lib/actions/members'
 import { toast } from 'sonner'
 import { useRouter } from 'next/navigation'
-import type { User, MembershipType, UserMembership } from '@/lib/database.types'
+import type { User, MembershipType, UserMembership } from '@/lib/types'
 
 type UserMembershipWithType = UserMembership & {
   membership_types: MembershipType | null

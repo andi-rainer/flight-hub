@@ -2,7 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
-import type { AccountInsert, AccountUpdate } from '@/lib/database.types'
+import type { AccountInsert, AccountUpdate } from '@/lib/types'
 
 /**
  * Server actions for User Accounts management

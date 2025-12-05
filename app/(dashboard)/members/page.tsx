@@ -13,7 +13,7 @@ import { EditMemberDialog } from './components/edit-member-dialog'
 import { MemberDocumentsDialog } from './components/member-documents-dialog'
 import { ManageMembershipDialog } from './components/manage-membership-dialog'
 import { FunctionsSection } from './components/functions-section'
-import type { User, Document, UserMembership, MembershipType, FunctionWithStats } from '@/lib/database.types'
+import type { User, Document, UserMembership, MembershipType, FunctionWithStats } from '@/lib/types'
 
 type UserMembershipWithType = UserMembership & {
   membership_types: MembershipType | null
@@ -241,7 +241,7 @@ async function getFunctions(): Promise<FunctionWithStats[]> {
     return []
   }
 
-  return functions || []
+  return (functions as FunctionWithStats[]) || []
 }
 
 async function getFunctionCategories() {

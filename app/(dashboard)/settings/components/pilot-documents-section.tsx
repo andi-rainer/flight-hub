@@ -28,7 +28,7 @@ import {
 import { ExternalLink, AlertCircle, FileText, Loader2, Plus, Calendar, AlertTriangle, RefreshCw } from 'lucide-react'
 import { toast } from 'sonner'
 import { format } from 'date-fns'
-import type { Document } from '@/lib/database.types'
+import type { Document } from '@/lib/types'
 import { EndorsementSelector, type EndorsementSelection } from '@/components/endorsement-selector'
 import { DocumentPrivilegesDisplay } from './document-privileges-display'
 

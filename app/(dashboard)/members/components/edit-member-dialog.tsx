@@ -18,7 +18,7 @@ import { resendInvitation } from '@/lib/actions/members'
 import { updateMemberProfile } from '@/lib/actions/settings'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
-import type { User, FunctionWithStats } from '@/lib/database.types'
+import type { User, FunctionWithStats } from '@/lib/types'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Separator } from '@/components/ui/separator'
 

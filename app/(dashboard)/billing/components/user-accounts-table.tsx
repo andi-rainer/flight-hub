@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Users } from 'lucide-react'
 import { UserAccountDetailsDialog } from './user-account-details-dialog'
-import type { UserBalance } from '@/lib/database.types'
+import type { UserBalance } from '@/lib/types'
 
 interface UserAccountsTableProps {
   balances: UserBalance[]

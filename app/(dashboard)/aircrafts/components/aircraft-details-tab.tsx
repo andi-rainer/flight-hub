@@ -12,7 +12,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog'
 import { Pencil } from 'lucide-react'
-import type { Plane } from '@/lib/database.types'
+import type { Plane } from '@/lib/types'
 import { AircraftForm } from './aircraft-form'
 import { useState } from 'react'
 import { format } from 'date-fns'

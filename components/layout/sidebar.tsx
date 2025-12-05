@@ -10,7 +10,7 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
 import { Badge } from '@/components/ui/badge'
 import { createClient } from '@/lib/supabase/client'
-import type { User } from '@/lib/database.types'
+import type { User } from '@/lib/types'
 import { hasPermission, type Permission } from '@/lib/permissions'
 import {
   LayoutDashboard,

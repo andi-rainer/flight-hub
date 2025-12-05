@@ -13,7 +13,7 @@ import { toast } from 'sonner'
 import { CgLimitDialog } from './cg-limit-dialog'
 import { StationDialog } from './station-dialog'
 import { ConvertMassUnitDialog } from './convert-mass-unit-dialog'
-import type { Plane } from '@/lib/database.types'
+import type { Plane } from '@/lib/types'
 
 interface CgLimit {
   id: string

@@ -15,11 +15,11 @@ import {
 } from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
-import { Loader2, ExternalLink, Plus, X, Upload, FileText } from 'lucide-react'
+import { Loader2, ExternalLink, Plus, X, FileText } from 'lucide-react'
 import { toast } from 'sonner'
 import { getMembershipTypes } from '@/lib/actions/memberships'
 import { createClient } from '@/lib/supabase/client'
-import type { MembershipType } from '@/lib/database.types'
+import type { MembershipType } from '@/lib/types'
 
 interface CustomField {
   id: string

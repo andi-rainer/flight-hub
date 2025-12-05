@@ -20,7 +20,7 @@ import { Plus, Pencil, Trash2, Loader2 } from 'lucide-react'
 import { createFunction, updateFunction, deleteFunction } from '@/lib/actions/settings'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
-import type { FunctionMaster } from '@/lib/database.types'
+import type { FunctionMaster } from '@/lib/types'
 import {
   AlertDialog,
   AlertDialogAction,

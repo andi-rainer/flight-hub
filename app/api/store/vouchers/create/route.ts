@@ -103,10 +103,10 @@ export async function POST(request: NextRequest) {
 
     // Calculate validity period
     let validUntil = null
-    if (voucherType.validity_days) {
+    if (voucherType.validity_months) {
       const validFrom = new Date()
       validUntil = new Date(validFrom)
-      validUntil.setDate(validUntil.getDate() + voucherType.validity_days)
+      validUntil.setDate(validUntil.getDate() + voucherType.validity_months)
     }
 
     // Create voucher

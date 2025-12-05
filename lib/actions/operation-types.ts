@@ -2,7 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
-import type { OperationTypeInsert, OperationTypeUpdate } from '@/lib/database.types'
+import type { OperationTypeInsert, OperationTypeUpdate } from '@/lib/types'
 
 /**
  * Server actions for Operation Types Management

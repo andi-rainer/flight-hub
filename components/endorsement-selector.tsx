@@ -15,7 +15,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
-import type { Endorsement } from '@/lib/database.types'
+import type { Endorsement } from '@/lib/types'
 
 export interface EndorsementSelection {
   endorsementId: string

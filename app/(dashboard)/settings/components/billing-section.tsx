@@ -3,7 +3,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Info } from 'lucide-react'
-import type { Plane } from '@/lib/database.types'
+import type { Plane } from '@/lib/types'
 
 interface BillingSectionProps {
   aircrafts: Plane[]

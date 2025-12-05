@@ -218,7 +218,7 @@ export async function cancelBooking(bookingId: string, reason: string) {
   }
 
   // Decrement timeframe booking count if it was pending or confirmed
-  if (booking.status === 'pending' || booking.status === 'confirmed') {
+  if ((booking.status === 'pending' || booking.status === 'confirmed') && booking.timeframe_id) {
     await auth.supabase.rpc('decrement_timeframe_bookings', {
       timeframe_id: booking.timeframe_id
     })

@@ -17,7 +17,7 @@ import { Loader2, User as UserIcon, Mail, Shield, Briefcase, Phone, Calendar, Ma
 import { updateUserProfile, updateUserEmail, updateUserMembershipDates } from '@/lib/actions/settings'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
-import type { User } from '@/lib/database.types'
+import type { User } from '@/lib/types'
 
 type UserWithFunctionNames = User & {
   functionNames?: string[]

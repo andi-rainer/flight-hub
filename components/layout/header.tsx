@@ -5,7 +5,7 @@ import { useTranslations } from 'next-intl'
 import { MobileSidebar } from './sidebar'
 import { UserMenu } from './user-menu'
 import { ModeToggle } from './mode-toggle'
-import type { User } from '@/lib/database.types'
+import type { User } from '@/lib/types'
 
 interface HeaderProps {
   user: User

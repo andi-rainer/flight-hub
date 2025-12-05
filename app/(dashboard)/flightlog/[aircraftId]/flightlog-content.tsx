@@ -21,7 +21,7 @@ import {
 import { FlightlogDialog } from './components/flightlog-dialog'
 import { getFlightlogs, getAllUsers, getActiveAircraftForFlightlog, getOperationTypesForPlane } from '../actions'
 import { createClient } from '@/lib/supabase/client'
-import type { FlightlogWithTimes, OperationType, UserProfile } from '@/lib/database.types'
+import type { FlightlogWithTimes, OperationType, UserProfile } from '@/lib/types'
 import { Plus, Filter, Loader2, Lock, ExternalLink, Plane as PlaneIcon, ArrowLeft, Clock, Target, AlertTriangle } from 'lucide-react'
 import { toast } from 'sonner'
 import { format } from 'date-fns'

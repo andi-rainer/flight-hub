@@ -41,7 +41,7 @@ import {
   deleteAircraftAirportFee,
   getPlanes,
 } from '@/lib/actions/airport-fees'
-import type { AirportWithAircraftFees, AircraftAirportFee, Plane } from '@/lib/database.types'
+import type { AirportWithAircraftFees, AircraftAirportFee, Plane } from '@/lib/types'
 
 export function AirportFeesSection() {
   const [airports, setAirports] = useState<AirportWithAircraftFees[]>([])

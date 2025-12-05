@@ -39,7 +39,7 @@ import {
 } from '@/components/ui/select'
 import { Shield, Plus, Pencil, Trash2, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
-import type { DocumentDefinition, FunctionMaster } from '@/lib/database.types'
+import type { DocumentDefinition, FunctionMaster } from '@/lib/types'
 
 interface DocumentCategory {
   id: string

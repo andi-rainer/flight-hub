@@ -10,7 +10,7 @@ import { Loader2 } from 'lucide-react'
 import { updateUserProfile, updateUserEmail, updateUserPassword } from '@/lib/actions/settings'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
-import type { User } from '@/lib/database.types'
+import type { User } from '@/lib/types'
 
 interface ProfileSectionProps {
   user: User

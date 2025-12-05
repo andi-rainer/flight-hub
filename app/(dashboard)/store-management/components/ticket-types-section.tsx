@@ -60,7 +60,7 @@ export function TicketTypesSection() {
       console.error('Error loading ticket types:', error)
       toast.error('Failed to load ticket types')
     } else {
-      setTicketTypes(data || [])
+      setTicketTypes((data as unknown as TicketType[]) || [])
     }
     setIsLoading(false)
   }

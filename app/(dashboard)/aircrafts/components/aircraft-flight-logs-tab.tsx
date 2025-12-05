@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Button } from '@/components/ui/button'
 import { FileText, Lock, Download } from 'lucide-react'
-import type { FlightlogWithTimes } from '@/lib/database.types'
+import type { FlightlogWithTimes } from '@/lib/types'
 import { FlightLogsPagination } from './flight-logs-pagination'
 import { getTranslations } from 'next-intl/server'
 

@@ -9,7 +9,7 @@ import { MembershipTypesSection } from './membership-types-section'
 import { TandemRegistrationSection } from './tandem-registration-section'
 import { BoardContactSection } from './board-contact-section'
 import { hasPermission } from '@/lib/permissions'
-import type { User } from '@/lib/database.types'
+import type { User } from '@/lib/types'
 
 interface SettingsTabsProps {
   user: User

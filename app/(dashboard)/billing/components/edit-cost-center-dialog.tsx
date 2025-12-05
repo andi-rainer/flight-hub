@@ -11,7 +11,7 @@ import { Switch } from '@/components/ui/switch'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Loader2, AlertCircle, Trash2 } from 'lucide-react'
 import { updateCostCenter, deleteCostCenter } from '@/lib/actions/cost-centers'
-import type { CostCenter } from '@/lib/database.types'
+import type { CostCenter } from '@/lib/types'
 
 interface EditCostCenterDialogProps {
   costCenter: CostCenter

@@ -40,7 +40,7 @@ import {
 } from '@/lib/actions/memberships'
 import { toast } from 'sonner'
 import { useRouter } from 'next/navigation'
-import type { MembershipType } from '@/lib/database.types'
+import type { MembershipType } from '@/lib/types'
 
 export function MembershipTypesSection() {
   const router = useRouter()

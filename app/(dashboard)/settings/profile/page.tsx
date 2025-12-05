@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from '@/navigation'
 import { UserProfileSection } from './user-profile-section'
-import type { User } from '@/lib/database.types'
+import type { User } from '@/lib/types'
 
 type UserWithFunctionNames = User & {
   functionNames?: string[]

@@ -2,7 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { requirePermission, getCurrentUserWithFunctions, hasPermission } from '@/lib/permissions'
-import type { FlightlogInsert, FlightlogUpdate } from '@/lib/database.types'
+import type { FlightlogInsert, FlightlogUpdate } from '@/lib/types'
 
 export type FlightWarning = {
   type: 'location_disconnect' | 'flight_overlap' | 'excessive_ground_time'

@@ -3,7 +3,7 @@
 import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { requirePermission } from '@/lib/permissions'
-import type { TablesUpdate } from '@/lib/database.types'
+import type { TablesUpdate } from '@/lib/types'
 import { assignMembership } from './memberships'
 
 /**
