@@ -8,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Switch } from '@/components/ui/switch'
-import { Plus, Trash2, Upload, FileText, X } from 'lucide-react'
+import { Plus, Trash2, FileText, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { getStoreContent, updateStoreContent, uploadTermsPDF, deleteTermsPDF, type StoreContent } from '@/lib/actions/store-content'
 
@@ -79,6 +79,46 @@ export function ContentManagementSection() {
         bookings_info_section1_title_de: result.data.bookings_info_section1_title_de ?? '',
         bookings_info_section2_title: result.data.bookings_info_section2_title ?? '',
         bookings_info_section2_title_de: result.data.bookings_info_section2_title_de ?? '',
+        // Success page fields
+        success_payment_title: result.data.success_payment_title ?? '',
+        success_payment_title_de: result.data.success_payment_title_de ?? '',
+        success_payment_description: result.data.success_payment_description ?? '',
+        success_payment_description_de: result.data.success_payment_description_de ?? '',
+        success_payment_check_email: result.data.success_payment_check_email ?? '',
+        success_payment_check_email_de: result.data.success_payment_check_email_de ?? '',
+        success_payment_email_message: result.data.success_payment_email_message ?? '',
+        success_payment_email_message_de: result.data.success_payment_email_message_de ?? '',
+        success_reservation_title: result.data.success_reservation_title ?? '',
+        success_reservation_title_de: result.data.success_reservation_title_de ?? '',
+        success_reservation_description: result.data.success_reservation_description ?? '',
+        success_reservation_description_de: result.data.success_reservation_description_de ?? '',
+        success_reservation_booking_confirmed: result.data.success_reservation_booking_confirmed ?? '',
+        success_reservation_booking_confirmed_de: result.data.success_reservation_booking_confirmed_de ?? '',
+        success_reservation_voucher_used: result.data.success_reservation_voucher_used ?? '',
+        success_reservation_voucher_used_de: result.data.success_reservation_voucher_used_de ?? '',
+        success_reservation_scheduled_for: result.data.success_reservation_scheduled_for ?? '',
+        success_reservation_scheduled_for_de: result.data.success_reservation_scheduled_for_de ?? '',
+        success_reservation_check_email: result.data.success_reservation_check_email ?? '',
+        success_reservation_check_email_de: result.data.success_reservation_check_email_de ?? '',
+        success_reservation_email_message: result.data.success_reservation_email_message ?? '',
+        success_reservation_email_message_de: result.data.success_reservation_email_message_de ?? '',
+        success_whats_next_title: result.data.success_whats_next_title ?? '',
+        success_whats_next_title_de: result.data.success_whats_next_title_de ?? '',
+        success_help_title: result.data.success_help_title ?? '',
+        success_help_title_de: result.data.success_help_title_de ?? '',
+        success_help_message: result.data.success_help_message ?? '',
+        success_help_message_de: result.data.success_help_message_de ?? '',
+        success_contact_email: result.data.success_contact_email ?? '',
+        success_back_to_home_button: result.data.success_back_to_home_button ?? '',
+        success_back_to_home_button_de: result.data.success_back_to_home_button_de ?? '',
+        success_purchase_another_button: result.data.success_purchase_another_button ?? '',
+        success_purchase_another_button_de: result.data.success_purchase_another_button_de ?? '',
+        success_voucher_code_label: result.data.success_voucher_code_label ?? '',
+        success_voucher_code_label_de: result.data.success_voucher_code_label_de ?? '',
+        success_booking_code_label: result.data.success_booking_code_label ?? '',
+        success_booking_code_label_de: result.data.success_booking_code_label_de ?? '',
+        success_download_pdf_button: result.data.success_download_pdf_button ?? '',
+        success_download_pdf_button_de: result.data.success_download_pdf_button_de ?? '',
         terms_url: result.data.terms_url ?? '',
         terms_url_de: result.data.terms_url_de ?? '',
       })
@@ -233,6 +273,71 @@ export function ContentManagementSection() {
     )
   }
 
+  const renderStepsList = (fieldName: string, title: string) => {
+    if (!content) return null
+    const key = fieldName as keyof StoreContent
+    const steps = (content[key] as Feature[]) || []
+
+    const addStep = (field: string) => {
+      const key = field as keyof StoreContent
+      const currentSteps = (content[key] as Feature[]) || []
+      setContent({
+        ...content,
+        [field]: [...currentSteps, { text: '', text_de: '' }]
+      })
+    }
+
+    const updateStep = (field: string, index: number, lang: 'text' | 'text_de', value: string) => {
+      const key = field as keyof StoreContent
+      const currentSteps = [...(content[key] as Feature[])]
+      currentSteps[index] = { ...currentSteps[index], [lang]: value }
+      setContent({ ...content, [field]: currentSteps })
+    }
+
+    const removeStep = (field: string, index: number) => {
+      const key = field as keyof StoreContent
+      const currentSteps = (content[key] as Feature[]).filter((_, i) => i !== index)
+      setContent({ ...content, [field]: currentSteps })
+    }
+
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <Label>{title}</Label>
+          <Button type="button" variant="outline" size="sm" onClick={() => addStep(fieldName)}>
+            <Plus className="h-4 w-4 mr-1" />
+            Add Step
+          </Button>
+        </div>
+        {steps.map((step, index) => (
+          <div key={index} className="grid grid-cols-[1fr_1fr_auto] gap-2">
+            <Input
+              placeholder="English text"
+              value={step.text}
+              onChange={(e) => updateStep(fieldName, index, 'text', e.target.value)}
+            />
+            <Input
+              placeholder="German text"
+              value={step.text_de}
+              onChange={(e) => updateStep(fieldName, index, 'text_de', e.target.value)}
+            />
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              onClick={() => removeStep(fieldName, index)}
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </div>
+        ))}
+        {steps.length === 0 && (
+          <p className="text-sm text-muted-foreground">No steps added yet</p>
+        )}
+      </div>
+    )
+  }
+
   if (isLoading) {
     return (
       <Card>
@@ -256,13 +361,14 @@ export function ContentManagementSection() {
   return (
     <div className="space-y-6">
       <Tabs defaultValue="home" className="w-full">
-        <TabsList className="grid w-full grid-cols-6">
+        <TabsList className="grid w-full grid-cols-7">
           <TabsTrigger value="home">Home</TabsTrigger>
           <TabsTrigger value="voucher-cards">Voucher Cards</TabsTrigger>
           <TabsTrigger value="booking-cards">Booking Cards</TabsTrigger>
           <TabsTrigger value="redeem-cards">Redeem Cards</TabsTrigger>
           <TabsTrigger value="vouchers-page">Vouchers Page</TabsTrigger>
           <TabsTrigger value="bookings-page">Bookings Page</TabsTrigger>
+          <TabsTrigger value="success-page">Success Page</TabsTrigger>
         </TabsList>
 
         {/* HOME PAGE TAB */}
@@ -330,6 +436,122 @@ export function ContentManagementSection() {
                     placeholder="Alle Preise inkl. MwSt..."
                   />
                 </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Terms & Conditions Upload */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Terms & Conditions</CardTitle>
+              <CardDescription>
+                Upload PDF documents that customers must accept before purchasing
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* English Terms */}
+              <div className="space-y-3">
+                <Label>Terms & Conditions (English)</Label>
+                {content.terms_url ? (
+                  <div className="flex items-center gap-2 p-3 border rounded-md bg-muted/50">
+                    <FileText className="h-5 w-5 text-blue-600" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">Terms & Conditions (EN)</p>
+                      <a
+                        href={content.terms_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs text-blue-600 hover:underline truncate block"
+                      >
+                        {content.terms_url}
+                      </a>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleTermsDelete('en')}
+                      disabled={isUploadingTerms === 'en'}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <Input
+                      type="file"
+                      accept=".pdf"
+                      onChange={(e) => handleTermsUpload(e, 'en')}
+                      disabled={isUploadingTerms === 'en'}
+                      className="flex-1"
+                    />
+                    {isUploadingTerms === 'en' && (
+                      <div className="text-sm text-muted-foreground">Uploading...</div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* German Terms */}
+              <div className="space-y-3">
+                <Label>Terms & Conditions (German)</Label>
+                {content.terms_url_de ? (
+                  <div className="flex items-center gap-2 p-3 border rounded-md bg-muted/50">
+                    <FileText className="h-5 w-5 text-blue-600" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">Terms & Conditions (DE)</p>
+                      <a
+                        href={content.terms_url_de}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs text-blue-600 hover:underline truncate block"
+                      >
+                        {content.terms_url_de}
+                      </a>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleTermsDelete('de')}
+                      disabled={isUploadingTerms === 'de'}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <Input
+                      type="file"
+                      accept=".pdf"
+                      onChange={(e) => handleTermsUpload(e, 'de')}
+                      disabled={isUploadingTerms === 'de'}
+                      className="flex-1"
+                    />
+                    {isUploadingTerms === 'de' && (
+                      <div className="text-sm text-muted-foreground">Uploading...</div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Show Terms on Checkout Toggle */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Checkout Settings</CardTitle>
+              <CardDescription>
+                Configure checkout behavior
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center gap-2">
+                <Switch
+                  checked={content.show_terms_on_checkout}
+                  onCheckedChange={(checked) => setContent({ ...content, show_terms_on_checkout: checked })}
+                />
+                <Label>Show terms on checkout</Label>
               </div>
             </CardContent>
           </Card>
@@ -817,122 +1039,424 @@ export function ContentManagementSection() {
             </CardContent>
           </Card>
         </TabsContent>
+
+        {/* SUCCESS PAGE TAB */}
+        <TabsContent value="success-page" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Success Page - Payment Success</CardTitle>
+              <CardDescription>
+                Configure content for successful voucher/booking purchases
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Title (English)</Label>
+                  <Input
+                    value={content.success_payment_title}
+                    onChange={(e) => setContent({ ...content, success_payment_title: e.target.value })}
+                    placeholder="Payment Successful!"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Title (German)</Label>
+                  <Input
+                    value={content.success_payment_title_de}
+                    onChange={(e) => setContent({ ...content, success_payment_title_de: e.target.value })}
+                    placeholder="Zahlung Erfolgreich!"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Description (English)</Label>
+                  <Textarea
+                    value={content.success_payment_description}
+                    onChange={(e) => setContent({ ...content, success_payment_description: e.target.value })}
+                    placeholder="Your payment has been processed successfully."
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Description (German)</Label>
+                  <Textarea
+                    value={content.success_payment_description_de}
+                    onChange={(e) => setContent({ ...content, success_payment_description_de: e.target.value })}
+                    placeholder="Ihre Zahlung wurde erfolgreich verarbeitet."
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Check Email Title (English)</Label>
+                  <Input
+                    value={content.success_payment_check_email}
+                    onChange={(e) => setContent({ ...content, success_payment_check_email: e.target.value })}
+                    placeholder="Check Your Email"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Check Email Title (German)</Label>
+                  <Input
+                    value={content.success_payment_check_email_de}
+                    onChange={(e) => setContent({ ...content, success_payment_check_email_de: e.target.value })}
+                    placeholder="Überprüfen Sie Ihre E-Mail"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Email Message (English)</Label>
+                  <Textarea
+                    value={content.success_payment_email_message}
+                    onChange={(e) => setContent({ ...content, success_payment_email_message: e.target.value })}
+                    placeholder="We've sent a confirmation email..."
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Email Message (German)</Label>
+                  <Textarea
+                    value={content.success_payment_email_message_de}
+                    onChange={(e) => setContent({ ...content, success_payment_email_message_de: e.target.value })}
+                    placeholder="Wir haben Ihnen eine Bestätigungs-E-Mail..."
+                  />
+                </div>
+              </div>
+
+              <div>
+                {renderStepsList('success_payment_steps', 'Payment Success Steps')}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Success Page - Reservation Success</CardTitle>
+              <CardDescription>
+                Configure content for successful voucher bookings/redemptions
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Title (English)</Label>
+                  <Input
+                    value={content.success_reservation_title}
+                    onChange={(e) => setContent({ ...content, success_reservation_title: e.target.value })}
+                    placeholder="Reservation Confirmed!"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Title (German)</Label>
+                  <Input
+                    value={content.success_reservation_title_de}
+                    onChange={(e) => setContent({ ...content, success_reservation_title_de: e.target.value })}
+                    placeholder="Reservierung Bestätigt!"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Description (English)</Label>
+                  <Textarea
+                    value={content.success_reservation_description}
+                    onChange={(e) => setContent({ ...content, success_reservation_description: e.target.value })}
+                    placeholder="Your jump has been scheduled successfully."
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Description (German)</Label>
+                  <Textarea
+                    value={content.success_reservation_description_de}
+                    onChange={(e) => setContent({ ...content, success_reservation_description_de: e.target.value })}
+                    placeholder="Ihr Sprung wurde erfolgreich geplant."
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Booking Confirmed Label (English)</Label>
+                  <Input
+                    value={content.success_reservation_booking_confirmed}
+                    onChange={(e) => setContent({ ...content, success_reservation_booking_confirmed: e.target.value })}
+                    placeholder="Booking Code"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Booking Confirmed Label (German)</Label>
+                  <Input
+                    value={content.success_reservation_booking_confirmed_de}
+                    onChange={(e) => setContent({ ...content, success_reservation_booking_confirmed_de: e.target.value })}
+                    placeholder="Buchungscode"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Voucher Used Label (English)</Label>
+                  <Input
+                    value={content.success_reservation_voucher_used}
+                    onChange={(e) => setContent({ ...content, success_reservation_voucher_used: e.target.value })}
+                    placeholder="Voucher Code"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Voucher Used Label (German)</Label>
+                  <Input
+                    value={content.success_reservation_voucher_used_de}
+                    onChange={(e) => setContent({ ...content, success_reservation_voucher_used_de: e.target.value })}
+                    placeholder="Gutscheincode"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Scheduled For Label (English)</Label>
+                  <Input
+                    value={content.success_reservation_scheduled_for}
+                    onChange={(e) => setContent({ ...content, success_reservation_scheduled_for: e.target.value })}
+                    placeholder="Scheduled For"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Scheduled For Label (German)</Label>
+                  <Input
+                    value={content.success_reservation_scheduled_for_de}
+                    onChange={(e) => setContent({ ...content, success_reservation_scheduled_for_de: e.target.value })}
+                    placeholder="Geplant Für"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Check Email Title (English)</Label>
+                  <Input
+                    value={content.success_reservation_check_email}
+                    onChange={(e) => setContent({ ...content, success_reservation_check_email: e.target.value })}
+                    placeholder="Check Your Email"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Check Email Title (German)</Label>
+                  <Input
+                    value={content.success_reservation_check_email_de}
+                    onChange={(e) => setContent({ ...content, success_reservation_check_email_de: e.target.value })}
+                    placeholder="Überprüfen Sie Ihre E-Mail"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Email Message (English)</Label>
+                  <Textarea
+                    value={content.success_reservation_email_message}
+                    onChange={(e) => setContent({ ...content, success_reservation_email_message: e.target.value })}
+                    placeholder="We've sent a confirmation email..."
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Email Message (German)</Label>
+                  <Textarea
+                    value={content.success_reservation_email_message_de}
+                    onChange={(e) => setContent({ ...content, success_reservation_email_message_de: e.target.value })}
+                    placeholder="Wir haben Ihnen eine Bestätigungs-E-Mail..."
+                  />
+                </div>
+              </div>
+
+              <div>
+                {renderStepsList('success_reservation_steps', 'Reservation Success Steps')}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Success Page - Common</CardTitle>
+              <CardDescription>
+                Configure common content shared across all success pages
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>What&#39;s Next Title (English)</Label>
+                  <Input
+                    value={content.success_whats_next_title}
+                    onChange={(e) => setContent({ ...content, success_whats_next_title: e.target.value })}
+                    placeholder="What's Next?"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>What&#39;s Next Title (German)</Label>
+                  <Input
+                    value={content.success_whats_next_title_de}
+                    onChange={(e) => setContent({ ...content, success_whats_next_title_de: e.target.value })}
+                    placeholder="Was kommt als Nächstes?"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Help Title (English)</Label>
+                  <Input
+                    value={content.success_help_title}
+                    onChange={(e) => setContent({ ...content, success_help_title: e.target.value })}
+                    placeholder="Need Help?"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Help Title (German)</Label>
+                  <Input
+                    value={content.success_help_title_de}
+                    onChange={(e) => setContent({ ...content, success_help_title_de: e.target.value })}
+                    placeholder="Brauchen Sie Hilfe?"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Help Message (English)</Label>
+                  <Textarea
+                    value={content.success_help_message}
+                    onChange={(e) => setContent({ ...content, success_help_message: e.target.value })}
+                    placeholder="If you have any questions..."
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Help Message (German)</Label>
+                  <Textarea
+                    value={content.success_help_message_de}
+                    onChange={(e) => setContent({ ...content, success_help_message_de: e.target.value })}
+                    placeholder="Bei Fragen können Sie uns..."
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Contact Email</Label>
+                <Input
+                  value={content.success_contact_email}
+                  onChange={(e) => setContent({ ...content, success_contact_email: e.target.value })}
+                  placeholder="info@skydive-salzburg.com"
+                  type="email"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Voucher Code Label (English)</Label>
+                  <Input
+                    value={content.success_voucher_code_label}
+                    onChange={(e) => setContent({ ...content, success_voucher_code_label: e.target.value })}
+                    placeholder="Voucher Code"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Voucher Code Label (German)</Label>
+                  <Input
+                    value={content.success_voucher_code_label_de}
+                    onChange={(e) => setContent({ ...content, success_voucher_code_label_de: e.target.value })}
+                    placeholder="Gutscheincode"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Booking Code Label (English)</Label>
+                  <Input
+                    value={content.success_booking_code_label}
+                    onChange={(e) => setContent({ ...content, success_booking_code_label: e.target.value })}
+                    placeholder="Booking Code"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Booking Code Label (German)</Label>
+                  <Input
+                    value={content.success_booking_code_label_de}
+                    onChange={(e) => setContent({ ...content, success_booking_code_label_de: e.target.value })}
+                    placeholder="Buchungscode"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Download PDF Button (English)</Label>
+                  <Input
+                    value={content.success_download_pdf_button}
+                    onChange={(e) => setContent({ ...content, success_download_pdf_button: e.target.value })}
+                    placeholder="Download PDF"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Download PDF Button (German)</Label>
+                  <Input
+                    value={content.success_download_pdf_button_de}
+                    onChange={(e) => setContent({ ...content, success_download_pdf_button_de: e.target.value })}
+                    placeholder="PDF Herunterladen"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Back to Home Button (English)</Label>
+                  <Input
+                    value={content.success_back_to_home_button}
+                    onChange={(e) => setContent({ ...content, success_back_to_home_button: e.target.value })}
+                    placeholder="Back to Home"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Back to Home Button (German)</Label>
+                  <Input
+                    value={content.success_back_to_home_button_de}
+                    onChange={(e) => setContent({ ...content, success_back_to_home_button_de: e.target.value })}
+                    placeholder="Zurück zur Startseite"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Purchase Another Button (English)</Label>
+                  <Input
+                    value={content.success_purchase_another_button}
+                    onChange={(e) => setContent({ ...content, success_purchase_another_button: e.target.value })}
+                    placeholder="Purchase Another"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Purchase Another Button (German)</Label>
+                  <Input
+                    value={content.success_purchase_another_button_de}
+                    onChange={(e) => setContent({ ...content, success_purchase_another_button_de: e.target.value })}
+                    placeholder="Weitere Kaufen"
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
       </Tabs>
-
-      {/* Terms & Conditions Upload */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Terms & Conditions</CardTitle>
-          <CardDescription>
-            Upload PDF documents that customers must accept before purchasing
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          {/* English Terms */}
-          <div className="space-y-3">
-            <Label>Terms & Conditions (English)</Label>
-            {content.terms_url ? (
-              <div className="flex items-center gap-2 p-3 border rounded-md bg-muted/50">
-                <FileText className="h-5 w-5 text-blue-600" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">Terms & Conditions (EN)</p>
-                  <a
-                    href={content.terms_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-xs text-blue-600 hover:underline truncate block"
-                  >
-                    View PDF
-                  </a>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => handleTermsDelete('en')}
-                  disabled={isUploadingTerms === 'en'}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
-            ) : (
-              <div className="flex items-center gap-2">
-                <Input
-                  type="file"
-                  accept=".pdf,application/pdf"
-                  onChange={(e) => handleTermsUpload(e, 'en')}
-                  disabled={isUploadingTerms === 'en'}
-                  className="flex-1"
-                />
-                {isUploadingTerms === 'en' && (
-                  <div className="text-sm text-muted-foreground">Uploading...</div>
-                )}
-              </div>
-            )}
-            <p className="text-xs text-muted-foreground">
-              PDF file, max 10MB. This will be presented to English-speaking customers.
-            </p>
-          </div>
-
-          {/* German Terms */}
-          <div className="space-y-3">
-            <Label>Terms & Conditions (German)</Label>
-            {content.terms_url_de ? (
-              <div className="flex items-center gap-2 p-3 border rounded-md bg-muted/50">
-                <FileText className="h-5 w-5 text-blue-600" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">Terms & Conditions (DE)</p>
-                  <a
-                    href={content.terms_url_de}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-xs text-blue-600 hover:underline truncate block"
-                  >
-                    View PDF
-                  </a>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => handleTermsDelete('de')}
-                  disabled={isUploadingTerms === 'de'}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
-            ) : (
-              <div className="flex items-center gap-2">
-                <Input
-                  type="file"
-                  accept=".pdf,application/pdf"
-                  onChange={(e) => handleTermsUpload(e, 'de')}
-                  disabled={isUploadingTerms === 'de'}
-                  className="flex-1"
-                />
-                {isUploadingTerms === 'de' && (
-                  <div className="text-sm text-muted-foreground">Uploading...</div>
-                )}
-              </div>
-            )}
-            <p className="text-xs text-muted-foreground">
-              PDF file, max 10MB. This will be presented to German-speaking customers (falls back to English if not set).
-            </p>
-          </div>
-        </CardContent>
-      </Card>
 
       {/* Save Button (Fixed at bottom) */}
       <Card>
         <CardContent className="py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <Switch
-                  checked={content.show_terms_on_checkout}
-                  onCheckedChange={(checked) => setContent({ ...content, show_terms_on_checkout: checked })}
-                />
-                <Label>Show terms on checkout</Label>
-              </div>
-            </div>
+          <div className="flex justify-end">
             <Button onClick={handleSave} disabled={isSaving}>
               {isSaving ? 'Saving...' : 'Save All Changes'}
             </Button>

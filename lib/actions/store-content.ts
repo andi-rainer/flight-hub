@@ -63,6 +63,51 @@ export interface StoreContent {
   bookings_info_section2_title: string
   bookings_info_section2_title_de: string
   bookings_info_section2_features: StoreContentFeature[]
+  // Success page - Payment success
+  success_payment_title?: string
+  success_payment_title_de?: string
+  success_payment_description?: string
+  success_payment_description_de?: string
+  success_payment_check_email?: string
+  success_payment_check_email_de?: string
+  success_payment_email_message?: string
+  success_payment_email_message_de?: string
+  success_payment_steps?: StoreContentFeature[]
+  // Success page - Reservation success
+  success_reservation_title?: string
+  success_reservation_title_de?: string
+  success_reservation_description?: string
+  success_reservation_description_de?: string
+  success_reservation_booking_confirmed?: string
+  success_reservation_booking_confirmed_de?: string
+  success_reservation_voucher_used?: string
+  success_reservation_voucher_used_de?: string
+  success_reservation_scheduled_for?: string
+  success_reservation_scheduled_for_de?: string
+  success_reservation_check_email?: string
+  success_reservation_check_email_de?: string
+  success_reservation_email_message?: string
+  success_reservation_email_message_de?: string
+  success_reservation_steps?: StoreContentFeature[]
+  // Success page - Common
+  success_whats_next_title?: string
+  success_whats_next_title_de?: string
+  success_help_title?: string
+  success_help_title_de?: string
+  success_help_message?: string
+  success_help_message_de?: string
+  success_contact_email?: string
+  success_back_to_home_button?: string
+  success_back_to_home_button_de?: string
+  success_purchase_another_button?: string
+  success_purchase_another_button_de?: string
+  success_voucher_code_label?: string
+  success_voucher_code_label_de?: string
+  success_booking_code_label?: string
+  success_booking_code_label_de?: string
+  success_download_pdf_button?: string
+  success_download_pdf_button_de?: string
+  // Other
   terms_url: string | null
   terms_url_de: string | null
   show_terms_on_checkout: boolean
