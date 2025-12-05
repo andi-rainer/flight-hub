@@ -2487,28 +2487,24 @@ export type Database = {
           background_opacity: number | null
           background_position: string | null
           border_config: Json | null
+          canvas_height: number | null
+          canvas_width: number | null
           code: string
-          content_zones: Json | null
           created_at: string | null
-          decorative_images: Json | null
           description: string | null
           description_de: string | null
+          elements: Json | null
           font_config: Json | null
           id: string
           layout_config: Json
-          layout_type: string | null
-          logo_enabled: boolean | null
-          logo_position: Json | null
-          logo_url: string | null
           name: string
-          name_de: string
           page_config: Json | null
+          page_height_percentage: number | null
           preview_image_url: string | null
-          qr_config: Json | null
+          show_cut_line: boolean | null
+          show_recipient_name: boolean | null
           sort_order: number | null
-          text_overlay_color: string | null
-          text_overlay_enabled: boolean | null
-          text_overlay_position: Json | null
+          template_type: Database["public"]["Enums"]["template_type"]
           updated_at: string | null
         }
         Insert: {
@@ -2517,28 +2513,24 @@ export type Database = {
           background_opacity?: number | null
           background_position?: string | null
           border_config?: Json | null
+          canvas_height?: number | null
+          canvas_width?: number | null
           code: string
-          content_zones?: Json | null
           created_at?: string | null
-          decorative_images?: Json | null
           description?: string | null
           description_de?: string | null
+          elements?: Json | null
           font_config?: Json | null
           id?: string
           layout_config?: Json
-          layout_type?: string | null
-          logo_enabled?: boolean | null
-          logo_position?: Json | null
-          logo_url?: string | null
           name: string
-          name_de: string
           page_config?: Json | null
+          page_height_percentage?: number | null
           preview_image_url?: string | null
-          qr_config?: Json | null
+          show_cut_line?: boolean | null
+          show_recipient_name?: boolean | null
           sort_order?: number | null
-          text_overlay_color?: string | null
-          text_overlay_enabled?: boolean | null
-          text_overlay_position?: Json | null
+          template_type?: Database["public"]["Enums"]["template_type"]
           updated_at?: string | null
         }
         Update: {
@@ -2547,28 +2539,24 @@ export type Database = {
           background_opacity?: number | null
           background_position?: string | null
           border_config?: Json | null
+          canvas_height?: number | null
+          canvas_width?: number | null
           code?: string
-          content_zones?: Json | null
           created_at?: string | null
-          decorative_images?: Json | null
           description?: string | null
           description_de?: string | null
+          elements?: Json | null
           font_config?: Json | null
           id?: string
           layout_config?: Json
-          layout_type?: string | null
-          logo_enabled?: boolean | null
-          logo_position?: Json | null
-          logo_url?: string | null
           name?: string
-          name_de?: string
           page_config?: Json | null
+          page_height_percentage?: number | null
           preview_image_url?: string | null
-          qr_config?: Json | null
+          show_cut_line?: boolean | null
+          show_recipient_name?: boolean | null
           sort_order?: number | null
-          text_overlay_color?: string | null
-          text_overlay_enabled?: boolean | null
-          text_overlay_position?: Json | null
+          template_type?: Database["public"]["Enums"]["template_type"]
           updated_at?: string | null
         }
         Relationships: []
@@ -3137,6 +3125,8 @@ export type Database = {
           pdf_label_valid_until_de: string | null
           pdf_label_voucher_code: string | null
           pdf_label_voucher_code_de: string | null
+          pdf_voucher_description: string | null
+          pdf_voucher_description_de: string | null
           redeem_card_description: string
           redeem_card_description_de: string
           redeem_card_features: Json
@@ -3266,6 +3256,8 @@ export type Database = {
           pdf_label_valid_until_de?: string | null
           pdf_label_voucher_code?: string | null
           pdf_label_voucher_code_de?: string | null
+          pdf_voucher_description?: string | null
+          pdf_voucher_description_de?: string | null
           redeem_card_description?: string
           redeem_card_description_de?: string
           redeem_card_features?: Json
@@ -3395,6 +3387,8 @@ export type Database = {
           pdf_label_valid_until_de?: string | null
           pdf_label_voucher_code?: string | null
           pdf_label_voucher_code_de?: string | null
+          pdf_voucher_description?: string | null
+          pdf_voucher_description_de?: string | null
           redeem_card_description?: string
           redeem_card_description_de?: string
           redeem_card_features?: Json
@@ -5981,6 +5975,7 @@ export type Database = {
         | "landing_gear"
         | "other"
       reservation_status: "active" | "standby" | "cancelled"
+      template_type: "voucher" | "ticket"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -6126,6 +6121,7 @@ export const Constants = {
         "other",
       ],
       reservation_status: ["active", "standby", "cancelled"],
+      template_type: ["voucher", "ticket"],
     },
   },
 } as const

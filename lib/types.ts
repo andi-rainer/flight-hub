@@ -231,46 +231,111 @@ export interface AircraftWithAvailability extends RowType<'planes'> {
 }
 
 /**
- * PDF Design Template - Enhanced with Visual Designer
+ * Element Types for Visual Builder
+ */
+export type ElementType = 'text' | 'image' | 'qr' | 'line' | 'logo'
+
+export interface BaseElement {
+  id: string
+  type: ElementType
+  x: number
+  y: number
+  layer: number
+  locked?: boolean
+}
+
+export type CMSTextField =
+  | 'pdf_voucher_description'
+  | 'pdf_contact_phone'
+  | 'pdf_contact_email'
+  | 'pdf_contact_website'
+  | 'pdf_contact_address'
+  | 'pdf_label_voucher_code'
+  | 'pdf_label_booking_code'
+  | 'pdf_label_valid_until'
+  | 'pdf_label_redeem_instructions'
+  | 'pdf_label_terms'
+  | 'pdf_label_personal_message'
+  | 'pdf_label_from'
+
+export type DynamicTextField = 'voucherCode' | 'validUntil' | 'recipientName' | 'title'
+
+export interface TextElement extends BaseElement {
+  type: 'text'
+  width: number
+  height: number
+  // Content settings
+  content: string | null // null means use dynamic/CMS content
+  content_de?: string | null // German version for custom content
+  contentField?: DynamicTextField // for dynamic fields
+  cmsField?: CMSTextField // for CMS-driven content
+  // Label settings
+  label?: string // Backwards compatibility - will be migrated to labelCustom
+  labelCustom?: string // Custom label text (English)
+  labelCustom_de?: string // Custom label text (German)
+  labelCmsField?: CMSTextField // CMS field for label
+  // Styling
+  fontSize: number
+  fontFamily: string
+  fontWeight: string
+  color: string
+  align?: 'left' | 'center' | 'right'
+  lineHeight?: number
+}
+
+export interface ImageElement extends BaseElement {
+  type: 'image'
+  width: number
+  height: number
+  url: string
+  opacity?: number
+  fit?: 'contain' | 'cover' | 'fill'
+  borderRadius?: number
+}
+
+export interface LogoElement extends BaseElement {
+  type: 'logo'
+  width: number
+  height: number
+  url: string | null
+  opacity?: number
+  fit?: 'contain' | 'cover' | 'fill'
+}
+
+export interface QRElement extends BaseElement {
+  type: 'qr'
+  size: number
+  backgroundColor: string
+  foregroundColor: string
+  borderRadius?: number
+  includeMargin?: boolean
+}
+
+export interface LineElement extends BaseElement {
+  type: 'line'
+  orientation: 'horizontal' | 'vertical'
+  length: number
+  thickness: number
+  color: string
+  style: 'solid' | 'dashed' | 'dotted'
+}
+
+export type TemplateElement = TextElement | ImageElement | LogoElement | QRElement | LineElement
+
+/**
+ * PDF Design Template - Visual Builder with Drag & Drop Elements
  */
 export interface PDFTemplate extends RowType<'pdf_design_templates'> {
-  layout_type?: 'ticket' | 'full-photo' | 'certificate' | 'minimal'
+  // Element-based system
+  elements?: TemplateElement[]
+  canvas_width?: number
+  canvas_height?: number
+
+  // Global styling (still useful)
   background_image_url?: string | null
   background_opacity?: number | null
   background_position?: 'center' | 'top' | 'bottom' | 'left' | 'right' | 'stretch' | null
-  logo_url?: string | null
-  logo_position?: {
-    x: number
-    y: number
-    width: number
-    height: number
-  }
-  logo_enabled?: boolean | null
-  text_overlay_enabled?: boolean | null
-  text_overlay_color?: string | null
-  text_overlay_position?: {
-    x: number
-    y: number
-    width: string | number
-    height: number
-  }
-  decorative_images?: Array<{
-    url: string
-    x: number
-    y: number
-    width: number
-    height: number
-    name?: string
-  }>
-  qr_config?: {
-    position: string
-    x: number
-    y: number
-    size: number
-    backgroundColor: string
-    foregroundColor: string
-    includeMargin: boolean
-  }
+
   font_config?: {
     titleFont: string
     titleSize: number
@@ -282,6 +347,7 @@ export interface PDFTemplate extends RowType<'pdf_design_templates'> {
     labelSize: number
     labelColor: string
   }
+
   border_config?: {
     enabled: boolean
     style: string
@@ -290,29 +356,18 @@ export interface PDFTemplate extends RowType<'pdf_design_templates'> {
     cornerRadius: number
     decorative: boolean
   }
-  content_zones?: {
-    header: { x: number; y: number; width: number; height: number }
-    body: { x: number; y: number; width: number; height: number }
-    footer: { x: number; y: number; width: number; height: number }
-  }
-  page_config?: {
-    width: number
-    height: number
-    orientation: 'portrait' | 'landscape'
-    margins: { top: number; right: number; bottom: number; left: number }
-  }
-  layout_config: {
+
+  layout_config?: {
     primaryColor?: string
     secondaryColor?: string
     accentColor?: string
     textColor?: string
     backgroundColor?: string
-    headerHeight?: number
-    qrPosition?: 'right' | 'bottom' | 'center'
-    qrSize?: number
-    fontFamily?: string
-    headerFont?: string
   }
+
+  show_recipient_name?: boolean | null
+  show_cut_line?: boolean | null
+  page_height_percentage?: number | null
 }
 
 /**

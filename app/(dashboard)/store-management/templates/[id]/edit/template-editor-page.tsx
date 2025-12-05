@@ -3,36 +3,23 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Label } from '@/components/ui/label'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Slider } from '@/components/ui/slider'
-import { Switch } from '@/components/ui/switch'
+import { Card, CardContent } from '@/components/ui/card'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import { Slider } from '@/components/ui/slider'
+import { Label } from '@/components/ui/label'
+import { Input } from '@/components/ui/input'
 import { toast } from 'sonner'
-import { PDFTemplate } from '@/lib/types'
+import { PDFTemplate, TemplateElement, TemplateAsset } from '@/lib/types'
 import { getPDFTemplates, updatePDFTemplate } from '@/lib/actions/pdf-templates'
 import { getStoreContent } from '@/lib/actions/store-content'
-import {
-  Palette,
-  Type,
-  Image as ImageIcon,
-  Layout,
-  Square,
-  Save,
-  Eye,
-  Upload,
-  Trash2,
-  Plus,
-  ArrowLeft,
-  ChevronRight,
-} from 'lucide-react'
-import { TemplatePreview } from '@/app/(dashboard)/store-management/components/template-preview'
-import { ColorPicker } from '@/app/(dashboard)/store-management/components/color-picker'
+import { Save, Eye, ArrowLeft, ChevronRight, ZoomIn, ZoomOut } from 'lucide-react'
+import { TemplateBuilderCanvas } from '@/app/(dashboard)/store-management/components/template-builder-canvas'
+import { ElementToolbar } from '@/app/(dashboard)/store-management/components/element-toolbar'
+import { ElementPropertiesPanel } from '@/app/(dashboard)/store-management/components/element-properties-panel'
+import { CanvasSettings } from '@/app/(dashboard)/store-management/components/canvas-settings'
 import { AssetLibraryBrowser } from '@/app/(dashboard)/store-management/components/asset-library-browser'
+import { TemplatePreviewDialog } from '@/app/(dashboard)/store-management/components/template-preview-dialog'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { TemplateAsset } from '@/lib/types'
 
 interface TemplateEditorPageProps {
   templateId: string
@@ -44,10 +31,11 @@ export function TemplateEditorPage({ templateId }: TemplateEditorPageProps) {
   const [storeContent, setStoreContent] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
+  const [selectedElementId, setSelectedElementId] = useState<string | null>(null)
+  const [scale, setScale] = useState(0.8)
+  const [showAssetLibrary, setShowAssetLibrary] = useState(false)
+  const [assetLibraryType, setAssetLibraryType] = useState<'logo' | 'image'>('image')
   const [showPreview, setShowPreview] = useState(false)
-  const [showLogoLibrary, setShowLogoLibrary] = useState(false)
-  const [showBackgroundLibrary, setShowBackgroundLibrary] = useState(false)
-  const [showDecorativeLibrary, setShowDecorativeLibrary] = useState(false)
 
   useEffect(() => {
     loadTemplate()
@@ -67,6 +55,10 @@ export function TemplateEditorPage({ templateId }: TemplateEditorPageProps) {
     if (result.success && result.data) {
       const foundTemplate = result.data.find((t) => t.id === templateId)
       if (foundTemplate) {
+        // Initialize elements if not present
+        if (!foundTemplate.elements) {
+          foundTemplate.elements = []
+        }
         setTemplate(foundTemplate)
       } else {
         toast.error('Template not found')
@@ -84,23 +76,20 @@ export function TemplateEditorPage({ templateId }: TemplateEditorPageProps) {
     setIsSaving(true)
     try {
       const result = await updatePDFTemplate(template.id, {
-        layout_type: template.layout_type,
+        name: template.name,
+        description: template.description,
+        elements: template.elements,
+        canvas_width: template.canvas_width,
+        canvas_height: template.canvas_height,
         background_image_url: template.background_image_url,
         background_opacity: template.background_opacity,
         background_position: template.background_position,
-        logo_url: template.logo_url,
-        logo_position: template.logo_position,
-        logo_enabled: template.logo_enabled,
-        text_overlay_enabled: template.text_overlay_enabled,
-        text_overlay_color: template.text_overlay_color,
-        text_overlay_position: template.text_overlay_position,
-        decorative_images: template.decorative_images,
-        qr_config: template.qr_config,
         font_config: template.font_config,
         border_config: template.border_config,
-        content_zones: template.content_zones,
-        page_config: template.page_config,
         layout_config: template.layout_config,
+        show_recipient_name: template.show_recipient_name,
+        show_cut_line: template.show_cut_line,
+        page_height_percentage: template.page_height_percentage,
       })
 
       if (result.success) {
@@ -116,97 +105,85 @@ export function TemplateEditorPage({ templateId }: TemplateEditorPageProps) {
     }
   }
 
-  const updateLayoutConfig = (key: string, value: any) => {
+  const handleAddElement = (element: TemplateElement) => {
     if (!template) return
     setTemplate({
       ...template,
-      layout_config: {
-        ...template.layout_config,
-        [key]: value,
-      },
+      elements: [...(template.elements || []), element],
     })
+    setSelectedElementId(element.id)
   }
 
-  const updateFontConfig = (key: string, value: any) => {
+  const handleUpdateElement = (id: string, updates: Partial<TemplateElement>) => {
     if (!template) return
     setTemplate({
       ...template,
-      font_config: {
-        ...template.font_config,
-        [key]: value,
-      },
+      elements: (template.elements || []).map((el) =>
+        el.id === id ? { ...el, ...updates } as TemplateElement : el
+      ),
     })
   }
 
-  const updateBorderConfig = (key: string, value: any) => {
+  const handleDeleteElement = (id: string) => {
     if (!template) return
     setTemplate({
       ...template,
-      border_config: {
-        ...template.border_config,
-        [key]: value,
-      },
+      elements: (template.elements || []).filter((el) => el.id !== id),
     })
+    if (selectedElementId === id) {
+      setSelectedElementId(null)
+    }
   }
 
-  const updateQRConfig = (key: string, value: any) => {
+  const handleMoveLayer = (id: string, direction: 'up' | 'down') => {
     if (!template) return
-    setTemplate({
-      ...template,
-      qr_config: {
-        ...template.qr_config,
-        [key]: value,
-      },
-    })
+    const elements = template.elements || []
+    const element = elements.find((el) => el.id === id)
+    if (!element) return
+
+    const newLayer = direction === 'up' ? element.layer + 1 : element.layer - 1
+    handleUpdateElement(id, { layer: newLayer })
   }
 
-  const updateLogoPosition = (key: string, value: number) => {
-    if (!template) return
-    setTemplate({
-      ...template,
-      logo_position: {
-        ...template.logo_position,
-        [key]: value,
-      },
-    })
+  const handleShowAssetLibrary = (type: 'logo' | 'image') => {
+    setAssetLibraryType(type)
+    setShowAssetLibrary(true)
   }
 
-  const handleLogoSelect = (asset: TemplateAsset) => {
-    if (!template) return
-    setTemplate({
-      ...template,
-      logo_url: asset.file_url,
-    })
-    setShowLogoLibrary(false)
-    toast.success('Logo selected')
-  }
+  const handleAssetSelect = (assets: TemplateAsset[]) => {
+    if (!template || assets.length === 0) return
 
-  const handleBackgroundSelect = (asset: TemplateAsset) => {
-    if (!template) return
-    setTemplate({
-      ...template,
-      background_image_url: asset.file_url,
-    })
-    setShowBackgroundLibrary(false)
-    toast.success('Background image selected')
-  }
-
-  const handleDecorativeSelect = (assets: TemplateAsset[]) => {
-    if (!template) return
-    const newImages = assets.map((asset, index) => ({
-      url: asset.file_url,
+    const currentMaxLayer = Math.max(0, ...(template.elements || []).map(el => el.layer))
+    const newElements: TemplateElement[] = assets.map((asset, index) => ({
+      id: `el_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      type: assetLibraryType,
       x: 50 + index * 20,
-      y: 200 + index * 20,
-      width: 100,
-      height: 100,
-      name: asset.name,
+      y: 50 + index * 20,
+      layer: currentMaxLayer + 1 + index,
+      width: 150,
+      height: 150,
+      url: asset.file_url,
+      opacity: 1,
+      fit: 'contain' as const,
     }))
+
     setTemplate({
       ...template,
-      decorative_images: [...(template.decorative_images || []), ...newImages],
+      elements: [...(template.elements || []), ...newElements],
     })
-    setShowDecorativeLibrary(false)
-    toast.success(`${assets.length} decorative image(s) added`)
+
+    setShowAssetLibrary(false)
+    toast.success(`${assets.length} ${assetLibraryType}(s) added`)
+  }
+
+  const handleCanvasHeightChange = (percentage: number) => {
+    if (!template) return
+    const newHeight = Math.round(842 * (percentage / 100))
+    setTemplate({
+      ...template,
+      canvas_height: newHeight,
+      page_height_percentage: percentage,
+    })
   }
 
   if (isLoading) {
@@ -225,9 +202,14 @@ export function TemplateEditorPage({ templateId }: TemplateEditorPageProps) {
     )
   }
 
+  const selectedElement = (template.elements || []).find((el) => el.id === selectedElementId) || null
+  const canvasWidth = template.canvas_width || 595
+  const canvasHeight = template.canvas_height || 842
+  const maxLayer = Math.max(0, ...(template.elements || []).map(el => el.layer))
+
   return (
     <div className="h-screen flex flex-col">
-      {/* Header with Breadcrumbs */}
+      {/* Header */}
       <div className="border-b bg-background">
         <div className="flex items-center justify-between px-6 py-4">
           <div className="flex items-center gap-4">
@@ -272,638 +254,173 @@ export function TemplateEditorPage({ templateId }: TemplateEditorPageProps) {
 
       {/* Main Content */}
       <div className="flex-1 flex overflow-hidden">
-        {/* Left Panel - Configuration */}
-        <div className="w-[400px] border-r bg-muted/30">
+        {/* Left Panel - Toolbar */}
+        <div className="w-[280px] border-r bg-muted/30">
           <ScrollArea className="h-full">
-            <div className="p-6">
-              <Tabs defaultValue="layout" className="w-full">
-                <TabsList className="grid w-full grid-cols-5">
-                  <TabsTrigger value="layout">
-                    <Layout className="h-4 w-4" />
-                  </TabsTrigger>
-                  <TabsTrigger value="colors">
-                    <Palette className="h-4 w-4" />
-                  </TabsTrigger>
-                  <TabsTrigger value="typography">
-                    <Type className="h-4 w-4" />
-                  </TabsTrigger>
-                  <TabsTrigger value="images">
-                    <ImageIcon className="h-4 w-4" />
-                  </TabsTrigger>
-                  <TabsTrigger value="border">
-                    <Square className="h-4 w-4" />
-                  </TabsTrigger>
-                </TabsList>
-
-                {/* Layout Tab */}
-                <TabsContent value="layout" className="space-y-4 mt-6">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="text-sm">Layout Type</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <Select
-                        value={template.layout_type || 'ticket'}
-                        onValueChange={(value: any) =>
-                          setTemplate({ ...template, layout_type: value })
-                        }
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="ticket">Ticket Style</SelectItem>
-                          <SelectItem value="full-photo">Full Photo Background</SelectItem>
-                          <SelectItem value="certificate">Certificate Style</SelectItem>
-                          <SelectItem value="minimal">Minimal</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </CardContent>
-                  </Card>
-
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="text-sm">Logo Position</CardTitle>
-                      <CardDescription>Adjust logo placement and size</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <Label className="text-sm">Enabled</Label>
-                        <Switch
-                          checked={template.logo_enabled ?? true}
-                          onCheckedChange={(checked) =>
-                            setTemplate({ ...template, logo_enabled: checked })
-                          }
-                        />
-                      </div>
-                      {template.logo_url && (
-                        <div className="relative">
-                          <img
-                            src={template.logo_url}
-                            alt="Logo"
-                            className="w-full h-32 object-contain rounded border"
-                          />
-                          <Button
-                            size="sm"
-                            variant="destructive"
-                            className="absolute top-2 right-2"
-                            onClick={() =>
-                              setTemplate({ ...template, logo_url: null })
-                            }
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
-                        </div>
-                      )}
-                      <Button
-                        variant="outline"
-                        className="w-full"
-                        onClick={() => setShowLogoLibrary(true)}
-                      >
-                        <ImageIcon className="h-4 w-4 mr-2" />
-                        {template.logo_url ? 'Change Logo' : 'Select Logo'}
-                      </Button>
-                      <div className="space-y-2">
-                        <Label className="text-sm">X Position</Label>
-                        <Slider
-                          value={[template.logo_position?.x || 50]}
-                          onValueChange={([value]) => updateLogoPosition('x', value)}
-                          max={500}
-                          step={5}
-                        />
-                        <span className="text-xs text-muted-foreground">
-                          {template.logo_position?.x || 50}px
-                        </span>
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="text-sm">Y Position</Label>
-                        <Slider
-                          value={[template.logo_position?.y || 30]}
-                          onValueChange={([value]) => updateLogoPosition('y', value)}
-                          max={800}
-                          step={5}
-                        />
-                        <span className="text-xs text-muted-foreground">
-                          {template.logo_position?.y || 30}px
-                        </span>
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="text-sm">Width</Label>
-                        <Slider
-                          value={[template.logo_position?.width || 120]}
-                          onValueChange={([value]) => updateLogoPosition('width', value)}
-                          max={300}
-                          step={5}
-                        />
-                        <span className="text-xs text-muted-foreground">
-                          {template.logo_position?.width || 120}px
-                        </span>
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="text-sm">Height</Label>
-                        <Slider
-                          value={[template.logo_position?.height || 60]}
-                          onValueChange={([value]) => updateLogoPosition('height', value)}
-                          max={200}
-                          step={5}
-                        />
-                        <span className="text-xs text-muted-foreground">
-                          {template.logo_position?.height || 60}px
-                        </span>
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="text-sm">QR Code</CardTitle>
-                      <CardDescription>Configure QR code placement</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div className="space-y-2">
-                        <Label className="text-sm">Position</Label>
-                        <Select
-                          value={template.qr_config?.position || 'right'}
-                          onValueChange={(value) => updateQRConfig('position', value)}
-                        >
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="right">Right</SelectItem>
-                            <SelectItem value="bottom">Bottom</SelectItem>
-                            <SelectItem value="center">Center</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="text-sm">Size</Label>
-                        <Slider
-                          value={[template.qr_config?.size || 80]}
-                          onValueChange={([value]) => updateQRConfig('size', value)}
-                          min={50}
-                          max={150}
-                          step={5}
-                        />
-                        <span className="text-xs text-muted-foreground">
-                          {template.qr_config?.size || 80}px
-                        </span>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </TabsContent>
-
-                {/* Colors Tab */}
-                <TabsContent value="colors" className="space-y-4 mt-6">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="text-sm">Background Colors</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div className="space-y-2">
-                        <Label className="text-sm">Primary Color</Label>
-                        <ColorPicker
-                          color={template.layout_config?.primaryColor || '#3b82f6'}
-                          onChange={(color) => updateLayoutConfig('primaryColor', color)}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="text-sm">Secondary Color</Label>
-                        <ColorPicker
-                          color={template.layout_config?.secondaryColor || '#8b5cf6'}
-                          onChange={(color) => updateLayoutConfig('secondaryColor', color)}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="text-sm">Accent Color</Label>
-                        <ColorPicker
-                          color={template.layout_config?.accentColor || '#10b981'}
-                          onChange={(color) => updateLayoutConfig('accentColor', color)}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="text-sm">Background Color</Label>
-                        <ColorPicker
-                          color={template.layout_config?.backgroundColor || '#ffffff'}
-                          onChange={(color) => updateLayoutConfig('backgroundColor', color)}
-                        />
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="text-sm">QR Code Colors</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div className="space-y-2">
-                        <Label className="text-sm">Foreground</Label>
-                        <ColorPicker
-                          color={template.qr_config?.foregroundColor || '#000000'}
-                          onChange={(color) => updateQRConfig('foregroundColor', color)}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="text-sm">Background</Label>
-                        <ColorPicker
-                          color={template.qr_config?.backgroundColor || '#ffffff'}
-                          onChange={(color) => updateQRConfig('backgroundColor', color)}
-                        />
-                      </div>
-                    </CardContent>
-                  </Card>
-                </TabsContent>
-
-                {/* Typography Tab */}
-                <TabsContent value="typography" className="space-y-4 mt-6">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="text-sm">Title Font</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div className="space-y-2">
-                        <Label className="text-sm">Font Family</Label>
-                        <Select
-                          value={template.font_config?.titleFont || 'helvetica-bold'}
-                          onValueChange={(value) => updateFontConfig('titleFont', value)}
-                        >
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="helvetica">Helvetica</SelectItem>
-                            <SelectItem value="helvetica-bold">Helvetica Bold</SelectItem>
-                            <SelectItem value="times">Times</SelectItem>
-                            <SelectItem value="times-bold">Times Bold</SelectItem>
-                            <SelectItem value="courier">Courier</SelectItem>
-                            <SelectItem value="courier-bold">Courier Bold</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="text-sm">Font Size</Label>
-                        <Slider
-                          value={[template.font_config?.titleSize || 24]}
-                          onValueChange={([value]) => updateFontConfig('titleSize', value)}
-                          min={12}
-                          max={48}
-                          step={1}
-                        />
-                        <span className="text-xs text-muted-foreground">
-                          {template.font_config?.titleSize || 24}pt
-                        </span>
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="text-sm">Color</Label>
-                        <ColorPicker
-                          color={template.font_config?.titleColor || '#1f2937'}
-                          onChange={(color) => updateFontConfig('titleColor', color)}
-                        />
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="text-sm">Body Font</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div className="space-y-2">
-                        <Label className="text-sm">Font Family</Label>
-                        <Select
-                          value={template.font_config?.bodyFont || 'helvetica'}
-                          onValueChange={(value) => updateFontConfig('bodyFont', value)}
-                        >
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="helvetica">Helvetica</SelectItem>
-                            <SelectItem value="helvetica-bold">Helvetica Bold</SelectItem>
-                            <SelectItem value="times">Times</SelectItem>
-                            <SelectItem value="times-bold">Times Bold</SelectItem>
-                            <SelectItem value="courier">Courier</SelectItem>
-                            <SelectItem value="courier-bold">Courier Bold</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="text-sm">Font Size</Label>
-                        <Slider
-                          value={[template.font_config?.bodySize || 12]}
-                          onValueChange={([value]) => updateFontConfig('bodySize', value)}
-                          min={8}
-                          max={24}
-                          step={1}
-                        />
-                        <span className="text-xs text-muted-foreground">
-                          {template.font_config?.bodySize || 12}pt
-                        </span>
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="text-sm">Color</Label>
-                        <ColorPicker
-                          color={template.font_config?.bodyColor || '#4b5563'}
-                          onChange={(color) => updateFontConfig('bodyColor', color)}
-                        />
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="text-sm">Label Font</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div className="space-y-2">
-                        <Label className="text-sm">Font Family</Label>
-                        <Select
-                          value={template.font_config?.labelFont || 'helvetica-bold'}
-                          onValueChange={(value) => updateFontConfig('labelFont', value)}
-                        >
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="helvetica">Helvetica</SelectItem>
-                            <SelectItem value="helvetica-bold">Helvetica Bold</SelectItem>
-                            <SelectItem value="times">Times</SelectItem>
-                            <SelectItem value="times-bold">Times Bold</SelectItem>
-                            <SelectItem value="courier">Courier</SelectItem>
-                            <SelectItem value="courier-bold">Courier Bold</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="text-sm">Font Size</Label>
-                        <Slider
-                          value={[template.font_config?.labelSize || 10]}
-                          onValueChange={([value]) => updateFontConfig('labelSize', value)}
-                          min={8}
-                          max={18}
-                          step={1}
-                        />
-                        <span className="text-xs text-muted-foreground">
-                          {template.font_config?.labelSize || 10}pt
-                        </span>
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="text-sm">Color</Label>
-                        <ColorPicker
-                          color={template.font_config?.labelColor || '#6b7280'}
-                          onChange={(color) => updateFontConfig('labelColor', color)}
-                        />
-                      </div>
-                    </CardContent>
-                  </Card>
-                </TabsContent>
-
-                {/* Images Tab */}
-                <TabsContent value="images" className="space-y-4 mt-6">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="text-sm">Background Image</CardTitle>
-                      <CardDescription>Upload a background image for full-photo layouts</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      {template.background_image_url && (
-                        <div className="relative">
-                          <img
-                            src={template.background_image_url}
-                            alt="Background"
-                            className="w-full h-32 object-cover rounded"
-                          />
-                          <Button
-                            size="sm"
-                            variant="destructive"
-                            className="absolute top-2 right-2"
-                            onClick={() =>
-                              setTemplate({ ...template, background_image_url: null })
-                            }
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
-                        </div>
-                      )}
-                      <Button
-                        variant="outline"
-                        className="w-full"
-                        onClick={() => setShowBackgroundLibrary(true)}
-                      >
-                        <ImageIcon className="h-4 w-4 mr-2" />
-                        {template.background_image_url ? 'Change Background' : 'Select Background'}
-                      </Button>
-                      <div className="space-y-2">
-                        <Label className="text-sm">Opacity</Label>
-                        <Slider
-                          value={[(template.background_opacity || 1) * 100]}
-                          onValueChange={([value]) =>
-                            setTemplate({ ...template, background_opacity: value / 100 })
-                          }
-                          max={100}
-                          step={5}
-                        />
-                        <span className="text-xs text-muted-foreground">
-                          {Math.round((template.background_opacity || 1) * 100)}%
-                        </span>
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="text-sm">Decorative Images</CardTitle>
-                      <CardDescription>Add decorative elements to your template</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-2">
-                        {template.decorative_images?.map((img, index) => (
-                          <div key={index} className="flex items-center gap-2 p-2 border rounded">
-                            <ImageIcon className="h-4 w-4" />
-                            <span className="text-xs flex-1">{img.name || 'Decorative image'}</span>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => {
-                                const newImages = [...(template.decorative_images || [])]
-                                newImages.splice(index, 1)
-                                setTemplate({ ...template, decorative_images: newImages })
-                              }}
-                            >
-                              <Trash2 className="h-3 w-3" />
-                            </Button>
-                          </div>
-                        ))}
-                      </div>
-                      <Button
-                        variant="outline"
-                        className="w-full mt-3"
-                        onClick={() => setShowDecorativeLibrary(true)}
-                      >
-                        <Plus className="h-4 w-4 mr-2" />
-                        Add Decorative Images
-                      </Button>
-                    </CardContent>
-                  </Card>
-                </TabsContent>
-
-                {/* Border Tab */}
-                <TabsContent value="border" className="space-y-4 mt-6">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="text-sm">Border Settings</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <Label className="text-sm">Enabled</Label>
-                        <Switch
-                          checked={template.border_config?.enabled ?? false}
-                          onCheckedChange={(checked) => updateBorderConfig('enabled', checked)}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="text-sm">Style</Label>
-                        <Select
-                          value={template.border_config?.style || 'solid'}
-                          onValueChange={(value) => updateBorderConfig('style', value)}
-                        >
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="solid">Solid</SelectItem>
-                            <SelectItem value="dashed">Dashed</SelectItem>
-                            <SelectItem value="dotted">Dotted</SelectItem>
-                            <SelectItem value="double">Double</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="text-sm">Width</Label>
-                        <Slider
-                          value={[template.border_config?.width || 2]}
-                          onValueChange={([value]) => updateBorderConfig('width', value)}
-                          min={1}
-                          max={10}
-                          step={1}
-                        />
-                        <span className="text-xs text-muted-foreground">
-                          {template.border_config?.width || 2}px
-                        </span>
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="text-sm">Color</Label>
-                        <ColorPicker
-                          color={template.border_config?.color || '#e5e7eb'}
-                          onChange={(color) => updateBorderConfig('color', color)}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="text-sm">Corner Radius</Label>
-                        <Slider
-                          value={[template.border_config?.cornerRadius || 0]}
-                          onValueChange={([value]) => updateBorderConfig('cornerRadius', value)}
-                          max={20}
-                          step={1}
-                        />
-                        <span className="text-xs text-muted-foreground">
-                          {template.border_config?.cornerRadius || 0}px
-                        </span>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </TabsContent>
-              </Tabs>
+            <div className="p-4 space-y-4">
+              <ElementToolbar
+                onAddElement={handleAddElement}
+                onShowAssetLibrary={handleShowAssetLibrary}
+                maxLayer={maxLayer}
+              />
+              <CanvasSettings
+                backgroundColor={template.layout_config?.backgroundColor || '#ffffff'}
+                borderEnabled={template.border_config?.enabled ?? false}
+                borderWidth={template.border_config?.width || 2}
+                borderColor={template.border_config?.color || '#e5e7eb'}
+                borderStyle={template.border_config?.style || 'solid'}
+                borderRadius={template.border_config?.cornerRadius || 0}
+                onUpdateSettings={(settings) => {
+                  setTemplate({
+                    ...template,
+                    layout_config: {
+                      ...template.layout_config,
+                      backgroundColor: settings.backgroundColor ?? template.layout_config?.backgroundColor,
+                    },
+                    border_config: {
+                      ...template.border_config,
+                      enabled: settings.borderEnabled ?? template.border_config?.enabled ?? false,
+                      width: settings.borderWidth ?? template.border_config?.width ?? 2,
+                      color: settings.borderColor ?? template.border_config?.color ?? '#e5e7eb',
+                      style: settings.borderStyle ?? template.border_config?.style ?? 'solid',
+                      cornerRadius: settings.borderRadius ?? template.border_config?.cornerRadius ?? 0,
+                      decorative: false,
+                    },
+                  })
+                }}
+              />
             </div>
           </ScrollArea>
         </div>
 
-        {/* Right Panel - Preview */}
-        <div className="flex-1 flex flex-col bg-gray-50">
-          <div className="p-6">
-            <div className="flex items-center justify-center">
-              <div
-                className="bg-white shadow-2xl"
-                style={{
-                  width: '595px',
-                  height: '842px',
-                  transform: 'scale(0.85)',
-                  transformOrigin: 'top center',
-                }}
-              >
-                <TemplatePreview template={template} storeContent={storeContent} />
+        {/* Center - Canvas */}
+        <div className="flex-1 flex flex-col bg-gray-100">
+          {/* Canvas Toolbar */}
+          <div className="border-b bg-background px-4 py-3">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setScale(Math.max(0.25, scale - 0.1))}
+                  >
+                    <ZoomOut className="h-4 w-4" />
+                  </Button>
+                  <span className="text-sm font-medium min-w-[60px] text-center">
+                    {Math.round(scale * 100)}%
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setScale(Math.min(2, scale + 0.1))}
+                  >
+                    <ZoomIn className="h-4 w-4" />
+                  </Button>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <Label className="text-xs">Canvas Height:</Label>
+                  <Slider
+                    value={[template.page_height_percentage || 100]}
+                    onValueChange={([value]) => handleCanvasHeightChange(value)}
+                    min={30}
+                    max={100}
+                    step={5}
+                    className="w-32"
+                  />
+                  <span className="text-xs text-muted-foreground min-w-[60px]">
+                    {template.page_height_percentage || 100}%
+                  </span>
+                </div>
+              </div>
+
+              <div className="text-sm text-muted-foreground">
+                {(template.elements || []).length} element(s)
+              </div>
+            </div>
+
+            {/* Template Name and Description */}
+            <div className="flex items-center gap-4">
+              <div className="flex-1 max-w-xs">
+                <Label className="text-xs mb-1 block">Template Name</Label>
+                <Input
+                  value={template.name || ''}
+                  onChange={(e) => setTemplate({ ...template, name: e.target.value })}
+                  className="h-8"
+                  placeholder="Template name..."
+                />
+              </div>
+              <div className="flex-1">
+                <Label className="text-xs mb-1 block">Description (optional)</Label>
+                <Input
+                  value={template.description || ''}
+                  onChange={(e) => setTemplate({ ...template, description: e.target.value })}
+                  className="h-8"
+                  placeholder="Brief description..."
+                />
               </div>
             </div>
           </div>
+
+          {/* Canvas */}
+          <ScrollArea className="flex-1">
+            <div className="p-8">
+              <TemplateBuilderCanvas
+                elements={template.elements || []}
+                canvasWidth={canvasWidth}
+                canvasHeight={canvasHeight}
+                backgroundColor={template.layout_config?.backgroundColor || '#ffffff'}
+                backgroundImage={template.background_image_url || undefined}
+                backgroundOpacity={template.background_opacity || 1}
+                borderEnabled={template.border_config?.enabled ?? false}
+                borderWidth={template.border_config?.width || 2}
+                borderColor={template.border_config?.color || '#e5e7eb'}
+                borderStyle={template.border_config?.style || 'solid'}
+                borderRadius={template.border_config?.cornerRadius || 0}
+                selectedElementId={selectedElementId}
+                onSelectElement={setSelectedElementId}
+                onUpdateElement={handleUpdateElement}
+                onElementDragEnd={handleUpdateElement}
+                scale={scale}
+              />
+            </div>
+          </ScrollArea>
+        </div>
+
+        {/* Right Panel - Properties */}
+        <div className="w-[320px] border-l bg-muted/30">
+          <ScrollArea className="h-full">
+            <div className="p-4">
+              <ElementPropertiesPanel
+                element={selectedElement}
+                onUpdateElement={handleUpdateElement}
+                onDeleteElement={handleDeleteElement}
+                onMoveLayer={handleMoveLayer}
+              />
+            </div>
+          </ScrollArea>
         </div>
       </div>
 
-      {/* Full Preview Modal */}
-      {showPreview && (
-        <div
-          className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-8"
-          onClick={() => setShowPreview(false)}
-        >
-          <div className="relative">
-            <Button
-              variant="secondary"
-              className="absolute -top-12 right-0"
-              onClick={() => setShowPreview(false)}
-            >
-              Close
-            </Button>
-            <div
-              className="bg-white shadow-2xl"
-              style={{
-                width: '595px',
-                height: '842px',
-              }}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <TemplatePreview template={template} storeContent={storeContent} />
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Preview Dialog */}
+      <TemplatePreviewDialog
+        open={showPreview}
+        onOpenChange={setShowPreview}
+        template={template}
+        storeContent={storeContent}
+      />
 
-      {/* Logo Library Dialog */}
-      <Dialog open={showLogoLibrary} onOpenChange={setShowLogoLibrary}>
+      {/* Asset Library Dialog */}
+      <Dialog open={showAssetLibrary} onOpenChange={setShowAssetLibrary}>
         <DialogContent className="max-w-4xl max-h-[80vh]">
           <DialogHeader>
-            <DialogTitle>Select Logo</DialogTitle>
+            <DialogTitle>Select {assetLibraryType === 'logo' ? 'Logo' : 'Image'}</DialogTitle>
           </DialogHeader>
           <AssetLibraryBrowser
-            filterType="logo"
-            allowMultiple={false}
-            onSelectAsset={handleLogoSelect}
-          />
-        </DialogContent>
-      </Dialog>
-
-      {/* Background Library Dialog */}
-      <Dialog open={showBackgroundLibrary} onOpenChange={setShowBackgroundLibrary}>
-        <DialogContent className="max-w-4xl max-h-[80vh]">
-          <DialogHeader>
-            <DialogTitle>Select Background Image</DialogTitle>
-          </DialogHeader>
-          <AssetLibraryBrowser
-            filterType="background"
-            allowMultiple={false}
-            onSelectAsset={handleBackgroundSelect}
-          />
-        </DialogContent>
-      </Dialog>
-
-      {/* Decorative Images Library Dialog */}
-      <Dialog open={showDecorativeLibrary} onOpenChange={setShowDecorativeLibrary}>
-        <DialogContent className="max-w-4xl max-h-[80vh]">
-          <DialogHeader>
-            <DialogTitle>Select Decorative Images</DialogTitle>
-          </DialogHeader>
-          <AssetLibraryBrowser
-            filterType="decorative"
-            allowMultiple={true}
-            onSelectAsset={handleDecorativeSelect}
+            filterType={assetLibraryType}
+            onSelect={handleAssetSelect}
+            multiSelect={assetLibraryType === 'image'}
           />
         </DialogContent>
       </Dialog>

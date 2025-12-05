@@ -11,27 +11,23 @@ import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
   Plus,
-  Eye,
   Copy,
   Trash2,
   Edit,
   Image as ImageIcon,
-  Palette,
   Power,
   PowerOff,
-  X,
-  Settings
 } from 'lucide-react'
 import { toast } from 'sonner'
 import {
   getPDFTemplates,
   deletePDFTemplate,
   duplicatePDFTemplate,
-  updatePDFTemplate,
-  type PDFTemplate
+  updatePDFTemplate
 } from '@/lib/actions/pdf-templates'
 import { getStoreContent, updateStoreContent, type StoreContent } from '@/lib/actions/store-content'
 import { AssetLibraryBrowser } from './asset-library-browser'
+import { PDFTemplate } from '@/lib/types'
 
 export function TemplateDesignerSection() {
   const router = useRouter()
@@ -141,24 +137,20 @@ export function TemplateDesignerSection() {
     }
   }
 
-  const getLayoutTypeBadge = (layoutType: string | null | undefined) => {
+  const getTemplateTypeBadge = (templateType: string | null | undefined) => {
     const colors = {
+      voucher: 'bg-purple-100 text-purple-700',
       ticket: 'bg-blue-100 text-blue-700',
-      'full-photo': 'bg-purple-100 text-purple-700',
-      certificate: 'bg-green-100 text-green-700',
-      minimal: 'bg-gray-100 text-gray-700'
     }
 
     const labels = {
+      voucher: 'Voucher',
       ticket: 'Ticket',
-      'full-photo': 'Full Photo',
-      certificate: 'Certificate',
-      minimal: 'Minimal'
     }
 
-    const type = layoutType || 'ticket'
+    const type = templateType || 'voucher'
     return (
-      <Badge className={colors[type as keyof typeof colors] || colors.ticket}>
+      <Badge className={colors[type as keyof typeof colors] || colors.voucher}>
         {labels[type as keyof typeof labels] || type}
       </Badge>
     )
@@ -243,14 +235,10 @@ export function TemplateDesignerSection() {
                     <CardContent className="pt-4 space-y-3">
                       <div>
                         <h3 className="font-medium">{template.name}</h3>
-                        <p className="text-xs text-muted-foreground">{template.name_de}</p>
                       </div>
 
                       <div className="flex items-center gap-2">
-                        {getLayoutTypeBadge(template.layout_type)}
-                        <span className="text-xs text-muted-foreground">
-                          {template.code}
-                        </span>
+                        {getTemplateTypeBadge(template.template_type)}
                       </div>
 
                       {template.description && (

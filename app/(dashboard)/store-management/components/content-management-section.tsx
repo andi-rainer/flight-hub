@@ -121,6 +121,9 @@ export function ContentManagementSection() {
         success_download_pdf_button_de: result.data.success_download_pdf_button_de ?? '',
         terms_url: result.data.terms_url ?? '',
         terms_url_de: result.data.terms_url_de ?? '',
+        // PDF Configuration
+        pdf_voucher_description: result.data.pdf_voucher_description ?? '',
+        pdf_voucher_description_de: result.data.pdf_voucher_description_de ?? '',
       })
     } else {
       toast.error('Failed to load store content')
@@ -361,7 +364,7 @@ export function ContentManagementSection() {
   return (
     <div className="space-y-6">
       <Tabs defaultValue="home" className="w-full">
-        <TabsList className="grid w-full grid-cols-7">
+        <TabsList className="grid w-full grid-cols-8">
           <TabsTrigger value="home">Home</TabsTrigger>
           <TabsTrigger value="voucher-cards">Voucher Cards</TabsTrigger>
           <TabsTrigger value="booking-cards">Booking Cards</TabsTrigger>
@@ -369,6 +372,7 @@ export function ContentManagementSection() {
           <TabsTrigger value="vouchers-page">Vouchers Page</TabsTrigger>
           <TabsTrigger value="bookings-page">Bookings Page</TabsTrigger>
           <TabsTrigger value="success-page">Success Page</TabsTrigger>
+          <TabsTrigger value="pdf-config">PDF Config</TabsTrigger>
         </TabsList>
 
         {/* HOME PAGE TAB */}
@@ -1446,6 +1450,47 @@ export function ContentManagementSection() {
                     onChange={(e) => setContent({ ...content, success_purchase_another_button_de: e.target.value })}
                     placeholder="Weitere Kaufen"
                   />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* PDF CONFIGURATION TAB */}
+        <TabsContent value="pdf-config" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>PDF Voucher Configuration</CardTitle>
+              <CardDescription>
+                Configure default text content that appears on PDF vouchers. These can be overridden by individual templates.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Voucher Description (English)</Label>
+                  <Textarea
+                    value={content.pdf_voucher_description ?? ''}
+                    onChange={(e) => setContent({ ...content, pdf_voucher_description: e.target.value })}
+                    placeholder="Experience the thrill of a tandem skydive from 12,000 feet with our professional instructors. This voucher includes all equipment, training, and an unforgettable freefall experience."
+                    rows={4}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Default description text shown on PDF vouchers. Can be positioned freely using the template editor.
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Voucher Description (German)</Label>
+                  <Textarea
+                    value={content.pdf_voucher_description_de ?? ''}
+                    onChange={(e) => setContent({ ...content, pdf_voucher_description_de: e.target.value })}
+                    placeholder="Erleben Sie den Nervenkitzel eines Tandem-Fallschirmsprungs aus 12.000 Fuß mit unseren professionellen Ausbildern. Dieser Gutschein umfasst die gesamte Ausrüstung, das Training und ein unvergessliches Freifallserlebnis."
+                    rows={4}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Standard-Beschreibungstext für PDF-Gutscheine. Kann im Template-Editor frei positioniert werden.
+                  </p>
                 </div>
               </div>
             </CardContent>

@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { ScrollArea } from '@/components/ui/scroll-area'
 import {
   Dialog,
   DialogContent,
@@ -37,14 +38,14 @@ interface Asset {
 }
 
 interface AssetLibraryBrowserProps {
-  onSelectAsset?: (asset: Asset) => void
-  allowMultiple?: boolean
-  filterType?: 'background' | 'decorative' | 'logo' | 'border'
+  onSelect?: (assets: Asset[]) => void
+  multiSelect?: boolean
+  filterType?: 'background' | 'decorative' | 'logo' | 'border' | 'image'
 }
 
 export function AssetLibraryBrowser({
-  onSelectAsset,
-  allowMultiple = false,
+  onSelect,
+  multiSelect = false,
   filterType,
 }: AssetLibraryBrowserProps) {
   const [assets, setAssets] = useState<Asset[]>([])
@@ -80,7 +81,14 @@ export function AssetLibraryBrowser({
 
     // Filter by type
     if (activeTab !== 'all') {
-      filtered = filtered.filter((asset) => asset.asset_type === activeTab)
+      // If filterType is 'image', include both decorative and logo types
+      if (filterType === 'image') {
+        filtered = filtered.filter((asset) =>
+          asset.asset_type === 'decorative' || asset.asset_type === 'logo'
+        )
+      } else {
+        filtered = filtered.filter((asset) => asset.asset_type === activeTab)
+      }
     }
 
     // Filter by search query
@@ -140,7 +148,7 @@ export function AssetLibraryBrowser({
   }
 
   const handleSelect = (asset: Asset) => {
-    if (allowMultiple) {
+    if (multiSelect) {
       const newSelected = new Set(selectedAssets)
       if (newSelected.has(asset.id)) {
         newSelected.delete(asset.id)
@@ -149,8 +157,15 @@ export function AssetLibraryBrowser({
       }
       setSelectedAssets(newSelected)
     } else {
-      onSelectAsset?.(asset)
+      // For single select, pass array with one asset
+      onSelect?.([asset])
     }
+  }
+
+  const handleUseSelected = () => {
+    const selected = assets.filter(asset => selectedAssets.has(asset.id))
+    onSelect?.(selected)
+    setSelectedAssets(new Set())
   }
 
   const formatFileSize = (bytes?: number) => {
@@ -183,9 +198,10 @@ export function AssetLibraryBrowser({
   }
 
   return (
-    <div className="space-y-4">
-      {/* Header */}
-      <div className="flex items-center justify-between">
+    <ScrollArea className="h-[60vh]">
+      <div className="space-y-4 p-1">
+        {/* Header */}
+        <div className="flex items-center justify-between">
         <div className="flex items-center gap-2 flex-1 max-w-md">
           <div className="relative flex-1">
             <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -358,8 +374,8 @@ export function AssetLibraryBrowser({
       )}
 
       {/* Selection Summary (for multiple selection) */}
-      {allowMultiple && selectedAssets.size > 0 && (
-        <div className="fixed bottom-4 right-4 bg-primary text-primary-foreground p-4 rounded-lg shadow-lg">
+      {multiSelect && selectedAssets.size > 0 && (
+        <div className="fixed bottom-4 right-4 bg-primary text-primary-foreground p-4 rounded-lg shadow-lg z-50">
           <p className="text-sm font-medium">
             {selectedAssets.size} asset{selectedAssets.size > 1 ? 's' : ''} selected
           </p>
@@ -371,12 +387,13 @@ export function AssetLibraryBrowser({
             >
               Clear
             </Button>
-            <Button size="sm" onClick={() => {}}>
+            <Button size="sm" onClick={handleUseSelected}>
               Use Selected
             </Button>
           </div>
         </div>
       )}
-    </div>
+      </div>
+    </ScrollArea>
   )
 }

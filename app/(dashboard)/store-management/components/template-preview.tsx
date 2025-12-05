@@ -6,6 +6,8 @@ import { QrCode } from 'lucide-react'
 interface TemplatePreviewProps {
   template: PDFTemplate
   storeContent?: {
+    pdf_voucher_description?: string
+    pdf_voucher_description_de?: string
     pdf_label_voucher_code?: string
     pdf_label_booking_code?: string
     pdf_label_valid_until?: string
@@ -96,13 +98,30 @@ export function TemplatePreview({ template, storeContent }: TemplatePreviewProps
     recipient: 'RECIPIENT', // This could be added to CMS if needed
   }
 
+  // Get voucher description from CMS or use default
+  const voucherDescription = storeContent?.pdf_voucher_description ||
+    'Experience the thrill of a tandem skydive from 12,000 feet with our professional instructors. This voucher includes all equipment, training, and an unforgettable freefall experience.'
+
+  // Calculate page height for ticket-style vouchers
+  const pageHeight = template.page_height_percentage
+    ? (842 * (template.page_height_percentage / 100))
+    : 842
+
+  // Get text zone positions or use defaults
+  const textZones = template.text_zones || {}
+  const descriptionZone = textZones.description || { x: 60, y: 260, width: 475, height: 100, fontSize: 12 }
+  const recipientZone = textZones.recipient || { x: 60, y: 200, fontSize: 12 }
+  const voucherCodeZone = textZones.voucherCode || { x: 60, y: 150, fontSize: 12 }
+  const validUntilZone = textZones.validUntil || { x: 60, y: 180, fontSize: 12 }
+
   return (
     <div
-      className="relative w-full h-full overflow-hidden"
+      className="relative w-full overflow-hidden"
       style={{
         backgroundColor,
         border: borderEnabled ? `${borderWidth}px ${borderStyle} ${borderColor}` : 'none',
         borderRadius: `${borderRadius}px`,
+        height: `${pageHeight}px`,
       }}
     >
       {/* Background Image (for full-photo layout) */}
@@ -177,118 +196,137 @@ export function TemplatePreview({ template, storeContent }: TemplatePreviewProps
         </div>
       ))}
 
-      {/* Content Area */}
-      <div
+      {/* Title */}
+      <h1
         className="absolute"
         style={{
           left: '60px',
-          top: layoutType === 'full-photo' ? '530px' : '150px',
-          width: '475px',
+          top: layoutType === 'full-photo' ? '530px' : '30px',
+          fontFamily: getFontFamily(titleFont),
+          fontWeight: getFontWeight(titleFont),
+          fontSize: `${titleSize}px`,
+          color: titleColor,
+          margin: 0,
         }}
       >
-        {/* Title */}
-        <h1
+        {template.name}
+      </h1>
+
+      {/* Voucher Code */}
+      <div
+        className="absolute"
+        style={{
+          left: `${voucherCodeZone.x}px`,
+          top: `${voucherCodeZone.y}px`,
+        }}
+      >
+        <div
           style={{
-            fontFamily: getFontFamily(titleFont),
-            fontWeight: getFontWeight(titleFont),
-            fontSize: `${titleSize}px`,
-            color: titleColor,
-            margin: 0,
-            marginBottom: '16px',
+            fontFamily: getFontFamily(labelFont),
+            fontWeight: getFontWeight(labelFont),
+            fontSize: `${labelSize}px`,
+            color: labelColor,
+            marginBottom: '4px',
           }}
         >
-          {template.name}
-        </h1>
+          {labels.voucherCode}
+        </div>
+        <div
+          style={{
+            fontFamily: getFontFamily(bodyFont),
+            fontWeight: getFontWeight(bodyFont),
+            fontSize: `${voucherCodeZone.fontSize || bodySize}px`,
+            color: bodyColor,
+          }}
+        >
+          TANDEM-2025-XXXX
+        </div>
+      </div>
 
-        {/* Sample Content */}
-        <div className="space-y-3">
-          <div>
-            <div
-              style={{
-                fontFamily: getFontFamily(labelFont),
-                fontWeight: getFontWeight(labelFont),
-                fontSize: `${labelSize}px`,
-                color: labelColor,
-                marginBottom: '4px',
-              }}
-            >
-              {labels.voucherCode}
-            </div>
-            <div
-              style={{
-                fontFamily: getFontFamily(bodyFont),
-                fontWeight: getFontWeight(bodyFont),
-                fontSize: `${bodySize}px`,
-                color: bodyColor,
-              }}
-            >
-              TANDEM-2025-XXXX
-            </div>
-          </div>
+      {/* Valid Until */}
+      <div
+        className="absolute"
+        style={{
+          left: `${validUntilZone.x}px`,
+          top: `${validUntilZone.y}px`,
+        }}
+      >
+        <div
+          style={{
+            fontFamily: getFontFamily(labelFont),
+            fontWeight: getFontWeight(labelFont),
+            fontSize: `${labelSize}px`,
+            color: labelColor,
+            marginBottom: '4px',
+          }}
+        >
+          {labels.validUntil}
+        </div>
+        <div
+          style={{
+            fontFamily: getFontFamily(bodyFont),
+            fontWeight: getFontWeight(bodyFont),
+            fontSize: `${validUntilZone.fontSize || bodySize}px`,
+            color: bodyColor,
+          }}
+        >
+          December 31, 2025
+        </div>
+      </div>
 
-          <div>
-            <div
-              style={{
-                fontFamily: getFontFamily(labelFont),
-                fontWeight: getFontWeight(labelFont),
-                fontSize: `${labelSize}px`,
-                color: labelColor,
-                marginBottom: '4px',
-              }}
-            >
-              {labels.validUntil}
-            </div>
-            <div
-              style={{
-                fontFamily: getFontFamily(bodyFont),
-                fontWeight: getFontWeight(bodyFont),
-                fontSize: `${bodySize}px`,
-                color: bodyColor,
-              }}
-            >
-              December 31, 2025
-            </div>
+      {/* Recipient Name (if enabled) */}
+      {template.show_recipient_name && (
+        <div
+          className="absolute"
+          style={{
+            left: `${recipientZone.x}px`,
+            top: `${recipientZone.y}px`,
+          }}
+        >
+          <div
+            style={{
+              fontFamily: getFontFamily(labelFont),
+              fontWeight: getFontWeight(labelFont),
+              fontSize: `${labelSize}px`,
+              color: labelColor,
+              marginBottom: '4px',
+            }}
+          >
+            {labels.recipient}
           </div>
+          <div
+            style={{
+              fontFamily: getFontFamily(bodyFont),
+              fontWeight: getFontWeight(bodyFont),
+              fontSize: `${recipientZone.fontSize || bodySize}px`,
+              color: bodyColor,
+            }}
+          >
+            John Doe
+          </div>
+        </div>
+      )}
 
-          <div>
-            <div
-              style={{
-                fontFamily: getFontFamily(labelFont),
-                fontWeight: getFontWeight(labelFont),
-                fontSize: `${labelSize}px`,
-                color: labelColor,
-                marginBottom: '4px',
-              }}
-            >
-              {labels.recipient}
-            </div>
-            <div
-              style={{
-                fontFamily: getFontFamily(bodyFont),
-                fontWeight: getFontWeight(bodyFont),
-                fontSize: `${bodySize}px`,
-                color: bodyColor,
-              }}
-            >
-              John Doe
-            </div>
-          </div>
-
-          <div className="pt-4">
-            <div
-              style={{
-                fontFamily: getFontFamily(bodyFont),
-                fontWeight: getFontWeight(bodyFont),
-                fontSize: `${bodySize}px`,
-                color: bodyColor,
-                lineHeight: '1.6',
-              }}
-            >
-              Experience the thrill of a tandem skydive from 12,000 feet with our professional
-              instructors. This voucher includes all equipment, training, and an unforgettable
-              freefall experience.
-            </div>
-          </div>
+      {/* Voucher Description */}
+      <div
+        className="absolute"
+        style={{
+          left: `${descriptionZone.x}px`,
+          top: `${descriptionZone.y}px`,
+          width: `${descriptionZone.width}px`,
+          height: `${descriptionZone.height}px`,
+        }}
+      >
+        <div
+          style={{
+            fontFamily: getFontFamily(bodyFont),
+            fontWeight: getFontWeight(bodyFont),
+            fontSize: `${descriptionZone.fontSize || bodySize}px`,
+            color: bodyColor,
+            lineHeight: '1.6',
+          }}
+        >
+          {voucherDescription}
         </div>
       </div>
 
@@ -331,9 +369,34 @@ export function TemplatePreview({ template, storeContent }: TemplatePreviewProps
         </div>
       </div>
 
+      {/* Cut Line (for ticket-style vouchers) */}
+      {template.show_cut_line && (
+        <div
+          className="absolute left-0 right-0 flex items-center"
+          style={{
+            bottom: '-15px',
+            borderBottom: '1px dashed #999',
+          }}
+        >
+          <div
+            className="absolute left-1/2 transform -translate-x-1/2 bg-white px-2"
+            style={{
+              fontSize: '8px',
+              color: '#999',
+              bottom: '-4px',
+            }}
+          >
+            ✂ CUT HERE
+          </div>
+        </div>
+      )}
+
       {/* Layout Type Badge (for preview only) */}
       <div className="absolute top-2 left-2 bg-black/50 text-white text-xs px-2 py-1 rounded">
         {layoutType.charAt(0).toUpperCase() + layoutType.slice(1)} Layout
+        {template.page_height_percentage && template.page_height_percentage < 100 && (
+          <span className="ml-1">({template.page_height_percentage}% height)</span>
+        )}
       </div>
     </div>
   )

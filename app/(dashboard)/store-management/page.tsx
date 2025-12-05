@@ -1,6 +1,6 @@
 'use client'
 
-import { useSearchParams } from 'next/navigation'
+import { useSearchParams, useRouter } from 'next/navigation'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Store } from 'lucide-react'
 import { VoucherTypesSection } from './components/voucher-types-section'
@@ -10,8 +10,13 @@ import { ContentManagementSection } from './components/content-management-sectio
 import { TemplateDesignerSection } from './components/template-designer-section'
 
 export default function StoreManagementPage() {
+  const router = useRouter()
   const searchParams = useSearchParams()
   const activeTab = searchParams.get('tab') || 'settings'
+
+  const handleTabChange = (value: string) => {
+    router.push(`/store-management?tab=${value}`)
+  }
 
   return (
     <div className="space-y-6">
@@ -25,7 +30,7 @@ export default function StoreManagementPage() {
         </p>
       </div>
 
-      <Tabs value={activeTab} className="space-y-4">
+      <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-4">
         <TabsList>
           <TabsTrigger value="settings">Store Settings</TabsTrigger>
           <TabsTrigger value="vouchers">Voucher Types</TabsTrigger>

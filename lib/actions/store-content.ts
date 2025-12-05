@@ -108,6 +108,8 @@ export interface StoreContent {
   success_download_pdf_button?: string
   success_download_pdf_button_de?: string
   // PDF Configuration
+  pdf_voucher_description?: string | null
+  pdf_voucher_description_de?: string | null
   pdf_contact_phone?: string | null
   pdf_contact_phone_de?: string | null
   pdf_contact_email?: string | null
