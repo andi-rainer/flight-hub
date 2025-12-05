@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
-import { TemplateElement, TextElement, ImageElement, QRElement, LineElement, LogoElement } from '@/lib/types'
-import { QrCode, Type, Image as ImageIcon, Minus } from 'lucide-react'
+import { useState, useRef} from 'react'
+import { TemplateElement, QRElement } from '@/lib/types'
+import { QrCode, Image as ImageIcon } from 'lucide-react'
 
 interface TemplateBuilderCanvasProps {
   elements: TemplateElement[]
@@ -195,6 +195,9 @@ export function TemplateBuilderCanvas({
                   fontSize: `${Math.max(8, element.fontSize * 0.7)}px`,
                   color: '#6b7280',
                   marginBottom: '4px',
+                  userSelect: 'none',
+                  WebkitUserSelect: 'none',
+                  pointerEvents: 'none',
                 }}
               >
                 {labelText}
@@ -209,9 +212,12 @@ export function TemplateBuilderCanvas({
                 textAlign: element.align || 'left',
                 lineHeight: element.lineHeight || 1.5,
                 overflow: 'hidden',
+                userSelect: 'none',
+                WebkitUserSelect: 'none',
+                pointerEvents: 'none',
               }}
             >
-              {element.content || (element.contentField ? `{${element.contentField}}` : element.cmsField ? `{CMS: ${element.cmsField}}` : 'Text')}
+              {element.content || (element.contentField ? (element.contentField === 'personalMessage' ? '{Personal Message from buyer}' : `{${element.contentField}}`) : element.cmsField ? `{CMS: ${element.cmsField}}` : 'Text')}
             </div>
             {isSelected && !element.locked && (
               <>
@@ -246,11 +252,13 @@ export function TemplateBuilderCanvas({
               <img
                 src={element.url}
                 alt={element.type}
+                draggable={false}
                 style={{
                   width: '100%',
                   height: '100%',
                   objectFit: element.fit || 'contain',
                   opacity: element.opacity || 1,
+                  pointerEvents: 'none',
                 }}
               />
             ) : (
@@ -347,6 +355,10 @@ export function TemplateBuilderCanvas({
         transform: `scale(${scale})`,
         transformOrigin: 'top left',
         cursor: 'default',
+        userSelect: 'none',
+        WebkitUserSelect: 'none',
+        MozUserSelect: 'none',
+        msUserSelect: 'none',
       }}
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}

@@ -245,7 +245,9 @@ export interface BaseElement {
 }
 
 export type CMSTextField =
+  | 'pdf_voucher_name'
   | 'pdf_voucher_description'
+  | 'pdf_voucher_features'
   | 'pdf_contact_phone'
   | 'pdf_contact_email'
   | 'pdf_contact_website'
@@ -258,7 +260,7 @@ export type CMSTextField =
   | 'pdf_label_personal_message'
   | 'pdf_label_from'
 
-export type DynamicTextField = 'voucherCode' | 'validUntil' | 'recipientName' | 'title'
+export type DynamicTextField = 'voucherCode' | 'validUntil' | 'recipientName' | 'personalMessage' | 'title'
 
 export interface TextElement extends BaseElement {
   type: 'text'

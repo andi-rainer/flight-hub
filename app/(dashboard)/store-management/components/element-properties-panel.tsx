@@ -9,12 +9,14 @@ import { Slider } from '@/components/ui/slider'
 import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
 import { Separator } from '@/components/ui/separator'
-import { Trash2, Lock, Unlock, ArrowUp, ArrowDown } from 'lucide-react'
+import { Trash2, ArrowUp, ArrowDown } from 'lucide-react'
 import { TemplateElement, TextElement, ImageElement, QRElement, LineElement, LogoElement, CMSTextField, DynamicTextField } from '@/lib/types'
 import { ColorPicker } from './color-picker'
 
 const CMS_FIELD_LABELS: Record<CMSTextField, string> = {
+  pdf_voucher_name: 'Voucher Name',
   pdf_voucher_description: 'Voucher Description',
+  pdf_voucher_features: 'Voucher Features',
   pdf_contact_phone: 'Contact Phone',
   pdf_contact_email: 'Contact Email',
   pdf_contact_website: 'Contact Website',
@@ -183,6 +185,7 @@ export function ElementPropertiesPanel({
                 <SelectItem value="voucherCode">Voucher Code</SelectItem>
                 <SelectItem value="validUntil">Valid Until</SelectItem>
                 <SelectItem value="recipientName">Recipient Name</SelectItem>
+                <SelectItem value="personalMessage">Personal Message</SelectItem>
               </SelectContent>
             </Select>
           </div>

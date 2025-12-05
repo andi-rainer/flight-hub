@@ -3,8 +3,8 @@
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
-import { Type, Image, QrCode, Minus, Plus, FileImage, FileText } from 'lucide-react'
-import { TemplateElement, TextElement, ImageElement, QRElement, LineElement, LogoElement, CMSTextField, DynamicTextField } from '@/lib/types'
+import { Type, Image, QrCode, Minus, FileImage, FileText } from 'lucide-react'
+import { TemplateElement, TextElement, QRElement, LineElement, CMSTextField, DynamicTextField } from '@/lib/types'
 
 interface ElementToolbarProps {
   onAddElement: (element: TemplateElement) => void
@@ -120,15 +120,6 @@ export function ElementToolbar({ onAddElement, onShowAssetLibrary, maxLayer }: E
               variant="outline"
               size="sm"
               className="h-auto py-2 flex flex-col items-center gap-1"
-              onClick={() => addTextElement('title')}
-            >
-              <Type className="h-4 w-4" />
-              <span className="text-xs">Title</span>
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-auto py-2 flex flex-col items-center gap-1"
               onClick={() => addTextElement('voucherCode')}
             >
               <Type className="h-4 w-4" />
@@ -151,6 +142,15 @@ export function ElementToolbar({ onAddElement, onShowAssetLibrary, maxLayer }: E
             >
               <Type className="h-4 w-4" />
               <span className="text-xs">Recipient</span>
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-auto py-2 flex flex-col items-center gap-1"
+              onClick={() => addTextElement('personalMessage')}
+            >
+              <Type className="h-4 w-4" />
+              <span className="text-xs">Personal Message</span>
             </Button>
           </div>
         </div>

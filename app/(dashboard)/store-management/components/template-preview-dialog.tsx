@@ -63,15 +63,35 @@ export function TemplatePreviewDialog({
     voucherCode: template.template_type === 'voucher' ? 'TANDEM-2025-1234' : 'TKT-2025-5678',
     validUntil: 'December 31, 2025',
     recipientName: 'John Doe',
+    personalMessage: 'Wishing you an unforgettable adventure! Happy Birthday!',
   }
 
   const getCMSContent = (field: CMSTextField): string => {
-    // Special handling for pdf_voucher_description - get from selected voucher/ticket type
-    if (field === 'pdf_voucher_description' && selectedType) {
-      if (language === 'de') {
-        return selectedType.name_de || selectedType.name || `{${field}}`
+    // Special handling for pdf_voucher_* fields - get from selected voucher/ticket type
+    if (selectedType) {
+      if (field === 'pdf_voucher_name') {
+        if (language === 'de') {
+          return selectedType.name_de || selectedType.name || `{${field}}`
+        }
+        return selectedType.name || `{${field}}`
       }
-      return selectedType.name || `{${field}}`
+
+      if (field === 'pdf_voucher_description') {
+        if (language === 'de') {
+          return selectedType.description_de || selectedType.description || `{${field}}`
+        }
+        return selectedType.description || `{${field}}`
+      }
+
+      if (field === 'pdf_voucher_features') {
+        // Format features as a bulleted list
+        const features = selectedType.features as Array<{ text: string; text_de?: string }> || []
+        if (features.length === 0) return `{${field}}`
+
+        return features
+          .map(f => `• ${language === 'de' ? (f.text_de || f.text) : f.text}`)
+          .join('\n')
+      }
     }
 
     if (!storeContent) return `{${field}}`

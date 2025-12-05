@@ -3125,8 +3125,6 @@ export type Database = {
           pdf_label_valid_until_de: string | null
           pdf_label_voucher_code: string | null
           pdf_label_voucher_code_de: string | null
-          pdf_voucher_description: string | null
-          pdf_voucher_description_de: string | null
           redeem_card_description: string
           redeem_card_description_de: string
           redeem_card_features: Json
@@ -3256,8 +3254,6 @@ export type Database = {
           pdf_label_valid_until_de?: string | null
           pdf_label_voucher_code?: string | null
           pdf_label_voucher_code_de?: string | null
-          pdf_voucher_description?: string | null
-          pdf_voucher_description_de?: string | null
           redeem_card_description?: string
           redeem_card_description_de?: string
           redeem_card_features?: Json
@@ -3387,8 +3383,6 @@ export type Database = {
           pdf_label_valid_until_de?: string | null
           pdf_label_voucher_code?: string | null
           pdf_label_voucher_code_de?: string | null
-          pdf_voucher_description?: string | null
-          pdf_voucher_description_de?: string | null
           redeem_card_description?: string
           redeem_card_description_de?: string
           redeem_card_features?: Json
@@ -4550,11 +4544,13 @@ export type Database = {
           language: string | null
           notes: string | null
           payment_intent_id: string | null
+          personal_message: string | null
           price_paid_eur: number
           purchase_date: string | null
           purchaser_email: string
           purchaser_name: string
           purchaser_phone: string | null
+          recipient_name: string | null
           redeemed_at: string | null
           redeemed_by: string | null
           redeemed_for_flight_jumper_id: string | null
@@ -4580,11 +4576,13 @@ export type Database = {
           language?: string | null
           notes?: string | null
           payment_intent_id?: string | null
+          personal_message?: string | null
           price_paid_eur: number
           purchase_date?: string | null
           purchaser_email: string
           purchaser_name: string
           purchaser_phone?: string | null
+          recipient_name?: string | null
           redeemed_at?: string | null
           redeemed_by?: string | null
           redeemed_for_flight_jumper_id?: string | null
@@ -4610,11 +4608,13 @@ export type Database = {
           language?: string | null
           notes?: string | null
           payment_intent_id?: string | null
+          personal_message?: string | null
           price_paid_eur?: number
           purchase_date?: string | null
           purchaser_email?: string
           purchaser_name?: string
           purchaser_phone?: string | null
+          recipient_name?: string | null
           redeemed_at?: string | null
           redeemed_by?: string | null
           redeemed_for_flight_jumper_id?: string | null
