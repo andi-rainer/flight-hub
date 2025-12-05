@@ -4544,6 +4544,7 @@ export type Database = {
           language: string | null
           notes: string | null
           payment_intent_id: string | null
+          pdf_template_id: string | null
           personal_message: string | null
           price_paid_eur: number
           purchase_date: string | null
@@ -4576,6 +4577,7 @@ export type Database = {
           language?: string | null
           notes?: string | null
           payment_intent_id?: string | null
+          pdf_template_id?: string | null
           personal_message?: string | null
           price_paid_eur: number
           purchase_date?: string | null
@@ -4608,6 +4610,7 @@ export type Database = {
           language?: string | null
           notes?: string | null
           payment_intent_id?: string | null
+          pdf_template_id?: string | null
           personal_message?: string | null
           price_paid_eur?: number
           purchase_date?: string | null
@@ -4660,6 +4663,13 @@ export type Database = {
           {
             foreignKeyName: "vouchers_design_template_id_fkey"
             columns: ["design_template_id"]
+            isOneToOne: false
+            referencedRelation: "pdf_design_templates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vouchers_pdf_template_id_fkey"
+            columns: ["pdf_template_id"]
             isOneToOne: false
             referencedRelation: "pdf_design_templates"
             referencedColumns: ["id"]
