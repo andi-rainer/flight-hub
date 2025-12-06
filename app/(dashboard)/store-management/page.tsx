@@ -1,17 +1,23 @@
-import { Metadata } from 'next'
+'use client'
+
+import { useSearchParams, useRouter } from 'next/navigation'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Store } from 'lucide-react'
 import { VoucherTypesSection } from './components/voucher-types-section'
 import { TicketTypesSection } from './components/ticket-types-section'
 import { StoreSettingsSection } from './components/store-settings-section'
 import { ContentManagementSection } from './components/content-management-section'
-
-export const metadata: Metadata = {
-  title: 'Store Management',
-  description: 'Manage the online tandem store settings and content',
-}
+import { TemplateDesignerSection } from './components/template-designer-section'
 
 export default function StoreManagementPage() {
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const activeTab = searchParams.get('tab') || 'settings'
+
+  const handleTabChange = (value: string) => {
+    router.push(`/store-management?tab=${value}`)
+  }
+
   return (
     <div className="space-y-6">
       <div>
@@ -24,12 +30,13 @@ export default function StoreManagementPage() {
         </p>
       </div>
 
-      <Tabs defaultValue="settings" className="space-y-4">
+      <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-4">
         <TabsList>
           <TabsTrigger value="settings">Store Settings</TabsTrigger>
           <TabsTrigger value="vouchers">Voucher Types</TabsTrigger>
           <TabsTrigger value="tickets">Ticket Types</TabsTrigger>
           <TabsTrigger value="content">Content Management</TabsTrigger>
+          <TabsTrigger value="templates">PDF Templates</TabsTrigger>
         </TabsList>
 
         <TabsContent value="settings" className="space-y-4">
@@ -46,6 +53,10 @@ export default function StoreManagementPage() {
 
         <TabsContent value="content" className="space-y-4">
           <ContentManagementSection />
+        </TabsContent>
+
+        <TabsContent value="templates" className="space-y-4">
+          <TemplateDesignerSection />
         </TabsContent>
       </Tabs>
     </div>

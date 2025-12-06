@@ -107,6 +107,31 @@ export interface StoreContent {
   success_booking_code_label_de?: string
   success_download_pdf_button?: string
   success_download_pdf_button_de?: string
+  // PDF Configuration
+  pdf_voucher_description?: string | null
+  pdf_voucher_description_de?: string | null
+  pdf_contact_phone?: string | null
+  pdf_contact_phone_de?: string | null
+  pdf_contact_email?: string | null
+  pdf_contact_email_de?: string | null
+  pdf_contact_website?: string | null
+  pdf_contact_website_de?: string | null
+  pdf_contact_address?: string | null
+  pdf_contact_address_de?: string | null
+  pdf_label_voucher_code?: string | null
+  pdf_label_voucher_code_de?: string | null
+  pdf_label_booking_code?: string | null
+  pdf_label_booking_code_de?: string | null
+  pdf_label_valid_until?: string | null
+  pdf_label_valid_until_de?: string | null
+  pdf_label_redeem_instructions?: string | null
+  pdf_label_redeem_instructions_de?: string | null
+  pdf_label_terms?: string | null
+  pdf_label_terms_de?: string | null
+  pdf_label_personal_message?: string | null
+  pdf_label_personal_message_de?: string | null
+  pdf_label_from?: string | null
+  pdf_label_from_de?: string | null
   // Other
   terms_url: string | null
   terms_url_de: string | null
