@@ -28,6 +28,7 @@ import {
 import { getStoreContent, updateStoreContent, type StoreContent } from '@/lib/actions/store-content'
 import { AssetLibraryBrowser } from './asset-library-browser'
 import { PDFTemplate } from '@/lib/types'
+import { CreateTemplateDialog } from './create-template-dialog'
 
 export function TemplateDesignerSection() {
   const router = useRouter()
@@ -35,6 +36,7 @@ export function TemplateDesignerSection() {
   const [isLoading, setIsLoading] = useState(true)
   const [storeContent, setStoreContent] = useState<StoreContent | null>(null)
   const [isSavingGlobalSettings, setIsSavingGlobalSettings] = useState(false)
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
 
   useEffect(() => {
     loadTemplates()
@@ -186,7 +188,7 @@ export function TemplateDesignerSection() {
                     Design and manage voucher and ticket PDF templates
                   </CardDescription>
                 </div>
-                <Button>
+                <Button onClick={() => setIsCreateDialogOpen(true)}>
                   <Plus className="h-4 w-4 mr-2" />
                   Create Template
                 </Button>
@@ -291,7 +293,7 @@ export function TemplateDesignerSection() {
                   <div className="col-span-full text-center py-12">
                     <ImageIcon className="h-12 w-12 mx-auto mb-4 text-muted-foreground opacity-50" />
                     <p className="text-muted-foreground mb-4">No templates found</p>
-                    <Button>
+                    <Button onClick={() => setIsCreateDialogOpen(true)}>
                       <Plus className="h-4 w-4 mr-2" />
                       Create Your First Template
                     </Button>
@@ -574,6 +576,10 @@ export function TemplateDesignerSection() {
         </TabsContent>
       </Tabs>
 
+      <CreateTemplateDialog
+        open={isCreateDialogOpen}
+        onOpenChange={setIsCreateDialogOpen}
+      />
     </div>
   )
 }

@@ -68,11 +68,9 @@ export async function getPDFTemplate(id: string): Promise<{
  */
 export async function createPDFTemplate(data: {
   name: string
-  name_de: string
   code: string
   description?: string
-  description_de?: string
-  layout_type: 'ticket' | 'full-photo' | 'certificate' | 'minimal'
+  template_type: 'voucher' | 'ticket'
 }): Promise<{
   success: boolean
   data?: PDFTemplate
@@ -97,39 +95,34 @@ export async function createPDFTemplate(data: {
       return { success: false, error: 'Unauthorized' }
     }
 
-    // Get default config based on layout type
+    // Get default config based on template type
     const defaultConfigs = {
+      voucher: {
+        layout_config: { primaryColor: '#7c3aed', secondaryColor: '#a78bfa' },
+        border_config: { enabled: true, style: 'solid', width: 2, color: '#a78bfa', cornerRadius: 8, decorative: true },
+        canvas_width: 595,
+        canvas_height: 842,
+        elements: []
+      },
       ticket: {
         layout_config: { primaryColor: '#2563eb', secondaryColor: '#3b82f6' },
-        border_config: { enabled: true, style: 'solid', width: 2, color: '#3b82f6', cornerRadius: 8, decorative: true }
-      },
-      'full-photo': {
-        layout_config: { primaryColor: '#7c3aed', secondaryColor: '#a78bfa' },
-        text_overlay_enabled: true,
-        text_overlay_color: 'rgba(0,0,0,0.6)'
-      },
-      certificate: {
-        layout_config: { primaryColor: '#059669', secondaryColor: '#10b981' },
-        border_config: { enabled: true, style: 'double', width: 2, color: '#10b981', cornerRadius: 4, decorative: true }
-      },
-      minimal: {
-        layout_config: { primaryColor: '#374151', secondaryColor: '#6b7280' },
-        border_config: { enabled: false, style: 'none', width: 0, color: '#e5e7eb', cornerRadius: 0, decorative: false }
+        border_config: { enabled: true, style: 'solid', width: 2, color: '#3b82f6', cornerRadius: 8, decorative: true },
+        canvas_width: 595,
+        canvas_height: 842,
+        elements: []
       }
     }
 
-    const config = defaultConfigs[data.layout_type]
+    const config = defaultConfigs[data.template_type]
 
     // Create template
     const { data: template, error } = await supabase
       .from('pdf_design_templates')
       .insert({
         name: data.name,
-        name_de: data.name_de,
         code: data.code,
         description: data.description || null,
-        description_de: data.description_de || null,
-        layout_type: data.layout_type,
+        template_type: data.template_type,
         active: true,
         sort_order: 999,
         ...config
